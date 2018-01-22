@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head"></head>
+<body>
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1>Power Query</h1>
+                    <form id="queryForm" method="post">
+                        <fieldset>
+
+                            <div class="form-group">
+                                <label class="control-label" for="druidCluster">Druid Cluster</label>
+                                <select id="druidCluster" class="form-control"
+                                        th:field="*{druidCluster}" th:required="true">
+                                    <option th:each="druidCluster : ${druidClusters}"
+                                            th:value="${druidCluster.getClusterId()}"
+                                            th:selected="false"
+                                            th:attr="data-url=${druidCluster.getBrokerUrl()}"
+                                            th:text="${druidCluster.getClusterName()}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="queryText">Query</label>
+                                <div>
+									<textarea id="queryText" name="queryText" th:type="text"
+                                              class="form-control input-md"
+                                              rows="20" cols="200"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="granularitySection">
+                                <label class="control-label" for="granularity">Granularity</label>
+                                <select id="granularity" class="form-control" th:field="*{granularity}" required="true">
+                                    <option th:each="granularity : ${granularities}"
+                                            th:value="${granularity}"
+                                            th:selected="${granularity} == 'day' ? true : false"
+                                            th:text="${granularity}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="endTime">End Time</label>
+                                <div>
+                                    <input id="endTime" name="endTime" type="datetime-local"
+                                           class="form-control input-md" size="25"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="startTime">Start Time</label>
+                                <div>
+                                    <input id="startTime" name="endTime" type="datetime-local"
+                                           class="form-control input-md" size="25"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="timeOrigin">Time Origin</label>
+                                <div>
+                                    <input id="timeOrigin" name="endTime" type="datetime-local"
+                                           class="form-control input-md" size="25"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="hoursOfLag">Time SLA</label>
+                                <div>
+                                    <input id="hoursOfLag" name="endTime" type="number"
+                                           class="form-control input-md" size="25"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="intervals">Period Intervals</label>
+                                <div>
+                                    <input id="intervals" name="endTime" type="number"
+                                           class="form-control input-md" size="25"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="sdSlider">KSigma Sensitivity</label>
+                                <div class="well">
+                                    <input id="sdSlider" data-slider-id='sdControl' type="text" data-slider-min="1"
+                                           data-slider-max="6" data-slider-step="0.5" data-slider-value="3"/>
+                                    <span id="sdSliderValContainer"
+                                          style="padding-left:4em">Current '&sigma;' Value: <span
+                                            id="sdSliderVal">3</span>&sigma;</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <input id="submitInsta" type="submit" class="btn btn-success" value="Query"/>
+                            </div>
+
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var queryText = codeMirror('#queryText');
+
+    const $sdSlider = $('#sdSlider');
+    $sdSlider.slider();
+    $sdSlider.on("slide", function (slideEvent) {
+        $("#sdSliderVal").text(slideEvent.value);
+    });
+
+    $(document).ready(function () {
+        $("#queryForm").submit(function (e) {
+            console.log(e);
+            e.preventDefault();
+            var data = {};
+            data.query = queryText.getValue();
+            data.granularity = $('#granularity').val();
+            data.sigmaThreshold = $('#sdSliderVal').text();
+            data.clusterId = $('#druidCluster').val();
+            data.endTime = $('#endTime').val();
+            data.startTime = $('#startTime').val();
+            data.timeOrigin = $('#timeOrigin').val();
+            data.hoursOfLag = $('#hoursOfLag').val();
+            data.intervals = $('#intervals').val();
+            window.location.href = '/Debug/ProcessInstantReport?' + encodeQueryData(data);
+        });
+    });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head"></head>
+<body>
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1>Backfill Job</h1>
+                    <form id="queryForm" method="post">
+                        <fieldset>
+
+                            <div class="form-group">
+                                <label class="control-label" for="job">Job Metadata</label>
+                                <select id="job" class="form-control"
+                                        th:field="*{job}" th:required="true">
+                                    <option th:each="job : ${jobs}"
+                                            th:value="${job.getJobId()}"
+                                            th:selected="false"
+                                            th:text="${job.getJobId() + ' : ' + job.getTestName()}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="fillStartTime">Fill Start Time</label>
+                                <div>
+                                    <input id="fillStartTime" name="startTime" type="datetime-local"
+                                           class="form-control input-md" size="25" required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <input id="submitInsta" type="submit" class="btn btn-success" value="Query"/>
+                            </div>
+
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+        $("#queryForm").submit(function (e) {
+            const submitButton = $('#submitInsta');
+            // Disable submit button
+            submitButton.attr('disabled', true);
+            e.preventDefault();
+            const startTime = $('#fillStartTime').val();
+            var selectedDate = Date.parse(startTime);
+            if (selectedDate >= new Date().getTime()) {
+                showErrorMessage("Start time cannot be in future!")
+                return;
+            }
+            var data = {};
+            data.fillStartTime = startTime;
+            data.jobId = $('#job').val();
+            $.ajax({
+                type: 'POST',
+                url: '/Debug/BackfillReports',
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                dataType: 'text',
+                success: function () {
+                    toastr.success("Backfill complete!");
+                },
+                error: function (errorMessage) {
+                    toastr.error(errorMessage);
+                }
+            });
+        });
+    });
+
+</script>
+</body>
+</html>

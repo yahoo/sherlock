@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12 title">
+                    <div class="container">
+
+                        <!-- Site header -->
+                        <header class="header">
+                            <h1>Sherlock - Anomaly Detector</h1>
+                        </header>
+                        <!-- Jumbotron -->
+                        <div class="jumbotron">
+                            <h2>Introduction</h2>
+                            <p class="lead">Sherlock is an anomaly detection service built on top of
+                                <span class="highlight">Druid</span>. It leverages
+                                <span class="highlight">EGADS (Extensible Generic Anomaly Detection System)</span>
+                                to detect anomalies in time-series data. Users can schedule jobs on an hourly, daily,
+                                weekly, or monthly basis, view anomaly reports from Sherlock's interface, or receive
+                                them via email.</p>
+                            <p><a class="btn btn-success" href="#"><i class="fa fa-github fa-lg fa-2x"></i>
+                                Contribute</a></p>
+                        </div>
+
+                        <!-- Example row of columns -->
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <h2>Flash Query</h2>
+                                <p class="text-danger"></p>
+                                <p>Flash Query is a utility to perform instant Anomaly Detection on a Druid query.
+                                    Users may enter a Druid query along with detection parameters in the
+                                    <b>Flash Query</b> form. Sherlock detects anomalies in the time-series and displays
+                                    them in a <span class="highlight">line chart and table visualization.</span></p>
+                                <p><a class="btn btn-primary" href="#" role="button">Demo &raquo;</a></p>
+                            </div>
+                            <div class="col-lg-3">
+                                <h2>Job Scheduling</h2>
+                                <p>Sherlock provides Job Scheduling for a given Druid query to
+                                    <span class="highlight">periodically monitor time-series</span>. Users may
+                                    create jobs via the <b>New Job</b>.
+                                    <b>Jobs List</b> also provides a <span class="highlight">timeline chart</span> for
+                                    currently scheduled jobs.</p>
+                                <p><a class="btn btn-primary" href="#" role="button">Demo &raquo;</a></p>
+                            </div>
+                            <div class="col-lg-3">
+                                <h2>Druid Cluster</h2>
+                                <p>User can add new Druid cluster using <b>Add Cluster</b> form. <b>Druid Clusters</b>
+                                    shows the list of all druid clusters with their status and each cluster related
+                                    information. User can update the cluster by selecting it from the list.</p>
+                                <p><a class="btn btn-primary" href="#" role="button">Demo &raquo;</a></p>
+                            </div>
+                            <div class="col-lg-3">
+                                <h2>Reports</h2>
+                                <p>Sherlock provides <span class="highlight">Calendar-Heatmap visualization</span> where
+                                    periodically generated reports may be viewed. Reports show a table in which each
+                                    row represents a <span class="highlight">time-series and associated groupby dimension</span>
+                                    in the Druid query with anomalies.</p>
+                                <p><a class="btn btn-primary" href="#" role="button">Demo &raquo;</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- #Page Content -->
+</div>
+<!-- #Wrapper -->
+</body>
+
+</html>

@@ -1,0 +1,55 @@
+<div id="sidebar-wrapper" th:fragment="nav">
+    <ul class="sidebar-nav">
+        <li class="sidebar-brand">
+            <div class="text-center">
+                <a href="/">
+                    <img src="/img/pipe.png" width="60" />
+                </a>
+            </div>
+            <a href="/" th:styleappend="'color: rgba(255, 255, 255, 0.85);font-size: 18px'">Sherlock</a>
+        </li>
+        <li>
+            <a href="/Flash-Query">
+                <span class="glyphicon glyphicon-flash" style="font-size:200%;vertical-align:middle;letter-spacing: -0.2em;"></span>
+                <br/>
+                Flash Query
+            </a>
+        </li>
+        <li>
+            <a href="/Jobs">
+                <span class="glyphicon glyphicon-th-list" style="font-size:200%;vertical-align:middle;letter-spacing: -0.085em;"></span>
+                <br/>
+                Jobs List
+            </a>
+        </li>
+        <li>
+            <a href="/DeletedJobs">
+                <span class="glyphicon glyphicon-remove" style="font-size:200%;vertical-align:middle;letter-spacing: -0.085em;"></span>
+                <br/>
+                Deleted Jobs
+            </a>
+        </li>
+        <li>
+            <a href="/New">
+                <span class="glyphicon glyphicon-plus" style="font-size:200%;vertical-align:middle;letter-spacing: -0.2em;"></span>
+                <br/>
+                New Job
+            </a>
+        </li>
+        <li>
+            <a href="/Druid/Clusters">
+                <span class="glyphicon glyphicon-th-list" style="font-size:200%;vertical-align:middle;letter-spacing: -0.085em;"></span>
+                <br/>
+                Druid Clusters
+            </a>
+        </li>
+        <li>
+            <a href="/Druid/NewCluster">
+                <span class="glyphicon glyphicon-plus" style="font-size:200%;vertical-align:middle;letter-spacing: -0.2em;"></span>
+                <br/>
+                Add Cluster
+            </a>
+        </li>
+        <div id="version" th:text="${version}">v0.0.0</div>
+    </ul>
+</div>

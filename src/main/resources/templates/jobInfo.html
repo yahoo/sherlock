@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div id="title"><h1 th:text="${title}">TITLE</h1></div>
+                    <div id="updateTitle" hidden="true"><h1>Update Job Details:</h1></div>
+                    <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">Error message</div>
+                    <form id="jobInfoForm" method='post' action="/UpdateJobInfo">
+                        <fieldset>
+
+                            <input id="jobId" type="hidden" th:value="${job.getJobId()}"/>
+
+                            <div class="form-group" hidden="true">
+                                <label class="control-label" for="clusterId">Cluster Name:</label>
+                                <div>
+                                    <input id="clusterId" name="clusterId" type="text" class="form-control input-md"
+                                           size="25" th:value="${job.getClusterId()}" disabled="true" hidden="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="clusterName">Cluster Name:</label>
+                                <div>
+                                    <input id="clusterName" name="clusterName" type="text" class="form-control input-md"
+                                           size="25" th:value="${clusterName}" disabled="true" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="testName">Anomaly Test-Name:</label>
+                                <div>
+                                    <input id="testName" name="testName" type="text" class="form-control input-md"
+                                           size="25" th:value="${job.getTestName()}" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="testDescription">Description:</label>
+                                <div>
+                                    <textarea id="testDescription" name="testDescription" type="text"
+                                              class="form-control input-md" placeholder="Enter the description(optional)"
+                                              th:text="${job.getTestDescription()}" rows="2" cols="200"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="ownerName">Owner:</label>
+                                <div>
+                                    <input id="ownerName" name="ownerName" type="text" class="form-control input-md"
+                                           size="25" th:value="${job.getOwner()}" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="ownerEmail">Owner's Email:</label>
+                                <div>
+                                    <input id="ownerEmail" name="ownerEmail" type="email" class="form-control input-md"
+                                           size="25" th:value="${job.getOwnerEmail()}" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="queryText">Query:</label><br/>
+                                <button id="removeGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
+                                    <span class="glyphicon glyphicon-remove"></span> Remove
+                                </button>
+                                <button id="copyGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
+                                    <span class="glyphicon glyphicon-copy"></span> Copy
+                                </button>
+                                <br/>
+                                <textarea id="queryText" name="queryText" type="text" class="form-control input-md" rows="20" cols="200" th:text="${job.getUserQuery()}"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="queryUrl">Visualization URL:</label>
+                                <div>
+                                    <input id="queryUrl" name="queryUrl" type="url" class="form-control input-md"
+                                           size="25" th:value="${job.getUrl()}" th:required="false"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${deletedJobsView == null}">
+                                <label class="control-label" for="jobStatus">Job Status:</label>
+                                <div>
+                                    <input id="jobStatus" name="jobStatus" type="text" class="form-control input-md"
+                                           size="25" th:value="${job.getJobStatus()}" disabled="true"
+                                           th:styleappend="${job.getJobStatus() == 'CREATED' ? 'color: rgba(0,0,255,0.6)'
+                                           : (job.getJobStatus() == 'RUNNING' ? 'color: rgba(100,200,0,1.0)' :
+                                           (job.getJobStatus() == 'ERROR' ? 'color: rgba(255,0,0,1.0)' : 'color: rgba(200,100,0,0.8)'))}"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${deletedJobsView == null}">
+                                <label class="control-label" for="jobLastUpdateTime">Job Next Run Time:</label>
+                                <div>
+                                    <input id="jobLastUpdateTime" name="jobLastUpdateTime" type="text"
+                                           class="form-control input-md" size="25" th:value="${job.getFormattedNextRunTime()}"
+                                           disabled="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="granularitySection">
+                                <label class="control-label" for="granularity">Granularity: </label>
+                                <select id="granularity" class="form-control"  th:field="*{granularity}" th:required="true">
+                                    <option th:each="granularity : ${granularities}"
+                                            th:value="${granularity}"
+                                            th:selected="${granularity} == ${job.getGranularity()} ? true : false"
+                                            th:text="${granularity}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="frequencySection">
+                                <label class="control-label" for="frequency">Job Frequency:</label>
+                                <select id="frequency" class="form-control" th:field="*{frequency}"
+                                        th:required="true">
+                                    <option th:each="frequency : ${frequencies}"
+                                            th:value="${frequency}"
+                                            th:selected="${frequency} == ${job.getFrequency()} ? true : false"
+                                            th:text="${frequency}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="sdSlider">KSigma Sensitivity:
+                                    <a data-toggle="popover" data-trigger="hover">
+                                        help <span class="glyphicon glyphicon-info-sign"></span>
+                                    </a>
+                                </label>
+                                <p id="defaultSliderMsg" class="bg-info">Select '&sigma;' threshold for normal distribution,
+                                    bigger '&sigma;' values capture less anomalies than smaller '&sigma;' values.
+                                    <code>Recommended: '3&sigma;'</code></p>
+                                <div class="well">
+                                    <input id="sdSlider" data-slider-id='sdControl' type="text" data-slider-min="1"
+                                           data-slider-max="6" data-slider-step="0.5"/>
+                                    <span id="sdSliderValContainer" style="padding-left:4em">Current '&sigma;' Value:
+                                        <span id="sdSliderVal" th:text="${job.getSigmaThreshold()}"></span>&sigma;</span>
+                                </div>
+                            </div>
+
+                            <div id="viewReport" class="form-group">
+                                <label class="control-label" for="reportGlyphicon">Anomaly reports:</label><br/>
+                                <button id="reportGlyphicon" type="button" class="btn btn-info btn-lg custom-btn-color"
+                                        onclick="viewReports()"
+                                        th:attr="disabled=${job.getJobStatus() != 'CREATED' ? 'false' : 'true'}">
+                                    <span class="glyphicon glyphicon-list-alt"></span> Report
+                                </button>
+                            </div>
+
+                            <div id="jobActions" class="form-group" th:if="${deletedJobsView == null}">
+                                <label class="control-label" for="launch">Actions:</label>
+                                <div>
+                                    <!--Show launch button for jobs-->
+                                    <span id="launchButton" th:if="${job.getJobStatus() == 'CREATED'}">
+                                        <div id="launch" class="btn btn-success" onclick="continueLaunching()">Launch</div>
+                                    </span>
+                                    <!--Show re-launch button for jobs-->
+                                    <span id="relaunchButton" th:if="${job.getJobStatus() == 'STOPPED' || job.getJobStatus() == 'ERROR'}">
+                                        <div id="relaunch" class="btn btn-success" onclick="continueLaunching()">Re-Launch</div>
+                                    </span>
+                                    <!--Show stop button for jobs -->
+                                    <span id="stopButton" th:if="${job.getJobStatus() == 'RUNNING' || job.getJobStatus() == 'NODATA'}">
+                                        <div id="stop" class="btn btn-warning" data-toggle="modal" data-target="#stopConfirmModal">Stop</div>
+                                    </span>
+                                    <!--Show delete button for jobs -->
+                                    <span id="deleteButton">
+                                        <div id="delete" class="btn btn-danger" data-toggle="modal" data-target="#deleteConfirmModal">Delete</div>
+                                    </span>
+
+                                </div>
+                            </div>
+
+                            <div id="updateActions" class="form-group" hidden="true">
+                                <label class="control-label" for="submit">Action:</label>
+                                <div>
+                                    <!--Show update button for jobs-->
+                                    <span id="updateButton">
+                                        <input id="submit" type="submit" class="btn btn-success" value="Update"/>
+                                    </span>
+                                    <!--Show cancel button for jobs-->
+                                    <span id="cancelButton">
+                                        <div id="cancel" class="btn btn-danger" onclick="backToJobInfo()">Cancel</div>
+                                    </span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id='popoverInfo' hidden="true">popover msg.</div>
+    <!-- #Page Content -->
+    <!-- Launch confirmation -->
+    <div id="launchConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="launchConfirmModalCode"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="launchConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="launchConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Update confirmation -->
+    <div id="updateConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="updateConfirmModalCode">Do you really want to UPDATE?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="updateConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="updateConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Delete confirmation -->
+    <div id="deleteConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="deleteConfirmModalCode">Do you really want to DELETE?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="deleteConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="deleteConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Stop confirmation -->
+    <div id="stopConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="stopConfirmModalCode">Do you really want to STOP?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="stopConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="stopConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Pause confirmation -->
+    <div id="pauseConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="pauseConfirmModalCode"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="pauseConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="pauseConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Resume confirmation -->
+    <div id="resumeConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="resumeConfirmModalCode"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="resumeConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="resumeConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #wrapper -->
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
+/*<![CDATA[*/
+
+        // Shows an error message box with given message
+        function showErrorMessage(msg) {
+            toastr.error(msg);
+        }
+        // Shows an info message box with given message
+        function showInfoMessage(msg) {
+            toastr.info(msg);
+        }
+        // Shows a warning message box with given message
+        function showWarningMessage(msg) {
+            toastr.warning(msg);
+        }
+        // Return ajax message
+        function ajaxMessage(jqXHR, exception) {
+            // Show the error message
+            if (jqXHR.status === 0) {
+                showErrorMessage('Not connected. Verify network connection.');
+            } else if (jqXHR.status == 404) {
+                showErrorMessage('Requested page not found. [404]');
+            } else if (exception === 'parsererror') {
+                showErrorMessage('Requested JSON parse failed.');
+            } else if (exception === 'timeout') {
+                showErrorMessage('Time out error.');
+            } else if (exception === 'abort') {
+                showErrorMessage('Ajax request aborted.');
+            } else {
+                showErrorMessage(jqXHR.responseText);
+            }
+        }
+
+        $("#popoverInfo").load('/content/kSigmaTable.html #sensitivityTable');
+
+        var queryText = CodeMirror.fromTextArea($('#queryText')[0], {
+                            matchBrackets: true,
+                            mode: "application/ld+json",
+                            lineWrapping: true,
+                            lineNumbers: true,
+                            scrollbarStyle: "simple",
+                            highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true},
+                            readOnly: ([[${deletedJobsView} != null]] ? true : false)
+                        });
+
+        cmResize(queryText);
+
+        $("#sdSlider").slider({
+            value: [[${job.getSigmaThreshold()}]]
+        });
+
+        $(document).ready(function(){
+            $('[data-toggle="popover"]').popover({
+                    html: true,
+                    title: function () {
+                        return "Expected fraction of population inside range on bell curve. Outside population is considered as anomaly in data";
+                    },
+                    content: function () {
+                        return $("#popoverInfo").html();
+                    }
+            });
+        });
+
+        if([[${deletedJobsView} != null]]) {
+            $('#testName').attr("disabled", true);
+            $('#testDescription').attr("disabled", true);
+            $('#ownerName').attr("disabled", true);
+            $('#ownerEmail').attr("disabled", true);
+            $('#queryUrl').attr("disabled", true);
+            $('#granularity').attr("disabled", true);
+            $('#frequency').attr("disabled", true);
+            $("#sdSlider").slider("disable");
+        }
+
+        $("#sdSlider").on("slideStop", function(slideEvent) {
+            updateMode();
+            $("#sdSliderVal").text(slideEvent.value);
+        });
+
+        $('#testName').on('input', function() {
+            updateMode();
+        });
+
+        $('#testDescription').on('input', function() {
+            updateMode();
+        });
+
+        $('#ownerName').on('input', function() {
+            updateMode();
+        });
+
+        $('#ownerEmail').on('input', function() {
+            updateMode();
+        });
+
+        $('#queryUrl').on('input', function() {
+            updateMode();
+        });
+
+        $('#granularity').change(function() {
+            updateMode();
+        });
+
+        $('#frequency').change(function() {
+            updateMode();
+        });
+
+        function updateMode() {
+            /*[+
+            // Ignore for delete mode.
+            // Show update button for other modes.
+            if ([[${deletedJobsView == null}]]) {
+                $('#updateTitle').attr("hidden", false);
+                $('#title').attr("hidden", true);
+                $('#jobActions').attr("hidden", true);
+                $('#updateActions').attr("hidden", false);
+            }
+            +]*/
+        }
+
+        queryText.on('change', function(cm) {
+            if (queryText.getValue() == '') {
+                showWarningMessage("Query cannot be empty");
+            }
+            updateMode();
+        });
+
+        $("#deleteConfirmModalYes").click(function() {
+            $.ajax({
+                type: 'POST',
+                url: '/DeletedJobs/' + $('#jobId').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Job Deleted successfully.");
+                        setTimeout(function() {
+                            window.location.href = '/DeletedJobs';
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong in deleting the job! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+
+        $(document).ready(function() {
+            $("#jobInfoForm").submit(function(e) {
+                e.preventDefault();
+                if($('#granularity').prop('selectedIndex') > $('#frequency').prop('selectedIndex')) {
+                    showWarningMessage("The granularity must be less than or equal to the frequency!");
+                    return;
+                }
+                var data = {};
+                data.queryUrl = $('#queryUrl').val();
+                data.query = queryText.getValue();
+                data.testName = $('#testName').val();
+                data.owner = $('#ownerName').val();
+                data.ownerEmail = $('#ownerEmail').val();
+                data.testDescription = $('#testDescription').val();
+                data.granularity = $('#granularity').val();
+                data.frequency = $('#frequency').val();
+                data.sigmaThreshold = $('#sdSliderVal').text();
+                data.clusterId = $('#clusterId').val();
+                $.ajax({
+                    type: 'POST',
+                    url: '/UpdateJobInfo/' + $('#jobId').val(),
+                    data: JSON.stringify(data),
+                    contentType: "application/json",
+                    dataType: 'text',
+                    success: function (response) {
+                        if (response === 'success') {
+                            showInfoMessage("Job updated successfully.");
+                            setTimeout(function() {
+                                window.location.href = '/Jobs/' + $('#jobId').val();
+                            }, 1500);
+                        } else {
+                            // Else there was a warning, but not a failure
+                            showWarningMessage("Something went wrong in saving/updating the job! Try again.");
+                        }
+                    },
+                    error : ajaxMessage
+                });
+            });
+            return;
+        });
+
+        $("#launchConfirmModalYes").click(function() {
+            $.ajax({
+                type: 'POST',
+                url: '/LaunchJob/' + $('#jobId').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Job launched successfully.");
+                        setTimeout(function() {
+                            window.location.href =  '/Jobs/' + $('#jobId').val();
+                        }, 1000);
+                    } else {
+                        // Else there was a warning, but not a failure
+                        showWarningMessage("Something went wrong in launching the job! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+        return;
+        });
+
+        function backToJobInfo() {
+            window.location.href = '/Jobs/' + $('#jobId').val();
+        }
+
+        function continueLaunching() {
+            $('#launchConfirmModalCode').html("Do you really want to LAUNCH the job with <b>granularity</b> <code>'" + $('#granularity').val() + "'</code> and <b>frequency</b> <code>'" + $('#frequency').val() + "'</code>?");
+            $('#launchConfirmModal').modal('show');
+        }
+
+        $("#stopConfirmModalYes").click(function() {
+            $.ajax({
+                type: 'POST',
+                url: '/StopJob/' + $('#jobId').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Job stopped successfully.");
+                        setTimeout(function() {
+                            window.location.href =  '/Jobs/' + $('#jobId').val();
+                        }, 1000);
+                    } else {
+                        // Else there was a warning, but not a failure
+                        showWarningMessage("Something went wrong in stopping the job! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+        return;
+        });
+
+        function viewReports() {
+            window.location.href = '/Reports/' + $('#jobId').val() + '/' + $('#frequency').val();
+        }
+
+        $('#removeGlyphicon').click(function() {
+            queryText.setValue("");
+            queryText.clearHistory();
+        });
+
+        $('#copyGlyphicon').click(function() {
+            var $temp = $("<textarea></textarea>");
+            $("body").append($temp);
+            $temp.val(queryText.getValue()).select();
+            document.execCommand("copy");
+            $temp.remove();
+        });
+
+/*]]>*/
+</script>
+
+</body>
+
+</html>

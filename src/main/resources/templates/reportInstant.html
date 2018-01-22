@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="bootstrap-data" th:attr="data-bootstrap=${data}"></div>
+    <div id="bootstrap-html" th:attr="data-html=${tableHtml}"></div>
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 style="margin-bottom: 15px" th:text="${title}"></h1>
+                    <div th:if="${error != null}"
+                         th:text="${error}"
+                         class="alert alert-danger"
+                         role="alert">
+                    </div>
+                    <div th:switch="${error != null}"></div>
+                    <div class="row" id="chart-container"></div>
+                    <div class="form-group" id="table-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    /*<![CDATA[*/
+    function getIndex(d) {
+        if (d.classed) {
+            return Number(d.classed.split('-')[1]);
+        }
+        return d[0].series;
+    }
+
+    function displayGraph(data) {
+        if (!data) {
+            return;
+        }
+        $('svg').remove();
+        $('#chart-container')[0].innerHTML += '<svg></svg>';
+        $('svg').height(650);
+        nv.addGraph(function () {
+            var chart = nv.models.lineWithFocusChart()
+                .margin({left: 100, right: 100})
+                .height(600)
+                .useInteractiveGuideline(true)
+                .showLegend(true);
+            const timeFormat = d3.time.format.utc("%b %d, %H:00");
+            chart.xAxis
+                .axisLabel('Time')
+                .tickFormat(function (x) {
+                    const currentDate = new Date(x * 1000);
+                    return timeFormat(currentDate);
+                });
+            chart.yAxis
+                .axisLabel('Metric')
+                .tickFormat(d3.format('.3s'));
+            chart.x2Axis
+                .axisLabel('Time')
+                .tickFormat(function (x) {
+                    const currentDate = new Date(x * 1000);
+                    return timeFormat(currentDate);
+                });
+            chart.y2Axis
+                .axisLabel('Metric')
+                .tickFormat(d3.format('.3s'));
+            d3.select('svg')
+                .datum(data)
+                .call(chart);
+            // The index of the first anomaly series
+            const anomalyStart = (data.length * 2) / 3;
+
+            function updateAnomalies() {
+                d3.select('.nv-groups')
+                    .selectAll('.nv-group')
+                    .each(function (d) {
+                        // Hide the lines for anomalies
+                        if (getIndex(d) >= anomalyStart) {
+                            d3.select(this)
+                                .selectAll('path')
+                                .style('stroke-opacity', 0);
+                        }
+                    });
+                d3.select('.nv-focusWrap')
+                    .select('.nv-groups')
+                    .selectAll('.nv-group')
+                    .each(function (d) {
+                        if (getIndex(d) >= anomalyStart) {
+                            d3.select(this)
+                                .selectAll('path')
+                                .style('stroke-opacity', 0);
+                        }
+                    });
+                d3.select('.nv-scatterWrap')
+                    .select('.nv-groups')
+                    .selectAll('.nv-group')
+                    .each(function (d) {
+                        if (getIndex(d) < anomalyStart) {
+                            return;
+                        }
+                        d3.select(this)
+                            .selectAll('path')
+                            .each(function (b) {
+                                // Highlight anomaly points as red except
+                                // if the point is null
+                                if (!b[0].y) {
+                                    d3.select(this)
+                                        .style('stroke-opacity', 0)
+                                        .style('fill-opacity', 0)
+                                        .style('stroke-width', 0);
+                                    return;
+                                }
+                                d3.select(this)
+                                    .style('fill', 'red')
+                                    .style('stroke', 'red')
+                                    .style('stroke-opacity', 0.8)
+                                    .style('fill-opacity', 0.6)
+                                    .style('stroke-width', 5);
+                            })
+                    });
+                // Hook onto the brush event so that the anomalies update while
+                // changing the focus
+                const prevBrush = chart.focus.dispatch.on('onBrush');
+
+                function hookBrush(e) {
+                    prevBrush(e);
+                    updateAnomalies();
+                }
+
+                // Rehook only if the line chart has redefined the event handler
+                if (prevBrush.name !== 'hookBrush') {
+                    chart.focus.dispatch.on('onBrush', hookBrush);
+                }
+            }
+
+            // Hook onto all update events to make sure the
+            // anomalies are displayed correctly
+            updateAnomalies();
+            chart.dispatch.on('renderEnd', updateAnomalies);
+            chart.dispatch.on('stateChange', updateAnomalies);
+            chart.dispatch.on('changeState', updateAnomalies);
+            nv.utils.windowResize(function () {
+                chart.update();
+                updateAnomalies();
+            });
+            return chart;
+        });
+    }
+
+    $(document).ready(function () {
+        const tableHtml = $('#bootstrap-html').attr('data-html');
+        $('#table-container').html(tableHtml);
+        $('#reportTable').DataTable({
+            "pageLength": 100,
+            "order": [[ 3, "desc" ]]
+        });
+        displayGraph($('#bootstrap-data').data('bootstrap'));
+    });
+    /*]]>*/
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+{
+  "metric": "m1",
+  "aggregations": [
+    {
+      "type": "hyperUnique",
+      "fieldName": "f1",
+      "name": "m1"
+    }
+  ],
+  "dimension": "dim1",
+  "intervals": "2017-08-04T17:34:04+00:00/2017-09-01T17:34:04+00:00",
+  "threshold": 1,
+  "postAggregations": [],
+  "queryType": "topN"
+}

@@ -1,0 +1,7 @@
+{
+  "clusterName" : "cluster1",
+  "clusterDescription" : "main_cluster",
+  "brokerHost" : "dd.abcd.com",
+  "brokerPort" : "4080",
+  "brokerEndpoint" : "/endpoint"
+}

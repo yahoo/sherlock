@@ -1,0 +1,41 @@
+.table-responsive .col-sm-5,
+.table-responsive .col-sm-6,
+.table-responsive .col-sm-7,
+.table-responsive .col-sm-12 {
+	padding-right: 0;
+}
+
+.table-responsive .row {
+	margin-right: 0;
+}
+
+.title-card {
+	background-color: #424244;
+	padding: 20px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	width: 270px;
+}
+
+.title-card h1 {
+	color: rgba(255, 255, 255, 0.85);
+	pointer-events: none;
+}
+
+.title-card i {
+	font-size: 64px;
+}
+
+.title-card a {
+	color: white;
+}
+
+.title-card a:hover {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.bg-info {
+	padding: 2px 0 2px 5px;
+	border-radius: 2px;
+}

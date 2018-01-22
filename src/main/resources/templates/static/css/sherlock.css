@@ -1,0 +1,71 @@
+/*!
+ * Custom Sherlock css
+ */
+
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #eee;
+  cursor: pointer;
+}
+
+.mycolor td {
+  color : red;
+}
+
+#version {
+    position:fixed;
+    padding:5px;
+    bottom:0px;
+    color: #999999;
+}
+
+.status {
+	padding-left: 6px;
+	padding-right: 6px;
+	padding-top: 1px;
+	padding-bottom: 2px;
+	border-radius: 2px;
+    line-height: 130%;
+}
+
+.ok-status {
+	background-color: rgba(0, 183, 119, 0.4);
+}
+
+.na-status {
+	background-color: rgba(192, 192, 192, 0.4);
+}
+
+.alert-status {
+	background-color: rgba(255, 195, 0, 0.4);
+}
+
+.fail-status {
+	background-color: rgba(255, 0, 0, 0.4);
+}
+
+.hidden{
+    display: none;
+}
+
+.custom-btn {
+    float: right;
+    height: 20px;
+    padding: 1px 8px;
+    border-radius : 0px;
+}
+
+.custom-report-btn {
+    float: left;
+    height: 26px;
+    background-color: #3fabb7;
+    padding: 3px 8px;
+    color: #fff;
+    border-color: #ccc;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 3px;
+}
+
+.custom-btn-color {
+    background-color: #3fabb7;
+}

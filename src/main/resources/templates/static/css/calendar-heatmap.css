@@ -1,0 +1,56 @@
+/*
+The MIT License (MIT)
+Copyright (c) 2016 Darragh Kirwan
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+text.month-name,
+text.calendar-heatmap-legend-text,
+text.day-initial {
+  font-size: 12px;
+  fill: inherit;
+  font-family: Helvetica, arial, 'Open Sans', sans-serif;
+}
+rect.cell:hover {
+  stroke: #555555;
+  stroke-width: 1px;
+}
+rect.cell:click {
+  stroke: #555555;
+  stroke-width: 1px;
+}
+.cell-tooltip {
+  position: absolute;
+  z-index: 9999;
+  padding: 5px 9px;
+  color: #dddddd;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.70);
+  border-radius: 3px;
+  text-align: center;
+}
+.cell-tooltip > span {
+  font-family: Helvetica, arial, 'Open Sans', sans-serif
+}
+.calendar-heatmap {
+  box-sizing: initial;
+}
+.bars {
+    fill: none;
+    stroke: #787a80;
+    stroke-width: 1px;
+}

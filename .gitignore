@@ -1,0 +1,8 @@
+.idea
+*.iml
+target/
+dependency-reduced-pom.xml
+*.swp
+*.swo
+*.csv
+*.db

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="bootstrap-data" th:attr="data-bootstrap=${timelineData}"></div>
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 th:text="${title}">Active Jobs</h1>
+                    <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">Error</div>
+                    <div th:if="${error == null and deletedJobsView == null and #lists.size(jobs) > 0}"
+                         id="timeline-container"></div>
+                    <div th:switch="${error != null}">
+                        <div th:case="${false}">
+                            <div class="table-responsive">
+                                <div th:switch="${#lists.size(jobs) > 0}">
+                                    <div th:case="${false}" class="alert alert-info" role="alert">No jobs to display
+                                    </div>
+                                    <table id="reportTable" th:case="${true}"
+                                           class="table table-striped table-hover table-bordered">
+                                        <thead>
+                                        <tr>
+                                            <th>Test Name</th>
+                                            <th>Owner</th>
+                                            <th>Test Description</th>
+                                            <th th:if="${deletedJobsView == null}">Job Status</th>
+                                            <th>Granularity</th>
+                                            <th>Frequency</th>
+                                            <th>Reports</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="job: ${jobs}" class='clickable-row'
+                                            th:attr="data-href=${deletedJobsView == null ? '/Jobs/' + job.getJobId() : '/DeletedJobs/' + job.getJobId() }">
+                                            <td th:text="${job.getTestName()}">testXYZ</td>
+                                            <td th:text="${job.getOwner()}">xyz</td>
+                                            <td th:text="${job.getTestDescription()}">test description</td>
+                                            <td th:if="${deletedJobsView == null}" th:text="${job.getJobStatus()}"
+                                                th:styleappend="${job.getJobStatus() == 'CREATED' ? 'color: rgba(0,0,255,0.6)' : (job.getJobStatus() == 'RUNNING' ? 'color: rgba(100,200,0,1.0)' : (job.getJobStatus() == 'ERROR' ? 'color: rgba(255,0,0,1.0)' : 'color: rgba(200,100,0,0.8)'))}">
+                                                created
+                                            </td>
+                                            <td th:text="${job.getGranularity()}">Day</td>
+                                            <td th:text="${job.getFrequency()}">Hour</td>
+                                            <td>
+                                                <button type="button" class="btn custom-report-btn"
+                                                        th:onclick="'fetchReport(\'' + ${job.getJobId()} + '\',\'' + ${job.getFrequency()} + '\');'"
+                                                        th:attr="disabled=${job.getJobStatus() != 'CREATED' ? 'false' : 'true'}">
+                                                    <span class="glyphicon glyphicon-list-alt"></span> Report
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- #Page Content -->
+</div>
+<!-- #Wrapper -->
+<script th:inline="javascript">
+/*<![CDATA[*/
+
+    $(".clickable-row").click(function () {
+        window.document.location = $(this).data("href");
+    });
+
+    $(".clickable-row .btn").click(function (e) {
+        e.stopPropagation();
+    });
+
+    $(document).ready(function () {
+        if (!$('#timeline-container').size()) {
+            return;
+        }
+        const data = $('#bootstrap-data').data('bootstrap');
+        if (!data.length) {
+            return;
+        }
+        function drawTimeline() {
+            // Create timeline chart
+            var tooltip = nv.models.tooltip();
+            for (var i = 0; i < data.length; ++i) {
+                if (!data[i].times) {
+                    continue;
+                }
+                for (var j = 0; j < data[i].times.length; ++j) {
+                    // Add a time amount to the starting time as the ending time
+                    // to give the displayed rectangles width on the timeline
+                    data[i].times[j].ending_time = data[i].times[j].starting_time + 700000;
+                }
+            }
+            var timeFormat = d3.time.format(data.timeFormat || "%b %d, %I:%M %p");
+            tooltip.contentGenerator(function (data) {
+                return "<div id='timeline-tooltip'>" +
+                    "<h4>" + data.value.label + "</h4>" +
+                    "<p>" + timeFormat(new Date(data.series[0].starting_time)) + "</p>" +
+                    "</div>";
+            });
+            var chart = d3.timeline()
+                .showTimeAxisTick()
+                .beginning(new Date())
+                .stack()
+                .margin({left: 80, right: 30, top: 0, bottom: 0})
+                .colorProperty('label')
+                .hover(function () {
+                    tooltip();
+                }).click(function (d, i, datum) {
+                    window.location.href = "/Jobs/" + datum.jobId;
+                }).mouseover(function (d, i, datum) {
+                    tooltip.data({
+                        key: 'key',
+                        value: datum,
+                        series: [d]
+                    }).hidden(false);
+                }).mouseout(function () {
+                    tooltip.hidden(true);
+                });
+            // Clear previous chart if any
+            $('svg').remove();
+            // Append and render the chart
+            d3.select('#timeline-container')
+                .append('svg')
+                .attr('width', $('.container-fluid').width())
+                .datum(data)
+                .call(chart);
+            // Round the rectangle corners
+            d3.selectAll('rect')
+                .attr('rx', 3)
+                .attr('ry', 3);
+        }
+
+        drawTimeline();
+        nv.utils.windowResize(function () {
+            drawTimeline();
+        });
+    });
+
+    var view = [[${deletedJobsView}]];
+
+    if (view == null) {
+        $('#reportTable').DataTable({
+            "pageLength": 100,
+            "order": [[ 5, "desc" ]]
+        });
+    } else {
+        $('#reportTable').DataTable({
+            "pageLength": 100,
+            "order": [[ 6, "desc" ]]
+        });
+    }
+
+    function fetchReport(jobId, frequency) {
+        window.document.location = '/Reports/' + jobId + '/' + frequency;
+    }
+
+/*]]>*/
+</script>
+
+</body>
+
+</html>

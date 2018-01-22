@@ -1,0 +1,157 @@
+{
+  "dimensions": [
+    "dim1",
+    "dim2"
+  ],
+  "aggregations": [
+    {
+      "fieldName": "f1",
+      "type": "longSum",
+      "name": "m1"
+    }
+  ],
+  "filter": {
+    "fields": [
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v1"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v2"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v4"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v2"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v1"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v3"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v5"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v2"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v4"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v3"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v6"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v2"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v5"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v3"
+          }
+        ],
+        "type": "and"
+      },
+      {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "dim1",
+            "value": "v6"
+          },
+          {
+            "type": "selector",
+            "dimension": "dim2",
+            "value": "v3"
+          }
+        ],
+        "type": "and"
+      }
+    ],
+    "type": "or"
+  },
+  "intervals": "2017-09-28T00:00:00+00:00/2017-10-26T03:45:02+00:00",
+  "limitSpec": {
+    "limit": 5,
+    "type": "default",
+    "columns": [
+      {
+        "direction": "descending",
+        "dimension": "m1"
+      }
+    ]
+  },
+  "granularity": {
+    "timeZone": "UTC",
+    "type": "period",
+    "period": "P1D"
+  },
+  "postAggregations": [],
+  "queryType": "groupBy",
+  "dataSource": "s1"
+}

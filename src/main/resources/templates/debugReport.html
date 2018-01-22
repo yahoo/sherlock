@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+	<div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+	<div id="bootstrap-data" th:text="${data}"></div>
+	<div id="page-content-wrapper">
+		<div>
+			<h2>Anomaly Reports</h2>
+			<table id="reportTable" class="table table-striped table-hover table-bordered">
+				<thead>
+				<tr>
+					<th>uniqueId</th>
+					<th>metricName</th>
+					<th>groupByFilters</th>
+					<th>formattedAnomalyTimestamps</th>
+					<th>formattedLastRunTime</th>
+					<th>queryURL</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr th:each="report: ${reports}">
+					<td th:text="${report.getUniqueId()}"></td>
+					<td th:text="${report.getMetricName()}"></td>
+					<td th:text="${report.getGroupByFilters()}"></td>
+					<td th:text="${report.getFormattedAnomalyTimestamps()}"
+					    style="white-space:pre-wrap;width:223px"></td>
+					<td th:text="${report.getFormattedLastRuntime()}"></td>
+					<td th:text="${report.getQueryURL()}"></td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<div>
+			<h2>Job Details</h2>
+			<table id="jobTable" class="table table-striped table-hover table-bordered">
+				<thead>
+				<tr>
+					<th>jobId</th>
+					<th>createTime</th>
+					<th>granularity</th>
+					<th>frequency</th>
+					<th>sigmaThreshold</th>
+					<th>clusterId</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td th:text="${job.getJobId()}"></td>
+					<td th:text="${job.getCreateTime()}"></td>
+					<td th:text="${job.getGranularity()}"></td>
+					<td th:text="${job.getFrequency()}"></td>
+					<td th:text="${job.getSigmaThreshold()}"></td>
+					<td th:text="${job.getClusterId()}"></td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<div>
+			<h2>Query Details</h2>
+			<h4>User query</h4>
+			<textarea id="queryText" name="queryText" type="text" class="form-control input-md"
+			          rows="40" cols="200" th:text="${job.getUserQuery()}"></textarea>
+			<br/>
+			<br/>
+			<h4>Query</h4>
+			<textarea id="userQueryText" name="userQueryText" type="text" class="form-control imput-md"
+			          rows="40" cols="200" th:text="${job.getPrettyQuery()}"></textarea>
+		</div>
+	</div>
+</div>
+
+<script>
+	var queryText = CodeMirror.fromTextArea($('#queryText')[0], {
+		matchBrackets: true,
+		mode: "application/ld+json",
+		lineWrapping: true,
+		lineNumbers: true,
+		scrollbarStyle: "simple",
+		highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true},
+		readOnly: true
+	});
+	cmResize(queryText);
+
+	var userQueryText = CodeMirror.fromTextArea($('#userQueryText')[0], {
+		matchBrackets: true,
+		mode: "application/ld+json",
+		lineWrapping: true,
+		lineNumbers: true,
+		scrollbarStyle: "simple",
+		highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true},
+		readOnly: true
+	});
+	cmResize(userQueryText);
+</script>
+</body>
+</html>

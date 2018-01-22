@@ -1,0 +1,80 @@
+{
+  "metric": "m1",
+  "aggregations": [
+    {
+      "filter": {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "d1",
+            "value": "v1"
+          },
+          {
+            "type": "selector",
+            "dimension": "d2",
+            "value": "v2"
+          },
+          {
+            "type": "selector",
+            "dimension": "d3",
+            "value": "v3"
+          }
+        ],
+        "type": "and"
+      },
+      "aggregator": {
+        "fieldName": "f1",
+        "type": "longSum",
+        "name": "m1"
+      },
+      "type": "filtered"
+    },
+    {
+      "filter": {
+        "fields": [
+          {
+            "type": "selector",
+            "dimension": "d4",
+            "value": "v4"
+          }
+        ],
+        "type": "or"
+      },
+      "aggregator": {
+        "fieldName": "f2",
+        "type": "longSum",
+        "name": "n1"
+      },
+      "type": "filtered"
+    }
+  ],
+  "dimension": "dim1",
+  "intervals": "2017-09-15T20:48:28+00:00/2017-10-13T20:48:28+00:00",
+  "dataSource": "s1",
+  "granularity": {
+    "timeZone": "UTC",
+    "type": "period",
+    "period": "P1D"
+  },
+  "threshold": 50,
+  "postAggregations": [
+    {
+      "fields": [
+        {
+          "fieldName": "m1",
+          "type": "fieldAccess",
+          "name": "m1"
+        },
+        {
+          "fieldName": "f3",
+          "type": "fieldAccess",
+          "name": "n3"
+        }
+      ],
+      "type": "arithmetic",
+      "name": "m3",
+      "fn": "/"
+    }
+  ],
+  "queryType": "topN"
+}

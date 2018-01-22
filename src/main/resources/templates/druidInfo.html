@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+	<!-- Sidebar -->
+	<div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+	<!-- #Sidebar -->
+
+	<!-- Page Content -->
+	<div id="page-content-wrapper">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 th:text="${title}">TITLE</h1>
+					<div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">Error message</div>
+					<form id="clusterForm" method='post'>
+						<fieldset>
+							<div class="form-group">
+								<label class="control-label" for="clusterId">Cluster Id:</label>
+								<div>
+									<input id="clusterId" name="clusterId" type="text"
+									       class="form-control input-md" size="25" required="true"
+									       disabled="true" th:value="${cluster.getClusterId()}" />
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="clusterName">Cluster Name:</label>
+								<div>
+									<input id="clusterName" name="clusterName" type="text"
+									       class="form-control input-md" size="25" required="true"
+									       th:value="${cluster.getClusterName()}" />
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="clusterDescription">Description:</label>
+								<div>
+									<input id="clusterDescription" name="clusterDescription" type="text"
+									       class="form-control input-md" rows="2" cols="200"
+									       th:value="${cluster.getClusterDescription()}" />
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="brokerHost">Broker Host:</label>
+								<div>
+									<input id="brokerHost" name="brokerHost" type="text"
+									       class="form-control input-md" size="25" required="true"
+									       th:value="${cluster.getBrokerHost()}" />
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="brokerPort">Broker Port:</label>
+								<div>
+									<input id="brokerPort" name="brokerPort" type="number"
+									       class="form-control input-md" size="25" required="true"
+									       th:value="${cluster.getBrokerPort()}" />
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="control-label" for="brokerEndpoint">Broker Endpoint:</label>
+								<div>
+									<input id="brokerEndpoint" name="brokerEndpoint" type="text"
+									       class="form-control input-md" size="25" required="true"
+									       th:value="${cluster.getBrokerEndpoint()}" />
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="hoursOfLag">Time SLA</label>
+								<div>
+									<input id="hoursOfLag" name="hoursOfLag" type="number"
+										   class="form-control input-md" size="25" th:value="${cluster.getHoursOfLag()}"/>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="updateCluster">Actions:</label>
+								<input id="updateCluster" class="btn btn-success" type="submit" />
+								<div id="deleteCluster" class="btn btn-danger">Delete</div>
+							</div>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- #Page Content -->
+
+	<!-- delete confirmation -->
+	<div id="deleteConfirmModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-body">
+					<p id="deleteConfirmModalCode">Delete this cluster?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" data-dismiss="modal" class="btn btn-primary" id="deleteConfirmModalYes">Yes</button>
+					<button type="button" data-dismiss="modal" class="btn" id="deleteConfirmModalNo">No</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- update confirmation -->
+	<div id="updateConfirmModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-body">
+					<p id="updateConfirmationModalCode">Update this cluster?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" data-dismiss="modal" class="btn btn-primary" id="updateConfirmModalYes">Yes</button>
+					<button type="button" data-dismiss="modal" class="btn" id="updateConfirmModalNo">No</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- #Wrapper -->
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
+
+	// Shows an error message box with given message
+	function showErrorMessage(msg) {
+		toastr.error(msg);
+	}
+	// Shows an info message box with given message
+	function showInfoMessage(msg) {
+		toastr.info(msg);
+	}
+	// Shows a warning message box with given message
+	function showWarningMessage(msg) {
+		toastr.warning(msg);
+	}
+	// Return ajax message
+	function ajaxMessage(jqXHR, exception) {
+		// Show the error message
+		if (jqXHR.status === 0) {
+			showErrorMessage('Not connected. Verify network connection.');
+		} else if (jqXHR.status === 404) {
+			showErrorMessage('Requested page not found. [404]');
+		} else if (exception === 'parsererror') {
+			showErrorMessage('Requested JSON parse failed.');
+		} else if (exception === 'timeout') {
+			showErrorMessage('Time out error.');
+		} else if (exception === 'abort') {
+			showErrorMessage('Ajax request aborted.');
+		} else {
+			showErrorMessage(jqXHR.responseText);
+		}
+	}
+
+	$(document).ready(function() {
+		$("#clusterForm").submit(function(e) {
+			e.preventDefault();
+			$('#updateConfirmModalCode').html();
+			$('#updateConfirmModal').modal('show');
+		});
+		$('#deleteCluster').click(function(e) {
+			e.preventDefault();
+			$('#deleteConfirmModalCode').html();
+			$('#deleteConfirmModal').modal('show');
+		})
+	});
+
+	$('#deleteConfirmModalYes').click(function() {
+		$.ajax({
+			type: 'POST',
+			url: '/Druid/DeleteCluster/' + $('#clusterId').val(),
+			dataType: 'text',
+			success: function (response) {
+				if ($.isEmptyObject(response)) {
+					// Else there was a warning, but not a failure
+					showWarningMessage('Something went wrong! Try again');
+				} else {
+					window.document.location = '/Druid/Clusters';
+					showInfoMessage('Cluster deleted successfully');
+				}
+			},
+			error: ajaxMessage
+		});
+	});
+
+	$('#updateConfirmModalYes').click(function() {
+		const data ={
+			clusterName: $('#clusterName').val(),
+			clusterDescription: $('#clusterDescription').val(),
+			brokerHost: $('#brokerHost').val(),
+			brokerPort: $('#brokerPort').val(),
+			brokerEndpoint: $('#brokerEndpoint').val(),
+			hoursOfLag: $('#hoursOfLag').val()
+		};
+		$.ajax({
+			type: 'POST',
+			url: '/Druid/UpdateCluster/' + $('#clusterId').val(),
+			data: JSON.stringify(data),
+			contentType: "application/json",
+			dataType: 'text',
+			success: function(response) {
+				if ($.isEmptyObject(response)) {
+					showWarningMessage('Something went wrong! Try again');
+				} else {
+					window.document.location = '/Druid/Clusters';
+					showInfoMessage('Cluster updated successfully');
+				}
+			},
+			error: ajaxMessage
+		});
+	});
+
+	$('form input[type=submit]').click(function() {
+		$('input[type=submit]', $(this).parents('form')).removeAttr('clicked');
+		$(this).attr('clicked', 'true');
+	});
+
+	$('#deleteConfirmModalNo').click(function() {
+		showWarningMessage('Cluster was not delete');
+	});
+
+	$('#updateConfirmModalNo').click(function() {
+		showWarningMessage('Cluster was not updated');
+	});
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<!-- Wrapper -->
+<div id="wrapper">
+	<!-- Sidebar -->
+	<div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+	<!-- #Sidebar -->
+
+	<!-- Page Content -->
+	<div id="page-content-wrapper">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 th:text="${title}">TITLE</h1>
+					<div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">Error message</div>
+					<form id="clusterForm" method='post'>
+						<fieldset>
+
+							<div class="form-group">
+								<label class="control-label" for="clusterName">Druid Cluster Name:</label>
+								<div>
+									<input id="clusterName" name="clusterName" type="text"
+									       placeholder="Enter a name for this cluster" class="form-control input-md"
+									       size="25" required="true" autofocus="true"/>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="clusterDescription">Description:</label>
+								<div>
+									<input id="clusterDescription" name="clusterDescription" type="text"
+									       placeholder="(Optional) Enter a cluster description" class="form-control input-md"
+									       rows="2" cols="200"/>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="brokerHost">Broker Host:</label>
+								<div>
+									<input id="brokerHost" name="brokerHost" type="text"
+									       placeholder="Enter the cluster broker hostname (e.g. localhost)" class="form-control input-md"
+									       size="25" required="true"/>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="brokerPort">Broker Port:</label>
+								<div>
+									<input id="brokerPort" name="brokerPort" type="number"
+									       placeholder="Enter the druid broker port (e.g. 4080)"
+									       class="form-control input-md" size="25" required="true" value="4080"/>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="brokerEndpoint">Broker Endpont:</label>
+								<div>
+									<input id="brokerEndpoint" name="brokerEndpoint" type="text"
+									       placeholder="Enter the druid broker endpoint"
+									       class="form-control input-md" size="25" required="true"
+									       value="/druid/v2/"/>
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label" for="hoursOfLag">Time SLA</label>
+								<div>
+									<input id="hoursOfLag" name="hoursOfLag" type="number" min="0"
+										   class="form-control input-md" size="25" value="0"/>
+								</div>
+							</div>
+
+							<input id="clusterId" hidden="true"/>
+
+							<div class="form-group">
+								<label class="control-label" for="saveCluster">Actions:</label>
+								<input id="saveCluster" type="submit" class="btn btn-success" value="Save"/>
+							</div>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- #Page Content -->
+
+	<!-- save confirmation -->
+	<div id="saveConfirmModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-body">
+					<p id="saveConfirmModalCode">Add this cluster?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" data-dismiss="modal" class="btn btn-primary" id="saveConfirmModalYes">Yes</button>
+					<button type="button" data-dismiss="modal" class="btn" id="saveConfirmModalNo">No</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- #Wrapper -->
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
+
+	// Shows an error message box with given message
+	function showErrorMessage(msg) {
+		toastr.error(msg);
+	}
+	// Shows an info message box with given message
+	function showInfoMessage(msg) {
+		toastr.info(msg);
+	}
+	// Shows a warning message box with given message
+	function showWarningMessage(msg) {
+		toastr.warning(msg);
+	}
+	// Return ajax message
+	function ajaxMessage(jqXHR, exception) {
+		// Show the error message
+		if (jqXHR.status === 0) {
+			showErrorMessage('Not connected. Verify network connection.');
+		} else if (jqXHR.status === 404) {
+			showErrorMessage('Requested page not found. [404]');
+		} else if (exception === 'parsererror') {
+			showErrorMessage('Requested JSON parse failed.');
+		} else if (exception === 'timeout') {
+			showErrorMessage('Time out error.');
+		} else if (exception === 'abort') {
+			showErrorMessage('Ajax request aborted.');
+		} else {
+			showErrorMessage(jqXHR.responseText);
+		}
+	}
+
+	$(document).ready(function() {
+		$("#clusterForm").submit(function(e) {
+			e.preventDefault();
+			$('#saveConfirmModalCode').html();
+			$('#saveConfirmModal').modal('show');
+		});
+	});
+
+	$("#saveConfirmModalYes").click(function() {
+		var data = {
+			clusterName: $('#clusterName').val(),
+			clusterDescription: $('#clusterDescription').val(),
+			brokerHost: $('#brokerHost').val(),
+			brokerPort: $('#brokerPort').val(),
+			brokerEndpoint: $('#brokerEndpoint').val(),
+			hoursOfLag: $('#hoursOfLag').val()
+		};
+		$.ajax({
+			type: 'POST',
+			url: '/Druid/NewCluster',
+			data: JSON.stringify(data),
+			contentType: "application/json",
+			dataType: 'text',
+			success: function (response) {
+				if ($.isEmptyObject(response)) {
+					// Else there was a warning, but not a failure
+					showWarningMessage("Something went wrong! Try again.");
+				} else {
+					window.document.location = '/Druid/Clusters';
+					showInfoMessage("Cluster saved successfully");
+				}
+			},
+			error : ajaxMessage
+		});
+	});
+
+	$("form input[type=submit]").click(function() {
+		$("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+		$(this).attr("clicked", "true");
+	});
+
+	$("#saveConfirmModalNo").click(function() {
+		showWarningMessage("Cluster was not added.");
+	});
+</script>
+
+</body>
+
+</html>

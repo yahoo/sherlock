@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 th:text="${title}">Flash Query</h1>
+                    <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">
+                        Error message
+                    </div>
+                    <form id="queryForm" method='post'
+                          th:action="${instantView != null ? '/Flash-Query/ProcessAnomalyReport' : ''}">
+                        <fieldset>
+
+                            <div class="form-group" th:if="${instantView == null}">
+                                <label class="control-label" for="test-name">Anomaly Test-Name:</label>
+                                <div>
+                                    <input id="test-name" name="test-name" type="text"
+                                           placeholder="Enter your test name" class="form-control input-md"
+                                           size="25" th:required="true" th:autofocus="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView == null}">
+                                <label class="control-label" for="test-description">Description:</label>
+                                <div>
+                                    <textarea id="test-description" name="test-description" th:type="text"
+                                              placeholder="Enter the description (optional)"
+                                              class="form-control input-md" rows="2" cols="200"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView == null}">
+                                <label class="control-label" for="owner-name">Owner:</label>
+                                <div>
+                                    <input id="owner-name" name="owner-name" type="text"
+                                           placeholder="Enter the name of the owner of the test"
+                                           class="form-control input-md" size="25" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView == null}">
+                                <label class="control-label" for="owner-email">Owner's Email:</label>
+                                <div>
+                                    <input id="owner-email" name="owner-email" type="email"
+                                           placeholder="Enter the email of the owner of the test"
+                                           class="form-control input-md" size="25" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="druidCluster">Druid Cluster:</label>
+                                <p id="defaultDruidClusterMsg" class="bg-info">Select a Druid cluster</p>
+                                <select id="druidCluster" class="form-control" name="clusterId"
+                                        th:field="${druidCluster}" th:required="true">
+                                    <option th:each="druidCluster : ${druidClusters}"
+                                            th:value="${druidCluster.getClusterId()}"
+                                            th:selected="false"
+                                            th:attr="data-url=${druidCluster.getBrokerUrl()}"
+                                            th:text="${druidCluster.getClusterName()}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="queryText">Query:</label>
+                                <p class="bg-info">Paste the druid query here</p>
+                                <button id="removeGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
+                                    <span class="glyphicon glyphicon-remove"></span> Remove
+                                </button>
+                                <button id="copyGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
+                                    <span class="glyphicon glyphicon-copy"></span> Copy
+                                </button>
+                                <br/>
+                                <div>
+									<textarea id="queryText" name="query" th:type="text"
+                                              class="form-control input-md" rows="20" cols="200"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView == null}">
+                                <label class="control-label" for="queryUrl">Visualization URL:</label>
+                                <div>
+                                    <input id="queryUrl" name="queryUrl" type="url"
+                                           placeholder="Paste the query URL here (optional)"
+                                           class="form-control input-md" size="25" th:required="false"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="granularitySection">
+                                <label class="control-label" for="granularity">Granularity: </label>
+                                <p id="defaultGranularityMsg" class="bg-info">Select the granularity of the data.
+                                    <code>Default: 'day'</code></p>
+                                <select id="granularity" name="granularity" class="form-control"
+                                        th:field="*{granularity}" th:required="true">
+                                    <option th:each="granularity : ${granularities}"
+                                            th:value="${granularity}"
+                                            th:selected="${granularity} == 'day' ? true : false"
+                                            th:text="${granularity}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="frequencySection"
+                                 th:attr="hidden=${instantView != null ? 'true' : 'false'}">
+                                <label class="control-label" for="frequency">Job Frequency:</label>
+                                <p id="defaultFrequencyMsg" class="bg-info">Select the frequency of the cron job.
+                                    <code>Default: 'day'</code></p>
+                                <select id="frequency" name="frequency" class="form-control"
+                                        th:field="*{frequency}" th:required="true">
+                                    <option th:each="frequency : ${frequencies}"
+                                            th:value="${frequency}"
+                                            th:selected="${frequency} == 'day' ? true : false"
+                                            th:text="${frequency}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="sdSlider">KSigma Sensitivity:
+                                    <a data-toggle="popover" data-trigger="hover">
+                                        help <span class="glyphicon glyphicon-info-sign"></span>
+                                    </a>
+                                </label>
+                                <p id="defaultSliderMsg" class="bg-info">Select '&sigma;' threshold for normal
+                                    distribution, bigger '&sigma;' values capture less anomalies than smaller '&sigma;'
+                                    values. <code>Recommended: '3&sigma;'</code></p>
+                                <div class="well">
+                                    <input id="sdSlider" name="sigmaThreshold" data-slider-id='sdControl'
+                                           type="text" data-slider-min="1" data-slider-max="6"
+                                           data-slider-step="0.5" data-slider-value="3"/>
+                                    <span id="sdSliderValContainer"
+                                          style="padding-left:4em">Current '&sigma;' Value: <span
+                                            id="sdSliderVal">3</span>&sigma;</span>
+                                </div>
+                            </div>
+
+                            <input id="jobId" th:hidden="true"/>
+
+                            <div class="form-group">
+                                <label class="control-label" for="submitInsta">Actions:</label>
+                                <div>
+                                    <!--Show insta result button for flash query view-->
+                                    <span th:if="${instantView != null}">
+                                            <input id="submitInsta" type="submit" class="btn btn-success"
+                                                   value="Flash Results"/>
+                                        </span>
+                                    <!--Show save button for new form view-->
+                                    <span th:if="${instantView == null}">
+                                            <input id="saveJob" type="submit" class="btn btn-success" value="Save"/>
+                                        </span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                    <div id="table-container" class="form-group"></div>
+                    <div id="chart-container" class="row"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id='popoverInfo' th:hidden="true">popover msg.</div>
+
+    <!-- save confirmation -->
+    <div id="saveConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="saveConfirmModalCode">Save the job finally?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="saveConfirmModalYes">Yes
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn" id="saveConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- cron confirmation -->
+    <div id="cronConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="cronConfirmModalCode">Ready to launch the job (YES action won't launch, it just redirects to job launching page)?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="cronConfirmModalYes">Yes
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn" id="cronConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #Wrapper -->
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
+    /*<![CDATA[*/
+    // Shows an error message box with given message
+    function showErrorMessage(msg) {
+        toastr.error(msg);
+    }
+
+    // Shows an info message box with given message
+    function showInfoMessage(msg) {
+        toastr.info(msg);
+    }
+
+    // Shows a warning message box with given message
+    function showWarningMessage(msg) {
+        toastr.warning(msg);
+    }
+
+    // Return ajax message
+    function ajaxMessage(jqXHR, exception) {
+        // Show the error message
+        if (jqXHR.status === 0) {
+            showErrorMessage('Not connected. Verify network connection.');
+        } else if (jqXHR.status === 404) {
+            showErrorMessage('Requested page not found. [404]');
+        } else if (exception === 'parsererror') {
+            showErrorMessage('Requested JSON parse failed.');
+        } else if (exception === 'timeout') {
+            showErrorMessage('Time out error.');
+        } else if (exception === 'abort') {
+            showErrorMessage('Ajax request aborted.');
+        } else {
+            showErrorMessage(jqXHR.responseText);
+        }
+    }
+
+    $("#popoverInfo").load('/content/kSigmaTable.html #sensitivityTable');
+
+    const $druidCluster = $('#druidCluster');
+
+    $(document).ready(function () {
+        $('[data-toggle="popover"]').popover({
+            html: true,
+            title: function () {
+                return "Expected fraction of population inside range on bell curve. Outside population is considered as anomaly in data";
+            },
+            content: function () {
+                return $("#popoverInfo").html();
+            }
+        });
+        $("#queryForm").submit(function (e) {
+            var val = $("input[type=submit][clicked=true]").val();
+            if (val === 'Save') {
+                e.preventDefault();
+                if ($('#granularity').prop('selectedIndex') > $('#frequency').prop('selectedIndex')) {
+                    showWarningMessage("The granularity must be less than or equal to the frequency!");
+                    return;
+                }
+                $('#saveConfirmModalCode').html();
+                $('#saveConfirmModal').modal('show');
+            }
+        });
+    });
+
+    $("#cronConfirmModalYes").click(function () {
+        setTimeout(function () {
+            window.location.href = '/Jobs/' + $('#jobId').val();
+        }, 700);
+    });
+
+    $("#cronConfirmModalNo").click(function () {
+        setTimeout(function () {
+            window.location.href = '/Jobs';
+        }, 700);
+    });
+
+    $("#saveConfirmModalYes").click(function () {
+        var data = {};
+        data.queryUrl = $('#queryUrl').val();
+        data.query = queryText.getValue();
+        data.testName = $('#test-name').val();
+        data.owner = $('#owner-name').val();
+        data.ownerEmail = $('#owner-email').val();
+        data.testDescription = $('#test-description').val();
+        data.granularity = $('#granularity').val();
+        data.frequency = $('#frequency').val();
+        data.sigmaThreshold = $('#sdSliderVal').text();
+        data.clusterId = $druidCluster.val();
+        $.ajax({
+            type: 'POST',
+            url: '/SaveJobInfo',
+            data: JSON.stringify(data),
+            contentType: "application/json",
+            dataType: 'text',
+            success: function (response) {
+                if ($.isEmptyObject(response)) {
+                    // Else there was a warning, but not a failure
+                    showWarningMessage("Something went wrong! Try again.");
+                } else {
+                    showInfoMessage("Job saved successfully.");
+                    setTimeout(function () {
+                        $('#jobId').val(response);
+                        $('#cronConfirmModalCode').html();
+                        $('#cronConfirmModal').modal('show');
+                    }, 1000);
+                }
+            },
+            error: ajaxMessage
+        });
+    });
+
+    $("form input[type=submit]").click(function () {
+        $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+        $(this).attr("clicked", "true");
+    });
+
+    $("#saveConfirmModalNo").click(function () {
+        showWarningMessage("Job is not saved.");
+    });
+
+    const $sdSlider = $('#sdSlider');
+    $sdSlider.slider();
+    $sdSlider.on("slide", function (slideEvent) {
+        $("#sdSliderVal").text(slideEvent.value);
+    });
+
+    var queryText = CodeMirror.fromTextArea($('#queryText')[0], {
+        matchBrackets: true,
+        mode: "application/ld+json",
+        lineWrapping: true,
+        lineNumbers: true,
+        scrollbarStyle: "simple",
+        highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true}
+    });
+
+    cmResize(queryText);
+
+    $('#removeGlyphicon').click(function () {
+        queryText.setValue("");
+        queryText.clearHistory();
+    });
+
+    $('#copyGlyphicon').click(function () {
+        var $temp = $("<textarea></textarea>");
+        $("body").append($temp);
+        $temp.val(queryText.getValue()).select();
+        document.execCommand("copy");
+        $temp.remove();
+    });
+
+    /*]]>*/
+</script>
+
+</body>
+
+</html>
