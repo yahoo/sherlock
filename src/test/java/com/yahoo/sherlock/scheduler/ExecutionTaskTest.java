@@ -6,6 +6,7 @@
 package com.yahoo.sherlock.scheduler;
 
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
@@ -38,6 +39,7 @@ public class ExecutionTaskTest {
         jm.setEffectiveRunTime(12340);
         jm.setGranularity(Granularity.HOUR.toString());
         jm.setFrequency(Granularity.HOUR.toString());
+        jm.setJobStatus(JobStatus.RUNNING.getValue());
         Mockito.when(js.popQueue(anyLong())).then(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock iom) throws Throwable {

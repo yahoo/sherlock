@@ -41,6 +41,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service class for job execution.
@@ -384,6 +385,9 @@ public class JobExecutionService {
             report.setUniqueId(anomaly.metricMetaData.id);
             report.setMetricName(anomaly.metricMetaData.name);
             report.setGroupByFilters(anomaly.metricMetaData.source);
+        } else {
+            UUID uuid = UUID.randomUUID();
+            report.setUniqueId(uuid.toString());
         }
         if (JobStatus.ERROR.getValue().equals(job.getJobStatus())) {
             log.info("Job [{}] completed with error", job.getJobId());
