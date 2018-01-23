@@ -91,6 +91,7 @@ public class JobExecutionService {
         try {
             List<Anomaly> anomalies = new ArrayList<>();
             List<AnomalyReport> reports = new ArrayList<>();
+            job.setJobStatus(JobStatus.RUNNING.getValue());
             try {
                 anomalies = executeJob(job, druidClusterAccessor.getDruidCluster(job.getClusterId()));
                 reports = getReports(anomalies, job);

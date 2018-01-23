@@ -139,11 +139,9 @@ public class ExecutionTask extends TimerTask {
             } else {
                 // Perform regular job execution and schedule for next time
                 jobExecutionService.execute(jobMetadata);
-                if (!jobMetadata.getJobStatus().equals(JobStatus.ERROR.getValue())) {
-                    schedulerService.rescheduleJob(jobMetadata);
-                    jobMetadataAccessor.putJobMetadata(jobMetadata);
-                    jobScheduler.removePending(jobMetadata.getJobId());
-                }
+                schedulerService.rescheduleJob(jobMetadata);
+                jobMetadataAccessor.putJobMetadata(jobMetadata);
+                jobScheduler.removePending(jobMetadata.getJobId());
             }
         }
     }
