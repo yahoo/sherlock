@@ -2,6 +2,8 @@ package com.yahoo.sherlock.store.core;
 
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisURI;
+import com.lambdaworks.redis.cluster.ClusterClientOptions;
+import com.lambdaworks.redis.cluster.ClusterTopologyRefreshOptions;
 import com.lambdaworks.redis.cluster.RedisClusterClient;
 import com.yahoo.sherlock.exception.StoreException;
 import com.yahoo.sherlock.settings.DatabaseConstants;
@@ -131,6 +133,18 @@ public class Client {
             return;
         }
         redisClusterClient = RedisClusterClient.create(produceURI(params));
+        // Adaptive cluster topology refresh for redis cluster client
+        ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
+            .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.MOVED_REDIRECT,
+                                          ClusterTopologyRefreshOptions.RefreshTrigger.ASK_REDIRECT,
+                                          ClusterTopologyRefreshOptions.RefreshTrigger.PERSISTENT_RECONNECTS)
+            .adaptiveRefreshTriggersTimeout(5, TimeUnit.SECONDS)
+            .refreshTriggersReconnectAttempts(5)
+            .build();
+
+        redisClusterClient.setOptions(ClusterClientOptions.builder()
+                                          .topologyRefreshOptions(topologyRefreshOptions)
+                                          .build());
     }
 
     /**
