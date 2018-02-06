@@ -140,9 +140,12 @@ public class Client {
                                           ClusterTopologyRefreshOptions.RefreshTrigger.PERSISTENT_RECONNECTS)
             .adaptiveRefreshTriggersTimeout(5, TimeUnit.SECONDS)
             .refreshTriggersReconnectAttempts(5)
+            .enablePeriodicRefresh(true)
+            .refreshPeriod(5, TimeUnit.MINUTES)
             .build();
 
         redisClusterClient.setOptions(ClusterClientOptions.builder()
+                                          .validateClusterNodeMembership(false)
                                           .topologyRefreshOptions(topologyRefreshOptions)
                                           .build());
     }
