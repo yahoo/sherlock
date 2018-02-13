@@ -25,7 +25,7 @@ public class JobTimelineTest {
     @Test
     public void testPoint() {
         JobTimeline.Point g = new JobTimeline.Point();
-        assertNull(g.getDisplay());
+        assertEquals(g.getDisplay(), "false");
         g = new JobTimeline.Point(100);
         assertTrue(g.getTimestamp() == g.getEndTimestamp());
         assertEquals(g.getTimestamp(), 100 * 1000);

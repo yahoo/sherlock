@@ -156,4 +156,30 @@ public class Constants {
      */
     public static final String NODATA = "nodata";
 
+    /**
+     * Delimiter constant for comma.
+     */
+    public static final String COMMA_DELIMITER = ",";
+
+    /**
+     * Delimiter constant for colon.
+     */
+    public static final String COLON_DELIMITER = ":";
+
+    /**
+     * Delimiter constant for '@'.
+     */
+    public static final String AT_DELIMITER = "@";
+
+    /**
+     * Delimiter constant for html line break.
+     */
+    public static final String HTML_LINEBREAK_DELIMITER = "<br/>";
+
+    /**
+     * Delimiter constant for new line.
+     */
+    public static final String NEWLINE_DELIMITER = "\n";
+
+
 }

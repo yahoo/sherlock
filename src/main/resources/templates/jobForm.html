@@ -321,7 +321,7 @@
 
     const $sdSlider = $('#sdSlider');
     $sdSlider.slider();
-    $sdSlider.on("slide", function (slideEvent) {
+    $sdSlider.on("slideStop", function (slideEvent) {
         $("#sdSliderVal").text(slideEvent.value);
     });
 

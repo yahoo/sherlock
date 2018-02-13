@@ -13,6 +13,7 @@ import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.enums.Granularity;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -24,6 +25,7 @@ import java.util.List;
  * The job timeline class represents the scheduled jobs
  * displayed on a timeline for a certain look forward periods.
  */
+@Slf4j
 public class JobTimeline {
 
     /**
@@ -47,13 +49,14 @@ public class JobTimeline {
         /**
          * The display mode of the point.
          */
+        @SerializedName("display")
         private String display;
 
         /**
          * Default constructor.
          */
         public Point() {
-            display = null;
+            display = "false";
         }
 
         /**
@@ -66,6 +69,7 @@ public class JobTimeline {
             this();
             this.timestamp = timestamp * 1000L; // convert to millis
             this.endTimestamp = this.timestamp;
+            this.display = null;
         }
     }
 
@@ -192,20 +196,31 @@ public class JobTimeline {
      * @return the points for the job
      */
     public static Point[] generatePoints(JobMetadata job, long startTime, long endTime) {
-        long currentTime = job.getEffectiveRunTime() * 60L;
+        long jobEffectiveRunTime = job.getEffectiveRunTime() * 60L;
         Granularity jobGranularity = Granularity.getValue(job.getGranularity());
         long seconds = jobGranularity.getMinutes() * 60L;
-        if (currentTime < startTime) {
-            int missingPeriods = (int) Math.ceil((startTime - currentTime) / (double) seconds);
-            currentTime += missingPeriods * seconds;
+        while (jobEffectiveRunTime < startTime) {
+            jobEffectiveRunTime += seconds;
         }
-        int deltaPeriods = (int) Math.ceil((endTime - currentTime) / (double) seconds);
-        Point[] points = new Point[deltaPeriods];
-        for (int i = 0; i < deltaPeriods; i++) {
-            points[i] = new Point(currentTime);
-            currentTime += seconds;
+        if (endTime <= jobEffectiveRunTime) {
+            Point[] points = new Point[1];
+            points[0] = new Point(endTime);
+            points[0].display = "false";
+            return points;
+        } else {
+            int deltaPeriods = (int) Math.ceil((endTime - jobEffectiveRunTime) / (double) seconds);
+            if (deltaPeriods <= 0) {
+                Point[] points = new Point[1];
+                points[0] = new Point(endTime);
+                points[0].display = "false";
+                return points;
+            }
+            Point[] points = new Point[deltaPeriods];
+            for (int i = 0; i < deltaPeriods; i++) {
+                points[i] = new Point(jobEffectiveRunTime);
+                jobEffectiveRunTime += seconds;
+            }
+            return points;
         }
-        return points;
     }
-
 }

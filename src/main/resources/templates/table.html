@@ -35,8 +35,9 @@
                 <tr th:attr="style=${emailHtml != null ? 'background-color: white;' : ''}">
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Metric</th>
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Group By Dimensions</th>
-                    <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Anomalous Timestamp</th>
-                    <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Report Endtime</th>
+                    <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Anomaly Info</th>
+                    <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Metric Deviation</th>
+                    <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Model Info</th>
                     <div th:if="${instantView == null}">
                         <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Visualization Link</th>
                     </div>
@@ -47,7 +48,8 @@
                     <td th:text="${anomaly.getMetricName()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Timeseries XYZ</td>
                     <td th:text="${anomaly.getGroupByFilters()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">List of group by dimensions</td>
                     <td th:text="${anomaly.getFormattedAnomalyTimestamps()}" th:styleappend="'color: rgba(255,0,0,0.6)'" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">List of anomalies</td>
-                    <td th:text="${anomaly.getFormattedReportGenerationTime()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Report Endtime</td>
+                    <td th:utext="${anomaly.getFormattedDeviation()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Deviation</td>
+                    <td th:text="${anomaly.getModelInfo()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Model Info</td>
                     <div th:if="${instantView == null}">
                         <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
                             <a th:if="${anomaly.getQueryURL() != null and not #strings.isEmpty(anomaly.getQueryURL())}"

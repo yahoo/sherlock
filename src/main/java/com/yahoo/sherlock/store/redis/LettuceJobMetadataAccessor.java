@@ -198,12 +198,6 @@ public class LettuceJobMetadataAccessor
         try (RedisConnection<String> conn = connect()) {
             if (isMissingId(job)) {
                 job.setJobId(newId());
-            } else {
-                try {
-                    performDeleteJob(job.getJobId().toString());
-                } catch (JobNotFoundException e) {
-                    log.error("Job with assigned ID does not exist!", e);
-                }
             }
             AsyncCommands<String> cmd = conn.async();
             cmd.setAutoFlushCommands(false);
@@ -225,12 +219,9 @@ public class LettuceJobMetadataAccessor
         log.info("Putting list of [{}] jobs", jobs.size());
         try (RedisConnection<String> conn = connect()) {
             List<JobMetadata> requireId = new ArrayList<>(jobs.size());
-            Set<JobMetadata> requireDel = new HashSet<>((int) (1.5 * jobs.size()));
             for (JobMetadata job : jobs) {
                 if (isMissingId(job)) {
                     requireId.add(job);
-                } else {
-                    requireDel.add(job);
                 }
             }
             if (!requireId.isEmpty()) {
@@ -238,9 +229,6 @@ public class LettuceJobMetadataAccessor
                 for (int i = 0; i < newIds.length; i++) {
                     requireId.get(i).setJobId(newIds[i]);
                 }
-            }
-            if (!requireDel.isEmpty()) {
-                deleteGivenJobs(requireDel);
             }
             AsyncCommands<String> cmd = conn.async();
             RedisFuture[] futures = new RedisFuture[4 * jobs.size()];

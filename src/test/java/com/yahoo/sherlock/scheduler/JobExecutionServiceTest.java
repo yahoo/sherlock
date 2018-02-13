@@ -163,6 +163,8 @@ public class JobExecutionServiceTest {
         an.metricMetaData.source = "sources";
         an.intervals = new Anomaly.IntervalSequence();
         an.addInterval(1, 11, 1.11f);
+        an.intervals.get(0).actualVal = 12.0f;
+        an.intervals.get(0).expectedVal = 7.0f;
         JobMetadata job = new JobMetadata();
         job.setUrl("http://url.com");
         job.setJobId(1);

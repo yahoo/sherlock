@@ -99,7 +99,11 @@
                 for (var j = 0; j < data[i].times.length; ++j) {
                     // Add a time amount to the starting time as the ending time
                     // to give the displayed rectangles width on the timeline
-                    data[i].times[j].ending_time = data[i].times[j].starting_time + 700000;
+                    if (data[i].times[j].display === "false") {
+                        data[i].times[j].ending_time = data[i].times[j].starting_time;
+                    } else {
+                        data[i].times[j].ending_time = data[i].times[j].starting_time + 700000;
+                    }
                 }
             }
             var timeFormat = d3.time.format(data.timeFormat || "%b %d, %I:%M %p");

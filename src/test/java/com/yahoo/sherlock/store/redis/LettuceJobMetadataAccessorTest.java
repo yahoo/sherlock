@@ -191,7 +191,6 @@ public class LettuceJobMetadataAccessorTest {
         verify(async, times(2)).hmset(anyString(), anyMap());
         verify(async, times(6)).sadd(anyString(), anyVararg());
         verify(jma).newId();
-        verify(jma).performDeleteJob(anyString());
     }
 
     @Test
@@ -209,7 +208,6 @@ public class LettuceJobMetadataAccessorTest {
         verify(jma).newIds(2);
         assertEquals(jobs.get(2).getJobId(), (Integer) 3);
         assertEquals(jobs.get(3).getJobId(), (Integer) 4);
-        verify(jma).deleteGivenJobs(anySet());
         verify(async, times(4)).hmset(anyString(), anyMap());
         verify(async, times(12)).sadd(anyString(), anyVararg());
     }

@@ -44,7 +44,9 @@ public class AnomalyReport implements Serializable {
             job.getReportNominalTime(),
             job.getJobId(),
             job.getFrequency(),
-            Constants.WARNING
+            Constants.WARNING,
+            anomaly.modelName,
+            String.valueOf(job.getSigmaThreshold())
         );
         report.setHasAnomaly(anomaly.intervals.size() > 0);
         report.setAnomalyTimestampsFromInterval(anomaly.intervals);
@@ -92,6 +94,18 @@ public class AnomalyReport implements Serializable {
     @Attribute
     private String status;
 
+    /** Name of the Model used for anomaly detection. */
+    @Attribute
+    private String modelName;
+
+    /** Parameter values of the model. */
+    @Attribute
+    private String modelParam;
+
+    /** String to represent deviation comma separated. */
+    @Attribute
+    private String deviationString;
+
     /** Whether this anomaly report contains an anomaly. */
     private boolean hasAnomaly;
 
@@ -113,6 +127,8 @@ public class AnomalyReport implements Serializable {
      * @param jobId the associated job ID
      * @param jobFrequency frequency of the job
      * @param status the anomaly status
+     * @param modelName Name of the Model used for anomaly detection
+     * @param modelParam Parameter values of the model
      */
     public AnomalyReport(
         String uniqueId,
@@ -123,7 +139,9 @@ public class AnomalyReport implements Serializable {
         Integer reportQueryEndTime,
         Integer jobId,
         String jobFrequency,
-        String status
+        String status,
+        String modelName,
+        String modelParam
     ) {
         this.uniqueId = uniqueId;
         this.metricName = metricName;
@@ -134,6 +152,8 @@ public class AnomalyReport implements Serializable {
         this.jobId = jobId;
         this.jobFrequency = jobFrequency;
         this.status = status;
+        this.modelName = modelName;
+        this.modelParam = modelParam;
     }
 
     /**
@@ -143,10 +163,11 @@ public class AnomalyReport implements Serializable {
      * @return readable timestamps separated by new lines
      */
     public String getFormattedAnomalyTimestamps() {
-        String[] anomalyTimes = anomalyTimestamps.split(",");
-        StringJoiner joiner = new StringJoiner("\n");
+        String[] anomalyTimes = anomalyTimestamps.split(Constants.COMMA_DELIMITER);
+        StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
         for (String anomalyTime : anomalyTimes) {
-            String[] interval = anomalyTime.split(":");
+            String[] timeAndValueSplit = anomalyTime.split(Constants.AT_DELIMITER);
+            String[] interval = timeAndValueSplit[0].split(Constants.COLON_DELIMITER);
             if (!NumberUtils.isInteger(interval[0])) {
                 continue;
             }
@@ -186,10 +207,12 @@ public class AnomalyReport implements Serializable {
         if (anomalyTimestamps == null) {
             return Collections.emptyList();
         }
-        String[] anomalyTimes = anomalyTimestamps.split(",");
+        String[] anomalyTimes = anomalyTimestamps.split(Constants.COMMA_DELIMITER);
+        StringJoiner joiner = new StringJoiner(Constants.COMMA_DELIMITER);
         List<int[]> timestamps = new ArrayList<>(anomalyTimes.length * 2);
         for (String anomalyTime : anomalyTimes) {
-            String[] intervalStr = anomalyTime.split(":");
+            String[] timeAndValueSplit = anomalyTime.split(Constants.AT_DELIMITER);
+            String[] intervalStr = timeAndValueSplit[0].split(Constants.COLON_DELIMITER);
             if (!NumberUtils.isInteger(intervalStr[0])) {
                 continue;
             }
@@ -197,8 +220,14 @@ public class AnomalyReport implements Serializable {
             if (intervalStr.length > 1 && NumberUtils.isInteger(intervalStr[1])) {
                 interval[1] = Integer.parseInt(intervalStr[1]);
             }
+            if (timeAndValueSplit.length < 2) {
+                joiner.add(null);
+            } else {
+                joiner.add(timeAndValueSplit[1]);
+            }
             timestamps.add(interval);
         }
+        this.deviationString = joiner.toString();
         return timestamps;
     }
 
@@ -210,7 +239,7 @@ public class AnomalyReport implements Serializable {
      * @param intervals the intervals to set
      */
     public void setAnomalyTimestampsFromInterval(Anomaly.IntervalSequence intervals) {
-        StringJoiner joiner = new StringJoiner(",");
+        StringJoiner joiner = new StringJoiner(Constants.COMMA_DELIMITER);
         for (Anomaly.Interval interval : intervals) {
             long startHours = TimeUtils.getTimestampInHoursFromSeconds(interval.startTime);
             long endHours = 0;
@@ -223,6 +252,8 @@ public class AnomalyReport implements Serializable {
             } else {
                 intervalStr = String.format("%d:%d", startHours, endHours);
             }
+            int percentageDeviation = (int) (((interval.actualVal - interval.expectedVal) / interval.expectedVal) * 100);
+            intervalStr += Constants.AT_DELIMITER + String.valueOf(percentageDeviation);
             joiner.add(intervalStr);
         }
         anomalyTimestamps = joiner.toString();
@@ -235,7 +266,13 @@ public class AnomalyReport implements Serializable {
      * @param endBytes bytes representing the ending times
      */
     public void setAnomalyTimestampsFromBytes(byte[][] startBytes, byte[][] endBytes) {
-        StringJoiner joiner = new StringJoiner(",");
+        StringJoiner joiner = new StringJoiner(Constants.COMMA_DELIMITER);
+        String[] deviations;
+        if (deviationString == null) {
+            deviations = new String[startBytes.length];
+        } else {
+            deviations = deviationString.split(Constants.COMMA_DELIMITER);
+        }
         for (int i = 0; i < startBytes.length; i++) {
             if (startBytes[i] == null || startBytes[i].length == 0) {
                 log.error("Missing start time {} for report {}", i, getUniqueId());
@@ -252,12 +289,45 @@ public class AnomalyReport implements Serializable {
                 hrsEnd = NumberUtils.decodeBytes(endBytes[i]);
             }
             if (hrsEnd != 0 && hrsEnd != hrsStart) {
-                joiner.add(String.format("%d:%d", hrsStart, hrsEnd));
+                joiner.add(String.format("%d:%d", hrsStart, hrsEnd) + Constants.AT_DELIMITER + deviations[i]);
             } else {
-                joiner.add(String.valueOf(hrsStart));
+                joiner.add(String.valueOf(hrsStart) + Constants.AT_DELIMITER + deviations[i]);
             }
         }
         setAnomalyTimestamps(joiner.toString());
+    }
+
+    /**
+     * Method to return the model info to display on UI.
+     * @return model info string
+     */
+    public String getModelInfo() {
+        StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
+        joiner.add("Model: " + modelName);
+        joiner.add("Params: " + modelParam);
+        return joiner.toString();
+    }
+
+    /**
+     * Method to display deviation values on UI.
+     * @return html string with deviation values
+     */
+    public String getFormattedDeviation() {
+        String[] anomalyTimes = anomalyTimestamps.split(Constants.COMMA_DELIMITER);
+        StringJoiner joiner = new StringJoiner(Constants.HTML_LINEBREAK_DELIMITER);
+        for (String anomalyTime : anomalyTimes) {
+            String[] timeAndValueSplit = anomalyTime.split(Constants.AT_DELIMITER);
+            if (timeAndValueSplit.length < 2 || !NumberUtils.isInteger(timeAndValueSplit[1])) {
+                continue;
+            }
+            int deviation = Integer.valueOf(timeAndValueSplit[1]);
+            if (deviation < 0) {
+                joiner.add("<span style=\"color: rgba(240,0,0,0.8)\" class=\"glyphicon glyphicon-triangle-bottom\"></span><span style=\"color: rgba(240,0,0,0.8)\">" + timeAndValueSplit[1] + "%</span>");
+            } else {
+                joiner.add("<span style=\"color: rgba(0,200,0,0.8)\" class=\"glyphicon glyphicon-triangle-top\"></span><span style=\"color: rgba(0,200,0,0.8)\">" + timeAndValueSplit[1] + "%</span>");
+            }
+        }
+        return joiner.toString();
     }
 
     @Override

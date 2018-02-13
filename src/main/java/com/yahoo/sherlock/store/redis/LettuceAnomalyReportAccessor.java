@@ -186,9 +186,9 @@ public class LettuceAnomalyReportAccessor
             AnomalyReport report,
             AbstractLettuceAccessor acc
     ) {
+        List<int[]> timestamps = report.getAnomalyTimestampsHours();
         Map<String, String> reportMap = acc.map(report);
         reportMap.remove(DatabaseConstants.ANOMALY_TIMESTAMP);
-        List<int[]> timestamps = report.getAnomalyTimestampsHours();
         byte[] keyStart = encode(acc.key(report.getUniqueId(), DatabaseConstants.ANOMALY_TIMESTAMP, "start"));
         byte[] keyEnd = encode(acc.key(report.getUniqueId(), DatabaseConstants.ANOMALY_TIMESTAMP, "end"));
         List<ScoredValue<byte[]>> valuesStart = new ArrayList<>(timestamps.size());

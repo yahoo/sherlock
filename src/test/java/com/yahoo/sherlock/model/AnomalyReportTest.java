@@ -33,53 +33,57 @@ public class AnomalyReportTest {
         rep.setAnomalyTimestamps(timestampStr);
         String result = rep.getFormattedAnomalyTimestamps();
         String expected = String.format(
-                "%s%n%s%n%s to %s%n%s%n%s to %s",
-                formatHrs(337),
-                formatHrs(554),
-                formatHrs(557),
-                formatHrs(560),
-                formatHrs(3000),
-                formatHrs(3200),
-                formatHrs(3300)
+            "%s%n%s%n%s to %s%n%s%n%s to %s",
+            formatHrs(337),
+            formatHrs(554),
+            formatHrs(557),
+            formatHrs(560),
+            formatHrs(3000),
+            formatHrs(3200),
+            formatHrs(3300)
         );
         assertEquals(result, expected);
     }
 
     @Test
     public void testGetAnomalyTimestampHoursReturnsSinglesAndPairs() {
-        String timestampStr = "337,554,557:560,3000,3200:3300";
+        String timestampStr = "337@23,554@-40,557:560@45,3000@-1,3200:3300@90";
         AnomalyReport rep = new AnomalyReport();
         rep.setAnomalyTimestamps(timestampStr);
         List<int[]> result = rep.getAnomalyTimestampsHours();
         int[][] resArr = result.toArray(new int[0][]);
         int[][] expected = {
-                {337, 0},
-                {554, 0},
-                {557, 560},
-                {3000, 0},
-                {3200, 3300}
+            {337, 0},
+            {554, 0},
+            {557, 560},
+            {3000, 0},
+            {3200, 3300}
         };
+        String expectedDeviationString = "23,-40,45,-1,90";
         for (int i = 0; i < expected.length; i++) {
             assertEquals(resArr[i][0], expected[i][0]);
             assertEquals(resArr[i][1], expected[i][1]);
         }
+        assertEquals(rep.getDeviationString(), expectedDeviationString);
     }
 
     @Test
     public void testSetAnomalyTimestampsFromIntervalsCorrectlySetsValues() {
-        String expected = "337,554,557:560,3000,3200:3300";
+        String expected = "337@0,554@-100,557:560@0,3000@-100,3200:3300@3";
         int[][] source = {
-                {337, 337},
-                {554, 0},
-                {557, 560},
-                {3000, 0},
-                {3200, 3300}
+            {337, 337},
+            {554, 0},
+            {557, 560},
+            {3000, 0},
+            {3200, 3300}
         };
         Anomaly.IntervalSequence seq = new Anomaly.IntervalSequence();
         for (int[] pair : source) {
             Anomaly.Interval interval = new Anomaly.Interval();
             interval.startTime = pair[0] * 3600;
             interval.endTime = (long) pair[1] * 3600;
+            interval.expectedVal = (float) interval.startTime;
+            interval.actualVal = (float) interval.endTime;
             seq.add(interval);
         }
         // Make some end times null
@@ -112,15 +116,17 @@ public class AnomalyReportTest {
     @Test
     public void testParameterConstructor() {
         AnomalyReport rep = new AnomalyReport(
-                "uniqueId",
-                "metricName",
-                "groupByFilters",
-                "anomalyTimestamps",
-                "queryUrl",
-                12345,
-                1,
-                "jobFrequency",
-                "status"
+            "uniqueId",
+            "metricName",
+            "groupByFilters",
+            "anomalyTimestamps",
+            "queryUrl",
+            12345,
+            1,
+            "jobFrequency",
+            "status",
+            "model",
+            "3.0"
         );
         assertEquals(rep.getUniqueId(), "uniqueId");
         assertEquals(rep.getMetricName(), "metricName");
@@ -131,6 +137,9 @@ public class AnomalyReportTest {
         assertEquals(rep.getJobId(), (Integer) 1);
         assertEquals(rep.getJobFrequency(), "jobFrequency");
         assertEquals(rep.getStatus(), "status");
+        assertEquals(rep.getModelName(), "model");
+        assertEquals(rep.getModelParam(), "3.0");
+
     }
 
 }
