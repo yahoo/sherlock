@@ -109,6 +109,13 @@ public interface AsyncCommands<K> extends AutoCloseable {
      */
     RedisFuture<List<ScoredValue<K>>> zrangeWithScores(K key, long start, long end);
 
+    /**
+     * @param key key name
+     * @param seconds time in seconds
+     * @return true if expiration is set else false
+     */
+    RedisFuture<Boolean> expire(K key, long seconds);
+
     @Override
     void close();
 

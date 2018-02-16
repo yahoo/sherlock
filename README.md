@@ -120,7 +120,7 @@ Sherlock calls the user-configured EGADS API for each generated time-series, gen
     
 ### Redis Database
 
-Sherlock uses a Redis backend [Redis](https://redis.io/) to store job metadata, generated anomaly reports, among other information, and as a persistent job queue.
+Sherlock uses a Redis backend [Redis](https://redis.io/) to store job metadata, generated anomaly reports, among other information, and as a persistent job queue. Keys related to Reports have retention policy. Hourly job reports have retention of 14 days and daily/weekly/monthly job reports have 1 year of retention.   
     
 ### Sherlock UI
 
@@ -191,6 +191,7 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 | --redis-clustered       |    -                | `false`     | [redis-clustered](#redis-clustered)             |
 | --project-name          |    -                |  -          | [project-name](#project-name)                   |
 | --external-file-path    |    -                |  -          | [external-file-path](#external-file-path)       |
+| --debug-mode            |    -                | `false`     | [debug-mode](#debug-mode)                       |
 
 #### help
 Prints commandline argument help message.
@@ -242,6 +243,8 @@ Whether the Redis backend is a cluster.
 Name of the project to display on UI.
 #### external-file-path
 Specify the path to external files for Spark framework via this argument.
+#### debug-mode
+Debug mode enables debug routes. Ex. '/DatabaseJson' (shows redis data as json dump). Look at `com.yahoo.sherlock.App` for more details. 
 
 ## Committers
 

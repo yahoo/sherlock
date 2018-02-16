@@ -101,6 +101,13 @@ public interface SyncCommands<K> extends AutoCloseable {
      */
     <T> T eval(String script, ScriptOutputType type, K[] keys, K... values);
 
+    /**
+     * @param key key name
+     * @param seconds time in seconds
+     * @return true if expiration is set else false
+     */
+    Boolean expire(K key, long seconds);
+
     @Override
     void close();
 }

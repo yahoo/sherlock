@@ -81,6 +81,11 @@ public class SyncCommandsImpl<K> implements SyncCommands<K> {
     }
 
     @Override
+    public Boolean expire(K key, long seconds) {
+        return commands.expire(key, seconds);
+    }
+
+    @Override
     public void close() {
         commands.close();
     }

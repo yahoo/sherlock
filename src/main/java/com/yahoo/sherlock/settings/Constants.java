@@ -152,6 +152,16 @@ public class Constants {
     public static final int MINUTES_IN_HOUR = 60;
 
     /**
+     * The number of seconds in a minute.
+     */
+    public static final int SECONDS_IN_MINUTE = 60;
+
+    /**
+     * The number of hours in a day.
+     */
+    public static final int HOURS_IN_DAY = 24;
+
+    /**
      * Constant for 'nodata' key in UI params.
      */
     public static final String NODATA = "nodata";
@@ -181,5 +191,14 @@ public class Constants {
      */
     public static final String NEWLINE_DELIMITER = "\n";
 
+    /**
+     * Retention time in weeks(unit is days) for redis keys.
+     */
+    public static final int REDIS_RETENTION_WEEKS_IN_DAYS = 14;
+
+    /**
+     * Retention time in years(unit is days) for redis keys.
+     */
+    public static final int REDIS_RETENTION_YEARS_IN_DAYS = 366;
 
 }

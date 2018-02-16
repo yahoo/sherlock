@@ -90,6 +90,11 @@ public class AsyncCommandsImpl<K> implements AsyncCommands<K> {
     }
 
     @Override
+    public RedisFuture<Boolean> expire(K key, long seconds) {
+        return commands.expire(key, seconds);
+    }
+
+    @Override
     public void close() {
         commands.close();
     }
