@@ -93,7 +93,7 @@ public class TimeSeriesParserService {
      */
     public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity) {
         long singleInterval = granularity.getMinutes() * granularity.getIntervalsFromSettings();
-        int fillIntervals = (int) ((end - (start + singleInterval)) / granularity.getMinutes()) + 1;
+        int fillIntervals = (int) ((end - start) / granularity.getMinutes()) + 1;
         @SuppressWarnings("unchecked") List<TimeSeries>[] result = (List<TimeSeries>[]) new List[fillIntervals];
         if (sources.isEmpty()) {
             return result;
@@ -102,9 +102,10 @@ public class TimeSeriesParserService {
         for (TimeSeries source : sources) {
             source.data.sort(Comparator.comparingLong(a -> a.time));
         }
+        long queryWindowStart = start - singleInterval;
         int intervalIndex = 0;
         // collect all subtimeseries
-        for (long i = start ; i <= end && intervalIndex < fillIntervals ; i += granularity.getMinutes()) {
+        for (long i = queryWindowStart ; intervalIndex < fillIntervals ; i += granularity.getMinutes()) {
             final long localStart = i * 60;
             final long localEnd = (i + singleInterval) * 60;
             List<TimeSeries> subTimeseriesList;

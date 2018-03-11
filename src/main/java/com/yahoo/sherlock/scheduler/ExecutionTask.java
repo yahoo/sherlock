@@ -57,10 +57,10 @@ public class ExecutionTask extends TimerTask {
      * @param jobMetadataAccessor job accessor instance to use
      */
     public ExecutionTask(
-            JobExecutionService jobExecutionService,
-            SchedulerService schedulerService,
-            JobScheduler jobScheduler,
-            JobMetadataAccessor jobMetadataAccessor
+        JobExecutionService jobExecutionService,
+        SchedulerService schedulerService,
+        JobScheduler jobScheduler,
+        JobMetadataAccessor jobMetadataAccessor
     ) {
         this.jobExecutionService = jobExecutionService;
         this.schedulerService = schedulerService;
@@ -134,15 +134,15 @@ public class ExecutionTask extends TimerTask {
                 } else {
                     jobMetadata.setEffectiveQueryTime(nextQueryTime);
                     jobMetadata.setEffectiveRunTime(nextRunTime);
-                    jobScheduler.pushQueue(nextRunTime, jobMetadata.getJobId());
+                    jobScheduler.pushQueue(nextRunTime, jobMetadata.getJobId().toString());
                 }
             } else {
                 // Perform regular job execution and schedule for next time
                 jobExecutionService.execute(jobMetadata);
                 schedulerService.rescheduleJob(jobMetadata);
-                jobMetadataAccessor.putJobMetadata(jobMetadata);
-                jobScheduler.removePending(jobMetadata.getJobId());
             }
+            jobMetadataAccessor.putJobMetadata(jobMetadata);
+            jobScheduler.removePending(jobMetadata.getJobId());
         }
     }
 

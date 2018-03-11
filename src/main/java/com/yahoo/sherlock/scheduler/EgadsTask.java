@@ -8,7 +8,6 @@ package com.yahoo.sherlock.scheduler;
 
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
-import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.service.DetectorService;
@@ -30,9 +29,9 @@ public class EgadsTask implements Runnable {
      */
     private JobMetadata proxyJob;
     /**
-     * the effective report generation time.
+     * the effective endtime of subquery.
      */
-    private Integer reportNominalTime;
+    private Integer effectiveQueryEndTime;
     /**
      * The list of time series as the data.
      */
@@ -55,20 +54,20 @@ public class EgadsTask implements Runnable {
     /**
      * Create a new EGADS task.
      * @param job the job details
-     * @param reportNominalTime the effective report generation time
+     * @param effectiveQueryEndTime the effective endtime of subquery
      * @param timeSeriesList the time series data
      * @param detectorService detector service to use
      * @param executionService execution service to use
      */
     public EgadsTask(
         JobMetadata job,
-        Integer reportNominalTime,
+        Integer effectiveQueryEndTime,
         List<TimeSeries> timeSeriesList,
         DetectorService detectorService,
         JobExecutionService executionService
     ) {
         this.proxyJob = JobMetadata.copyJob(job);
-        this.reportNominalTime = reportNominalTime;
+        this.effectiveQueryEndTime = effectiveQueryEndTime;
         this.timeSeriesList = timeSeriesList;
         this.detectorService = detectorService;
         this.executionService = executionService;
@@ -86,9 +85,8 @@ public class EgadsTask implements Runnable {
         List<Anomaly> anomalies = new ArrayList<>();
         List<AnomalyReport> reports = new ArrayList<>();
         try {
-            proxyJob.setEffectiveQueryTime(reportNominalTime);
-            Integer effectiveEndTime = reportNominalTime - Granularity.getValue(proxyJob.getGranularity()).getMinutes();
-            anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), null, effectiveEndTime, proxyJob.getFrequency());
+            proxyJob.setEffectiveQueryTime(effectiveQueryEndTime);
+            anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), null, proxyJob.getReportNominalTime(), proxyJob.getFrequency());
             reports = executionService.getReports(anomalies, proxyJob);
         } catch (Exception e) {
             log.info("Error in egads job!", e);

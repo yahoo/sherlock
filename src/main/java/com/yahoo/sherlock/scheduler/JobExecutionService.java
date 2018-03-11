@@ -149,27 +149,29 @@ public class JobExecutionService {
      * @throws SherlockException if an error occurs during job execution
      */
     public void performBackfillJob(
-            JobMetadata job,
-            ZonedDateTime startTime
+        JobMetadata job,
+        ZonedDateTime startTime
     ) throws SherlockException {
         Granularity granularity = Granularity.getValue(job.getGranularity());
         Integer intervalEndTime = granularity.getEndTimeForInterval(ZonedDateTime.now(ZoneOffset.UTC)
-                .minusHours(job.getHoursOfLag()));
-        Integer intervalStartTime = granularity.getEndTimeForInterval(startTime)
-                - (granularity.getIntervalsFromSettings() - 1) * granularity.getMinutes();
+                                                                        .minusHours(job.getHoursOfLag()));
+        Integer jobWindowStart = granularity.getEndTimeForInterval(startTime);
+        log.info("Job window start: " + jobWindowStart);
+        Integer intervalStartTime = jobWindowStart
+                                    - (granularity.getIntervalsFromSettings() * granularity.getMinutes());
         Query query = QueryBuilder.start()
-                .startAt(intervalStartTime)
-                .endAt(intervalEndTime)
-                .queryString(job.getUserQuery())
-                .granularity(granularity)
-                .build();
+            .startAt(intervalStartTime)
+            .endAt(intervalEndTime)
+            .queryString(job.getUserQuery())
+            .granularity(granularity)
+            .build();
         try {
             DruidCluster cluster = druidClusterAccessor.getDruidCluster(job.getClusterId());
             performBackfillJob(
-                    job, cluster, query,
-                    intervalStartTime,
-                    intervalEndTime,
-                    granularity
+                job, cluster, query,
+                jobWindowStart,
+                intervalEndTime,
+                granularity
             );
         } catch (IOException | InterruptedException | ClusterNotFoundException | DruidException e) {
             log.info("Error occurred during backfill execution!", e);
@@ -194,14 +196,16 @@ public class JobExecutionService {
      * @throws IOException          if an error occurs while accessing the backend
      */
     public void performBackfillJob(
-            JobMetadata job,
-            DruidCluster cluster,
-            Query query,
-            Integer start,
-            Integer end,
-            Granularity granularity
+        JobMetadata job,
+        DruidCluster cluster,
+        Query query,
+        Integer start,
+        Integer end,
+        Granularity granularity
     ) throws SherlockException, DruidException, InterruptedException, IOException {
-        log.info("Performing backfill for job [{}] for time range ({}, {})", job.getJobId(), start, end);
+        log.info("Performing backfill for job [{}] for time range ({}, {})", job.getJobId(),
+                 TimeUtils.getTimeFromSeconds(start * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS),
+                 TimeUtils.getTimeFromSeconds(end * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS));
         log.info("Job granularity is [{}]", granularity.toString());
         DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
         TimeSeriesParserService parserService = serviceFactory.newTimeSeriesParserServiceInstance();
@@ -211,13 +215,13 @@ public class JobExecutionService {
         List<Thread> threads = new ArrayList<>(fillSeriesList.length);
         List<EgadsTask> tasks = new ArrayList<>(fillSeriesList.length);
         Integer singleInterval = granularity.getMinutes();
-        Integer subEnd = start + granularity.getIntervalsFromSettings() * granularity.getMinutes();
+        Integer subEnd = start;
         for (List<TimeSeries> fillSeries : fillSeriesList) {
             EgadsTask task = createTask(
-                    job,
-                    subEnd,
-                    fillSeries,
-                    detectorService
+                job,
+                subEnd,
+                fillSeries,
+                detectorService
             );
             tasks.add(task);
             Thread thread = new Thread(task);
@@ -238,18 +242,18 @@ public class JobExecutionService {
      * Create a new egads task.
      *
      * @param job               the job to run
-     * @param reportNominalTime the effective report generation time
+     * @param effectiveQueryEndTime  the effective endtime of subquery
      * @param series            time series data
      * @param detectorService   the detector service instance to use
      * @return an egads task
      */
     protected EgadsTask createTask(
-            JobMetadata job,
-            Integer reportNominalTime,
-            List<TimeSeries> series,
-            DetectorService detectorService
+        JobMetadata job,
+        Integer effectiveQueryEndTime,
+        List<TimeSeries> series,
+        DetectorService detectorService
     ) {
-        return new EgadsTask(job, reportNominalTime, series, detectorService, this);
+        return new EgadsTask(job, effectiveQueryEndTime, series, detectorService, this);
     }
 
     /**
@@ -268,12 +272,12 @@ public class JobExecutionService {
         try {
             DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
             return detectorService.detect(
-                    cluster,
-                    job.getQuery(),
-                    Granularity.getValue(job.getGranularity()),
-                    job.getSigmaThreshold(),
-                    job.getEffectiveQueryTime(),
-                    job.getFrequency()
+                cluster,
+                job.getQuery(),
+                Granularity.getValue(job.getGranularity()),
+                job.getSigmaThreshold(),
+                job.getEffectiveQueryTime(),
+                job.getFrequency()
             );
         } catch (Exception e) {
             log.error("Error during job execution [{}]", job.getJobId(), e);
@@ -307,20 +311,20 @@ public class JobExecutionService {
      * @throws SherlockException if an error occurs during execution
      */
     public List<Anomaly> executeJob(
-            JobMetadata job,
-            DruidCluster cluster,
-            Query query,
-            EgadsConfig config
+        JobMetadata job,
+        DruidCluster cluster,
+        Query query,
+        EgadsConfig config
     ) throws SherlockException {
         log.info("Executing job with Query [{}]", job.getJobId());
         try {
             DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
             return detectorService.detect(
-                    query,
-                    job.getSigmaThreshold(),
-                    cluster,
-                    config,
-                    job.getFrequency()
+                query,
+                job.getSigmaThreshold(),
+                cluster,
+                config,
+                job.getFrequency()
             );
         } catch (Exception e) {
             log.error("Error during job execution [{}]", job.getJobId(), e);

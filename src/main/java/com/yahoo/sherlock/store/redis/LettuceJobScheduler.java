@@ -5,6 +5,7 @@ import com.lambdaworks.redis.ScoredValue;
 import com.lambdaworks.redis.ScriptOutputType;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.JobScheduler;
@@ -12,6 +13,8 @@ import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.store.StoreParams;
 import com.yahoo.sherlock.store.core.RedisConnection;
 import com.yahoo.sherlock.store.core.SyncCommands;
+import com.yahoo.sherlock.utils.TimeUtils;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -71,7 +74,8 @@ public class LettuceJobScheduler
 
     @Override
     public void pushQueue(long timestampMinutes, String jobId) throws IOException {
-        log.info("Pushing job [{}] with time [{}]", jobId, timestampMinutes);
+        log.info("Pushing job [{}] with time [{}]", jobId, TimeUtils
+            .getTimeFromSeconds(timestampMinutes * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS));
         try (RedisConnection<String> conn = connect()) {
             conn.sync().zadd(queueName, (double) timestampMinutes, jobId);
         }
@@ -155,7 +159,8 @@ public class LettuceJobScheduler
             }
             String jobId = (String) result.get(0);
             try {
-                log.info("Found job [{}] on queue for time [{}]", jobId, timestampMinutes);
+                log.info("Found job [{}] on queue for time [{}]", jobId, TimeUtils
+                    .getTimeFromSeconds(timestampMinutes * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS));
                 return jobAccessor.getJobMetadata(jobId);
             } catch (JobNotFoundException e) {
                 syncCmd.zrem(pendingQueueName, jobId);
