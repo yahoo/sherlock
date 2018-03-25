@@ -6,7 +6,12 @@
 
 package com.yahoo.sherlock.model;
 
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.utils.Utils;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.Data;
 import spark.QueryParamsMap;
@@ -60,4 +65,15 @@ public class UserQuery {
 
     /** Id of the associated cluster for this job. */
     private Integer clusterId;
+
+    /**
+     * Removing duplicate emails and return set of comma separated emails.
+     * @return comma separated set of emails
+     */
+    public String getOwnerEmail() {
+        String[] emails = this.ownerEmail.replace(" ", "").split(Constants.COMMA_DELIMITER);
+        Set<String> setOfEmails = Arrays.stream(emails).collect(Collectors.toSet());
+        this.ownerEmail = setOfEmails.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER));
+        return this.ownerEmail;
+    }
 }

@@ -37,7 +37,7 @@ public class EmailService {
      * by '|' using String.format.
      */
     private static final String EMAIL_PATTERN =
-            "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\\.)?[a-zA-Z]+\\.)?(%s)\\.[a-z]{0,3}$";
+        "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\\.)?[a-zA-Z]+\\.)?(%s)\\.[a-z]{0,3}$";
 
     /**
      * Gets a list of valid domains, which may be empty, from the
@@ -64,6 +64,7 @@ public class EmailService {
      * @return true if the email matches
      */
     public boolean validateEmail(String email, List<String> validDomains) {
+        String[] allEmails = email.replace(" ", "").split(Constants.COMMA_DELIMITER);
         if (email == null || email.isEmpty()) {
             return false;
         }
@@ -76,35 +77,39 @@ public class EmailService {
             joiner.add(validDomain);
         }
         String domainsMatcher = joiner.toString();
-        return email.matches(String.format(EMAIL_PATTERN, domainsMatcher));
+        boolean result = true;
+        for (String oneEmail : allEmails) {
+            result = result && oneEmail.matches(String.format(EMAIL_PATTERN, domainsMatcher));
+        }
+        return result;
     }
 
     /**
      * Create the emaile handle.
      * @param owner owner name
-     * @param ownerEmailId owner email id
+     * @param ownerEmailIdList owner email ids
      * @return email handle
      */
-    public Email createEmailHandle(String owner, String ownerEmailId) {
+    public Email createEmailHandle(String owner, String ownerEmailIdList) {
         Email emailHandle = new Email();
         emailHandle.setFromAddress(Constants.SHERLOCK, CLISettings.FROM_MAIL);
         emailHandle.setReplyToAddress(Constants.SHERLOCK, CLISettings.REPLY_TO);
-        emailHandle.addNamedToRecipients(owner, ownerEmailId);
+        emailHandle.addNamedToRecipients(owner, ownerEmailIdList.split(Constants.COMMA_DELIMITER));
         return emailHandle;
     }
 
     /**
      * Method for email service.
      * @param owner owner name
-     * @param ownerEmailId owner email id
+     * @param ownerEmailIdList owner email ids
      * @param report anomaly report as a list of anomalies
      * @return status of email: true for success, false for error
      */
-    public boolean sendEmail(String owner, String ownerEmailId, List<AnomalyReport> report) {
+    public boolean sendEmail(String owner, String ownerEmailIdList, List<AnomalyReport> report) {
         Email emailHandle;
         try {
             // setting up email parameters
-            emailHandle = createEmailHandle(owner, ownerEmailId);
+            emailHandle = createEmailHandle(owner, ownerEmailIdList);
 
             // Setting up HTML thymeleaf email reply text
             Map<String, Object> params = new HashMap<>();
@@ -132,7 +137,7 @@ public class EmailService {
             return false;
         }
         // send email
-        log.info("Sending email to " + owner + " on email id: " + ownerEmailId);
+        log.info("Sending email to " + owner + " on email ids: " + ownerEmailIdList);
         return sendFormattedEmail(emailHandle);
     }
 

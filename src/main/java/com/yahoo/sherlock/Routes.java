@@ -412,8 +412,11 @@ public class Routes {
                 throw new SherlockException("Invalid owner email passed");
             }
             JobMetadata currentJob = jobAccessor.getJobMetadata(jobId);
+            // Validate query change if any
             Query query = null;
-            if (!currentJob.getUserQuery().equals(userQuery.getQuery())) {
+            String newQuery = userQuery.getQuery().replaceAll(Constants.WHITESPACE_REGEX, "");
+            String oldQuery = currentJob.getUserQuery().replaceAll(Constants.WHITESPACE_REGEX, "");
+            if (!oldQuery.equals(newQuery)) {
                 log.info("Validating altered user query");
                 DruidQueryService queryService = serviceFactory.newDruidQueryServiceInstance();
                 query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), null);
@@ -421,13 +424,13 @@ public class Routes {
             JobMetadata updatedJob = JobMetadata.fromQuery(userQuery, query);
             boolean isRerunRequired = (currentJob.userQueryChangeSchedule(userQuery) || query != null) && currentJob.isRunning();
             currentJob.update(updatedJob);
-            // Store in the database and reschedule if needed
-            jobAccessor.putJobMetadata(currentJob);
+            // reschedule if needed and store in the database
             if (isRerunRequired) {
                 log.info("Scheduling the job with new granularity and/or new frequency and/or new query.");
                 schedulerService.stopJob(currentJob.getJobId());
                 schedulerService.scheduleJob(currentJob);
             }
+            jobAccessor.putJobMetadata(currentJob);
             response.status(200);
             return Constants.SUCCESS;
         } catch (Exception e) {

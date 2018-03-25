@@ -302,7 +302,7 @@ public class JobMetadata implements Serializable {
      * @return true if the job status is running
      */
     public boolean isRunning() {
-        return JobStatus.RUNNING.getValue().equals(getJobStatus());
+        return JobStatus.RUNNING.getValue().equals(getJobStatus()) || JobStatus.NODATA.getValue().equals(getJobStatus());
     }
 
     /**

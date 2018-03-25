@@ -48,9 +48,9 @@
                             <div class="form-group" th:if="${instantView == null}">
                                 <label class="control-label" for="owner-email">Owner's Email:</label>
                                 <div>
-                                    <input id="owner-email" name="owner-email" type="email"
-                                           placeholder="Enter the email of the owner of the test"
-                                           class="form-control input-md" size="25" th:required="true"/>
+                                    <input type="text"  id="owner-email" name="owner-email"
+                                           placeholder="Enter the email[s] of the owner of the test"
+                                           class="form-control input-md" required="true"/>
                                 </div>
                             </div>
 
@@ -235,6 +235,17 @@
         }
     }
 
+    $('#owner-email')
+          .on('tokenfield:createdtoken', function (e) {
+            // Über-simplistic e-mail validation
+            var re = /\S+@\S+\.\S+/
+            var valid = re.test(e.attrs.value)
+            if (!valid) {
+              $(e.relatedTarget).addClass('invalid')
+            }
+          })
+          .tokenfield({showAutocompleteOnFocus: false});
+
     $("#popoverInfo").load('/content/kSigmaTable.html #sensitivityTable');
 
     const $druidCluster = $('#druidCluster');
@@ -281,7 +292,7 @@
         data.query = queryText.getValue();
         data.testName = $('#test-name').val();
         data.owner = $('#owner-name').val();
-        data.ownerEmail = $('#owner-email').val();
+        data.ownerEmail = $('#owner-email').tokenfield('getTokensList', ',');;
         data.testDescription = $('#test-description').val();
         data.granularity = $('#granularity').val();
         data.frequency = $('#frequency').val();

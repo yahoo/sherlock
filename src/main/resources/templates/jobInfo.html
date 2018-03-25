@@ -65,7 +65,7 @@
                             <div class="form-group">
                                 <label class="control-label" for="ownerEmail">Owner's Email:</label>
                                 <div>
-                                    <input id="ownerEmail" name="ownerEmail" type="email" class="form-control input-md"
+                                    <input id="ownerEmail" name="ownerEmail" type="text" class="form-control input-md"
                                            size="25" th:value="${job.getOwnerEmail()}" th:required="true"/>
                                 </div>
                             </div>
@@ -453,7 +453,7 @@
                 data.query = queryText.getValue();
                 data.testName = $('#testName').val();
                 data.owner = $('#ownerName').val();
-                data.ownerEmail = $('#ownerEmail').val();
+                data.ownerEmail = $('#ownerEmail').tokenfield('getTokensList', ',');
                 data.testDescription = $('#testDescription').val();
                 data.granularity = $('#granularity').val();
                 data.frequency = $('#frequency').val();
@@ -481,6 +481,23 @@
             });
             return;
         });
+
+        var emailTokens = $('#ownerEmail').tokenfield();
+
+        emailTokens.on('tokenfield:createdtoken', function (e) {
+                        var re = /\S+@\S+\.\S+/
+                        var valid = re.test(e.attrs.value)
+                        if (!valid) {
+                            $(e.relatedTarget).addClass('invalid')
+                        }
+                        updateMode();
+                   })
+                   .on('tokenfield:editedtoken', function (e) {
+                        updateMode();
+                   })
+                   .on('tokenfield:removedtoken', function (e) {
+                        updateMode();
+                   });
 
         $("#launchConfirmModalYes").click(function() {
             $.ajax({

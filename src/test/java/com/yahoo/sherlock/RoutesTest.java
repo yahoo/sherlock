@@ -381,7 +381,7 @@ public class RoutesTest {
 
     @Test
     public void testUpdateJobInfo() throws Exception {
-        String body = "{\"granularity\":\"day\",\"frequency\":\"day\",\"sigmaThreshold\":\"3\",\"ownerEmail\":\"someone@something.com\"}";
+        String body = "{\"granularity\":\"day\",\"frequency\":\"day\",\"sigmaThreshold\":\"3\",\"ownerEmail\":\"someone@something.com\",\"query\":\"{}\"}";
         Request req = mock(Request.class);
         when(req.body()).thenReturn(body);
         when(req.params(Constants.ID)).thenReturn("1");
@@ -801,6 +801,7 @@ public class RoutesTest {
         smap.put("granularity", new String[]{"hour"});
         smap.put("clusterId", new String[]{"1"});
         smap.put("sigmaThreshold", new String[]{"3.5"});
+        smap.put("ownerEmail", new String[]{"jigar@mail.com,me@mail.com"});
         DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = mock(DruidCluster.class);
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
@@ -854,6 +855,7 @@ public class RoutesTest {
         jo.add(QueryConstants.GRANULARITY, gran);
         jo.addProperty(QueryConstants.INTERVALS, "1");
         smap.put("query", new String[]{new Gson().toJson(jo)});
+        smap.put("ownerEmail", new String[]{"jigar@mail.com,me@mail.com"});
         @SuppressWarnings("unchecked") List<AnomalyReport> arlist = mock(List.class);
         when(jes.getReports(any(), any(JobMetadata.class))).thenReturn(arlist);
         when(tte.render(any(ModelAndView.class))).thenReturn("html");
@@ -881,7 +883,9 @@ public class RoutesTest {
             }
         ).when(jma).putJobMetadata(any(JobMetadata.class));
         QueryParamsMap qmap = mock(QueryParamsMap.class);
-        Map<String, String[]> smap = Collections.singletonMap("query", new String[]{""});
+        Map<String, String[]> smap = new HashMap<>();
+        smap.put("query", new String[]{""});
+        smap.put("ownerEmail", new String[]{"jigar@mail.com,me@mail.com"});
         when(qmap.toMap()).thenReturn(smap);
         when(req.queryMap()).thenReturn(qmap);
         ModelAndView mav = Routes.debugPowerQuery(req, res);
@@ -982,6 +986,7 @@ public class RoutesTest {
         when(map.toMap()).thenReturn(smap);
         when(req.queryMap()).thenReturn(map);
         smap.put("query", new String[]{new Gson().toJson(jo)});
+        smap.put("ownerEmail", new String[]{"jigar@mail.com,me@mail.com"});
         EgadsResult er = mock(EgadsResult.class);
         EgadsResult.Series series = mock(EgadsResult.Series.class);
         EgadsResult.Series[] data = {series, series, series};

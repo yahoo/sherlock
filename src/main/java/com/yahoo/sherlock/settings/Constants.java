@@ -201,4 +201,9 @@ public class Constants {
      */
     public static final int REDIS_RETENTION_YEARS_IN_DAYS = 366;
 
+    /**
+     * Regex constant for whitespace.
+     */
+    public static final String WHITESPACE_REGEX = "\\s+";
+
 }
