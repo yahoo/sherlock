@@ -354,7 +354,7 @@ public class JobExecutionService {
      * @param job       job metadata
      * @return a list of reports, which may be empty
      */
-    public List<AnomalyReport> getReports(List<Anomaly> anomalies, JobMetadata job) {
+    public synchronized List<AnomalyReport> getReports(List<Anomaly> anomalies, JobMetadata job) {
         // if no data was returned from druid datasource
         // set the job status to 'NODATA'
         if (anomalies.size() > 0 && anomalies.get(0).metricMetaData.source.equals(JobStatus.NODATA.getValue())) {
@@ -379,7 +379,7 @@ public class JobExecutionService {
      * @param anomaly an anomaly if there is one
      * @return a SUCCESS or ERROR report
      */
-    public AnomalyReport getSingletonReport(JobMetadata job, @Nullable Anomaly anomaly) {
+    public synchronized AnomalyReport getSingletonReport(JobMetadata job, @Nullable Anomaly anomaly) {
         AnomalyReport report = new AnomalyReport();
         report.setJobFrequency(job.getFrequency());
         report.setJobId(job.getJobId());

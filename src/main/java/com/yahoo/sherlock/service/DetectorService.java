@@ -176,7 +176,7 @@ public class DetectorService {
      * @return list of anomalies from the detection job
      * @throws SherlockException if an error occurs during analysis
      */
-    public List<Anomaly> runDetection(
+    public synchronized List<Anomaly> runDetection(
             List<TimeSeries> timeSeriesList,
             Double sigmaThreshold,
             EgadsConfig egadsConfig,

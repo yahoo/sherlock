@@ -81,7 +81,6 @@ public class EgadsTask implements Runnable {
      */
     @Override
     public void run() {
-        boolean error = false;
         List<Anomaly> anomalies = new ArrayList<>();
         List<AnomalyReport> reports = new ArrayList<>();
         try {
