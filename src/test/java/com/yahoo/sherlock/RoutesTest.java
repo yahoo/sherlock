@@ -801,7 +801,6 @@ public class RoutesTest {
         smap.put("granularity", new String[]{"hour"});
         smap.put("clusterId", new String[]{"1"});
         smap.put("sigmaThreshold", new String[]{"3.5"});
-        smap.put("ownerEmail", new String[]{"jigar@mail.com,me@mail.com"});
         DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = mock(DruidCluster.class);
         when(dca.getDruidCluster(anyString())).thenReturn(dc);

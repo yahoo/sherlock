@@ -71,9 +71,11 @@ public class UserQuery {
      * @return comma separated set of emails
      */
     public String getOwnerEmail() {
-        String[] emails = this.ownerEmail.replace(" ", "").split(Constants.COMMA_DELIMITER);
-        Set<String> setOfEmails = Arrays.stream(emails).collect(Collectors.toSet());
-        this.ownerEmail = setOfEmails.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER));
+        if (this.ownerEmail != null) {
+            String[] emails = this.ownerEmail.replace(" ", "").split(Constants.COMMA_DELIMITER);
+            Set<String> setOfEmails = Arrays.stream(emails).collect(Collectors.toSet());
+            this.ownerEmail = setOfEmails.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER));
+        }
         return this.ownerEmail;
     }
 }
