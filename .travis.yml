@@ -5,7 +5,6 @@ script:
   - mvn verify
 after_success:
   - mvn clean test jacoco:report coveralls:report
-  - test "${TRAVIS_PULL_REQUEST}" == "false" && mvn release:clean release:prepare
 cache:
   directories:
     - ~/.m2
