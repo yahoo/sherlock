@@ -34,6 +34,43 @@
         <tag>HEAD</tag>
     </scm>
 
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/yahoo/sherlock/issues</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>Travis</system>
+        <url>https://travis-ci.org/yahoo/sherlock</url>
+    </ciManagement>
+
+    <distributionManagement>
+        <repository>
+            <id>bintray-yahoo-sherlock</id>
+            <name>yahoo-sherlock</name>
+            <url>https://api.bintray.com/maven/yahoo/maven/sherlock;publish=1</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>bintray-yahoo-maven</id>
+            <name>bintray</name>
+            <url>http://yahoo.bintray.com/maven</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>bintray-yahoo-maven</id>
+            <name>bintray-plugins</name>
+            <url>http://yahoo.bintray.com/maven</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <dependencies>
         <dependency>
             <groupId>com.beust</groupId>
@@ -137,25 +174,6 @@
         </dependency>
     </dependencies>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>bintray-yahoo-maven</id>
-            <name>bintray-plugins</name>
-            <url>https://dl.bintray.com/yahoo/maven</url>
-        </pluginRepository>
-    </pluginRepositories>
-
-    <repositories>
-        <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>bintray-yahoo-maven</id>
-            <name>bintray</name>
-            <url>https://dl.bintray.com/yahoo/maven</url>
-        </repository>
-    </repositories>
-
     <build>
         <plugins>
 
@@ -200,6 +218,26 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5.2</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.eluder.coveralls</groupId>
+                <artifactId>coveralls-maven-plugin</artifactId>
+                <version>4.3.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.7.6.201602180812</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
