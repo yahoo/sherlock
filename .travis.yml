@@ -4,4 +4,8 @@ jdk:
 script:
   - mvn verify
 after_success:
-  - mvn clean cobertura:cobertura coveralls:report
+  - mvn clean test jacoco:report coveralls:report
+  - test "${TRAVIS_PULL_REQUEST}" == "false" && test "${TRAVIS_TAG}" != "" && mvn deploy --settings travis/settings.xml
+cache:
+  directories:
+    - ~/.m2
