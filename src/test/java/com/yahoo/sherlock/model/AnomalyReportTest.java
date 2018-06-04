@@ -126,7 +126,8 @@ public class AnomalyReportTest {
             "jobFrequency",
             "status",
             "model",
-            "3.0"
+            "3.0",
+            "xyz"
         );
         assertEquals(rep.getUniqueId(), "uniqueId");
         assertEquals(rep.getMetricName(), "metricName");
@@ -139,7 +140,7 @@ public class AnomalyReportTest {
         assertEquals(rep.getStatus(), "status");
         assertEquals(rep.getModelName(), "model");
         assertEquals(rep.getModelParam(), "3.0");
-
+        assertEquals(rep.getTestName(), "xyz");
     }
 
 }

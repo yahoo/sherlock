@@ -176,7 +176,10 @@
                                     <span id="deleteButton">
                                         <div id="delete" class="btn btn-danger" data-toggle="modal" data-target="#deleteConfirmModal">Delete</div>
                                     </span>
-
+                                    <!--Show clone button for jobs -->
+                                    <span id="cloneButton">
+                                        <div id="clone" class="btn btn-info" data-toggle="modal" data-target="#cloneConfirmModal">Clone</div>
+                                    </span>
                                 </div>
                             </div>
 
@@ -242,6 +245,21 @@
                 <div class="modal-footer">
                     <button type="button" data-dismiss="modal" class="btn btn-primary" id="deleteConfirmModalYes">Yes</button>
                     <button type="button" data-dismiss="modal" class="btn" id="deleteConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- clone confirmation -->
+    <div id="cloneConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="cloneConfirmModalCode">Do you really want to CLONE?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="cloneConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="cloneConfirmModalNo">No</button>
                 </div>
             </div>
         </div>
@@ -434,6 +452,26 @@
                         }, 1500);
                     } else {
                         showErrorMessage("Something went wrong in deleting the job! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+
+        $("#cloneConfirmModalYes").click(function() {
+            $.ajax({
+                type: 'POST',
+                url: '/CloneJob/' + $('#jobId').val(),
+                dataType: 'text',
+                success: function (response, status, jQxhr) {
+                    if (status === 'success') {
+                        showInfoMessage("Job Cloned successfully.");
+                        setTimeout(function() {
+                            window.location.href = '/Jobs/' + response;
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong in cloning the job! Try again.");
                     }
                 },
                 error : ajaxMessage

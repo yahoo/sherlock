@@ -45,7 +45,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="anomaly: ${Anomalies}" th:attr="style=${emailHtml != null ? 'background-color: #f9f9f9;' : ''}">
-                    <td th:text="${anomaly.getMetricName()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Timeseries XYZ</td>
+                    <td th:text="${anomaly.getMetricInfo()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Timeseries XYZ</td>
                     <td th:text="${anomaly.getGroupByFilters()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">List of group by dimensions</td>
                     <td th:text="${anomaly.getFormattedAnomalyTimestamps()}" th:styleappend="'color: rgba(255,0,0,0.6)'" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">List of anomalies</td>
                     <td th:utext="${anomaly.getFormattedDeviation()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Deviation</td>

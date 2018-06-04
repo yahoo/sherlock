@@ -502,6 +502,35 @@ public class Routes {
     }
 
     /**
+     * Method for cloning anomaly job.
+     *
+     * @param request  Request for cloning a job
+     * @param response Response
+     * @return cloned jobId
+     * @throws IOException IO exception
+     */
+    public static String cloneJob(Request request, Response response) throws IOException {
+        log.info("Cloning the job...");
+        JobMetadata jobMetadata;
+        JobMetadata clonedJobMetadata;
+        try {
+            // get jobinfo from database
+            jobMetadata = jobAccessor.getJobMetadata(request.params(Constants.ID));
+            // copy the job metadata
+            clonedJobMetadata = JobMetadata.copyJob(jobMetadata);
+            clonedJobMetadata.setTestName(clonedJobMetadata.getTestName() + Constants.CLONED);
+            clonedJobMetadata.setJobId(null);
+            String clonnedJobId = jobAccessor.putJobMetadata(clonedJobMetadata);
+            response.status(200);
+            return clonnedJobId;
+        } catch (Exception e) {
+            log.error("Exception while cloning the job!", e);
+            response.status(500);
+            return e.getMessage();
+        }
+    }
+
+    /**
      * Method to view cron job reports.
      *
      * @param request  User request to view report

@@ -40,9 +40,10 @@ public interface JobMetadataAccessor {
      * if one does not already exist.
      *
      * @param jobMetadata the job metadata to store
+     * @return job id
      * @throws IOException if there is an error with the persistence layer
      */
-    void putJobMetadata(JobMetadata jobMetadata) throws IOException;
+    String putJobMetadata(JobMetadata jobMetadata) throws IOException;
 
     /**
      * Put a list of jobs in the store. This method should overwrite

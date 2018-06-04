@@ -46,7 +46,8 @@ public class AnomalyReport implements Serializable {
             job.getFrequency(),
             Constants.WARNING,
             anomaly.modelName,
-            String.valueOf(job.getSigmaThreshold())
+            String.valueOf(job.getSigmaThreshold()),
+            job.getTestName()
         );
         report.setHasAnomaly(anomaly.intervals.size() > 0);
         report.setAnomalyTimestampsFromInterval(anomaly.intervals);
@@ -106,6 +107,10 @@ public class AnomalyReport implements Serializable {
     @Attribute
     private String deviationString;
 
+    @Attribute
+    /** Anomaly test name associated with this report. **/
+    private String testName;
+
     /** Whether this anomaly report contains an anomaly. */
     private boolean hasAnomaly;
 
@@ -129,6 +134,7 @@ public class AnomalyReport implements Serializable {
      * @param status the anomaly status
      * @param modelName Name of the Model used for anomaly detection
      * @param modelParam Parameter values of the model
+     * @param testName Anomaly test name associated with this report
      */
     public AnomalyReport(
         String uniqueId,
@@ -141,7 +147,8 @@ public class AnomalyReport implements Serializable {
         String jobFrequency,
         String status,
         String modelName,
-        String modelParam
+        String modelParam,
+        String testName
     ) {
         this.uniqueId = uniqueId;
         this.metricName = metricName;
@@ -154,6 +161,7 @@ public class AnomalyReport implements Serializable {
         this.status = status;
         this.modelName = modelName;
         this.modelParam = modelParam;
+        this.testName = testName;
     }
 
     /**
@@ -295,6 +303,19 @@ public class AnomalyReport implements Serializable {
             }
         }
         setAnomalyTimestamps(joiner.toString());
+    }
+
+    /**
+     * Method to return the metric and anomaly test info to display on UI.
+     * @return metric info string
+     */
+    public String getMetricInfo() {
+        StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
+        joiner.add("Metric: " + metricName);
+        if (testName != null) {
+            joiner.add("Anomaly test: " + testName);
+        }
+        return joiner.toString();
     }
 
     /**

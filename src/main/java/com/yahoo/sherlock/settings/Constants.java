@@ -206,4 +206,9 @@ public class Constants {
      */
     public static final String WHITESPACE_REGEX = "\\s+";
 
+    /**
+     * Constant for _cloned.
+     */
+    public static final String CLONED = "_cloned";
+
 }

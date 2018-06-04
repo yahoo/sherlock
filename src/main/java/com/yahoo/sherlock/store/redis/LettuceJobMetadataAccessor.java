@@ -193,7 +193,7 @@ public class LettuceJobMetadataAccessor
     }
 
     @Override
-    public void putJobMetadata(JobMetadata job) throws IOException {
+    public String putJobMetadata(JobMetadata job) throws IOException {
         log.info("Putting job metadata with ID [{}]", job.getJobId());
         try (RedisConnection<String> conn = connect()) {
             if (isMissingId(job)) {
@@ -211,6 +211,7 @@ public class LettuceJobMetadataAccessor
             cmd.flushCommands();
             await(futures);
             log.info("Job metadata with ID [{}] is updated", job.getJobId());
+            return String.valueOf(job.getJobId());
         }
     }
 
