@@ -93,7 +93,7 @@ public class TimeSeriesParserService {
      */
     public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity) {
         long singleInterval = granularity.getMinutes() * granularity.getIntervalsFromSettings();
-        int fillIntervals = (int) ((end - start) / granularity.getMinutes()) + 1;
+        int fillIntervals = (int) ((end - start) / granularity.getMinutes());
         @SuppressWarnings("unchecked") List<TimeSeries>[] result = (List<TimeSeries>[]) new List[fillIntervals];
         if (sources.isEmpty()) {
             return result;
@@ -115,7 +115,7 @@ public class TimeSeriesParserService {
                     subTimeseries.meta = copyMetricMeta(source.meta);
                     // copy datapoints for sub timeseries
                     source.data.stream()
-                        .filter(datapoint -> datapoint.time >= localStart && datapoint.time < localEnd)
+                        .filter(datapoint -> datapoint.time > localStart && datapoint.time <= localEnd)
                         .forEach(datapoint -> {
                                 try {
                                     subTimeseries.append(datapoint.time, datapoint.value);

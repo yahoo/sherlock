@@ -126,7 +126,7 @@ public class LettuceAnomalyReportAccessor
 
     @Override
     public List<AnomalyReport> getAnomalyReportsForJobAtTime(String jobId, String time, String frequency) throws IOException {
-        log.info("Getting anomaly reports for job [{}] frequency [{}] at time [{}]", jobId, time, frequency);
+        log.info("Getting anomaly reports for job [{}] frequency [{}] at time [{}]", jobId, frequency, time);
         try (RedisConnection<String> conn = connect()) {
             AsyncCommands<String> cmd = conn.async();
             cmd.setAutoFlushCommands(false);
@@ -173,6 +173,48 @@ public class LettuceAnomalyReportAccessor
             await(futures);
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error while deleting anomaly reports!", e);
+            throw new IOException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void deleteAnomalyReportsForJobAtTime(String jobId, String time, String frequency) throws IOException {
+        log.info("Getting anomaly reports for job [{}] frequency [{}] at time [{}] for deletion", jobId, frequency, time);
+        try (
+            RedisConnection<String> conn = connect();
+            RedisConnection<byte[]> binary = binary()
+        ) {
+            // Get all report IDs
+            AsyncCommands<String> cmd = conn.async();
+            AsyncCommands<byte[]> bin = binary.async();
+            cmd.setAutoFlushCommands(false);
+            RedisFuture<Set<String>> jobRepIds = cmd.smembers(index(jobIdName, jobId));
+            RedisFuture<Set<String>> jobTimeIds = cmd.smembers(index(timeName, time));
+            RedisFuture<Set<String>> jobFreqIds = cmd.smembers(index(frequencyName, frequency));
+            cmd.flushCommands();
+            await(jobRepIds, jobTimeIds, jobFreqIds);
+            Set<String> reportIds = jobRepIds.get();
+            reportIds.retainAll(jobTimeIds.get());
+            reportIds.retainAll(jobFreqIds.get());
+            // Delete the reports
+            cmd.setAutoFlushCommands(false);
+            bin.setAutoFlushCommands(false);
+            List<AnomalyReport> reports = getAnomalyReports(reportIds, this);
+            RedisFuture[] futures = new RedisFuture[6 * reports.size()];
+            int i = 0;
+            for (AnomalyReport report : reports) {
+                futures[i++] = cmd.srem(index(jobIdName, report.getJobId()), report.getUniqueId());
+                futures[i++] = cmd.srem(index(timeName, report.getReportQueryEndTime()), report.getUniqueId());
+                futures[i++] = cmd.srem(index(frequencyName, report.getJobFrequency()), report.getUniqueId());
+                futures[i++] = cmd.del(key(report.getUniqueId()));
+                futures[i++] = bin.del(encode(key(report.getUniqueId(), DatabaseConstants.ANOMALY_TIMESTAMP, "start")));
+                futures[i++] = bin.del(encode(key(report.getUniqueId(), DatabaseConstants.ANOMALY_TIMESTAMP, "end")));
+            }
+            cmd.flushCommands();
+            bin.flushCommands();
+            await(futures);
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error occurred while deleting anomaly reports!", e);
             throw new IOException(e.getMessage(), e);
         }
     }

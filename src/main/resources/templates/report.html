@@ -27,6 +27,14 @@
                                 </div>
                                 <input id="queryId" hidden="true" th:value="${queryId}"/>
                                 <div class="form-group" id="tableContainer"></div>
+                                <div class="form-group" id="rerunButtonContainer" hidden="true">
+                                    <span>Click to Rerun the job: </span>
+                                    <span>
+                                        <input id="rerun" type="button" class="btn btn-success" value="Rerun" onclick="rerunJob()"/>
+                                        <input id="jobId" type="hidden" th:value="${jobId}"/>
+                                        <input id="selectedTimestamp" type="hidden"/>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -61,7 +69,14 @@
          });
     }
 
-    function getReport(timestamp) {
+    function getReport(timestamp, type) {
+            $("#rerunButtonContainer").attr("hidden", true);
+            $("#tableContainer").html("");
+            if (type === "nodata") {
+                $("#rerunButtonContainer").attr("hidden", false);
+                $("#selectedTimestamp").val(timestamp);
+                return;
+            }
             var data = {};
             data.selectedDate = timestamp;
             data.frequency = [[${frequency}]];
@@ -98,9 +113,33 @@
 		    .frequency([[${frequency}]])
 		    .colorRange(['white', 'red'])
 		    .onClick(function (data) {
-			    getReport(data.timestamp);
+			    getReport(data.timestamp, data.type);
 		    });
 	    heatmap();  // render the chart
+    }
+
+    function rerunJob() {
+        var data = {};
+        data.jobId = $("#jobId").val();
+        data.timestamp = $("#selectedTimestamp").val();
+        $.ajax({
+            type: 'POST',
+            url: '/Rerun/' + data.jobId + '/' + data.timestamp,
+            data: JSON.stringify(data),
+            contentType: "application/json",
+            dataType: 'text',
+            success: function(response) {
+                if (response === 'success') {
+                    showInfoMessage("Job rerun is completed");
+                    setTimeout(function() {
+                        window.location.href =  $(location).attr('href');
+                    }, 200);
+                } else {
+                    showWarningMessage("Something went wrong in rerunning the job! Try again.");
+                }
+            },
+            error : ajaxMessage
+        });
     }
 
 /*]]>*/

@@ -111,9 +111,6 @@ class App {
             staticFiles.externalLocation(CLISettings.EXTERNAL_FILE_PATH);
         }
 
-
-        // get("/AnomalyDetector", (rq, rs) -> "<meta http-equiv=\"refresh\" content=\"0; url=" + Constants.HELP_URL + "\"/>");
-
         // Home Page
         get("/", Routes::viewHomePage, new ThymeleafTemplateEngine());
 
@@ -180,8 +177,8 @@ class App {
         // Routes to update a Druid cluster
         post("/Druid/UpdateCluster/:id", Routes::updateDruidCluster);
 
-        // Routes to status file
-        get("/status.html", Routes::viewStatus, new ThymeleafTemplateEngine());
+        // Routes to Rerun the job for given timestamp in minutes
+        post("/Rerun/:id/:timestamp", Routes::rerunJob);
 
         // Enable debug routes only in debug mode
         if (CLISettings.DEBUG_MODE) {

@@ -114,8 +114,10 @@ public enum Granularity {
                 return now.minusDays(intervals);
             case WEEK:
                 return now.minusWeeks(intervals);
-            default:
+            case MONTH:
                 return now.minusMonths(intervals);
+            default:
+                return now.minusHours(intervals);
         }
     }
 
@@ -189,40 +191,6 @@ public enum Granularity {
     }
 
     /**
-     * Method for selecting the time origin given the current time.
-     *
-     * @param date the current time
-     * @return the appropriate druid time origin as a zoned date time
-     */
-    public ZonedDateTime getNearestTimeOrigin(ZonedDateTime date) {
-        date = date.minusNanos(date.getNano());
-        date = date.minusSeconds(date.getSecond());
-        date = date.minusMinutes(date.getMinute());
-        switch (this) {
-            default:
-            case HOUR:
-                break;
-            case DAY:
-            case WEEK:
-            case MONTH:
-                date = date.minusHours(date.getHour());
-                break;
-        }
-        return date;
-    }
-
-    /**
-     * Increment a zoned date time
-     * a single time by this granularity.
-     *
-     * @param date date to increment
-     * @return a copy of the date incremented
-     */
-    public ZonedDateTime increment(ZonedDateTime date) {
-        return increment(date, 1);
-    }
-
-    /**
      * Increment a zoned date time by a
      * certain amount of this granularity.
      *
@@ -243,17 +211,6 @@ public enum Granularity {
             default:
                 return date.plusHours(amount);
         }
-    }
-
-    /**
-     * Decrement a zoned date time by a single
-     * count of this granularity.
-     *
-     * @param date zoned date time to decrease
-     * @return copy of the zoned date time
-     */
-    public ZonedDateTime decrement(ZonedDateTime date) {
-        return decrement(date, 1);
     }
 
     /**

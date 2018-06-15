@@ -126,7 +126,7 @@ public class LettuceAnomalyReportAccessorTest {
     }
 
     @Test
-    public void testGetAnomalyReportsForJobAndForJobAtTime() throws IOException {
+    public void testGetAnomalyReportsForJobAndForJobAtTimeAndDeleteReports() throws IOException {
         String jobId = "jobId:2";
         String freq = "freq:day";
         Set<String> resId = Sets.newHashSet("1", "2", "3", "4", "5");
@@ -169,12 +169,19 @@ public class LettuceAnomalyReportAccessorTest {
         result = ara.getAnomalyReportsForJobAtTime("2", "5000", "day");
         assertEquals(2, result.size());
         assertEqualsNoOrder(result.toArray(), new AnomalyReport[]{a2, a3});
+        // delete 3,4
+        doCallRealMethod().when(ara).deleteAnomalyReportsForJobAtTime(anyString(), anyString(), anyString());
+        ara.deleteAnomalyReportsForJobAtTime("2", "5000", "day");
+        verify(async, times(6)).srem(anyString(), anyVararg());
+        verify(async, times(2)).del(anyVararg());
+        verify(binAsync, times(4)).del(anyVararg());
+        // delete all
         doCallRealMethod().when(ara).deleteAnomalyReportsForJob(anyString());
         when(async.smembers(jobId)).thenReturn(fakeFuture(Sets.newHashSet("2", "3", "4", "5")));
         ara.deleteAnomalyReportsForJob("2");
-        verify(async, times(8)).srem(anyString(), anyVararg());
-        verify(async, times(5)).del(anyVararg());
-        verify(binAsync, times(8)).del(anyVararg());
+        verify(async, times(14)).srem(anyString(), anyVararg());
+        verify(async, times(7)).del(anyVararg());
+        verify(binAsync, times(12)).del(anyVararg());
     }
 
 }

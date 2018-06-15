@@ -48,7 +48,7 @@ public class AbstractLettuceAccessor extends BaseAccessor {
     /**
      * Await an array of futures.
      *
-     * @param futures redis futures to awwait
+     * @param futures redis futures to await
      */
     protected void await(RedisFuture... futures) {
         LettuceFutures.awaitAll(timeoutMillis, TimeUnit.MILLISECONDS, futures);

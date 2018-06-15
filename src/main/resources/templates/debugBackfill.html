@@ -32,6 +32,14 @@
                             </div>
 
                             <div class="form-group">
+                                <label class="control-label" for="fillEndTime">Fill End Time</label>
+                                <div>
+                                    <input id="fillEndTime" name="endTime" type="datetime-local"
+                                           class="form-control input-md" size="25"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
                                 <input id="submitInsta" type="submit" class="btn btn-success" value="Query"/>
                             </div>
 
@@ -44,7 +52,7 @@
 </div>
 
 <script>
-
+/*<![CDATA[*/
     $(document).ready(function () {
         $("#queryForm").submit(function (e) {
             const submitButton = $('#submitInsta');
@@ -52,13 +60,23 @@
             submitButton.attr('disabled', true);
             e.preventDefault();
             const startTime = $('#fillStartTime').val();
-            var selectedDate = Date.parse(startTime);
+            const endTime = $('#fillEndTime').val();
+            var selectedStartDate = Date.parse(startTime);
+            var selectedEndDate;
+            if (endTime !== null && endTime !== '') {
+                selectedEndDate = Date.parse(endTime);
+                if (selectedStartDate >= selectedEndDate) {
+                    showErrorMessage("Start time cannot be greater than End time!")
+                    return;
+                }
+            }
             if (selectedDate >= new Date().getTime()) {
                 showErrorMessage("Start time cannot be in future!")
                 return;
             }
             var data = {};
             data.fillStartTime = startTime;
+            data.fillEndTime = endTime;
             data.jobId = $('#job').val();
             $.ajax({
                 type: 'POST',
@@ -75,7 +93,7 @@
             });
         });
     });
-
+/*]]>*/
 </script>
 </body>
 </html>

@@ -33,6 +33,8 @@ import com.yahoo.sherlock.store.DruidClusterAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.utils.TimeUtils;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -47,6 +49,7 @@ import java.util.UUID;
  * Service class for job execution.
  */
 @Slf4j
+@Data
 public class JobExecutionService {
 
     /**
@@ -133,7 +136,7 @@ public class JobExecutionService {
         Integer timestampMinutes = job.getEffectiveQueryTime();
         ZonedDateTime startTime = TimeUtils.zonedDateTimeFromMinutes(timestampMinutes);
         try {
-            performBackfillJob(job, startTime);
+            performBackfillJob(job, startTime, null);
         } catch (SherlockException e) {
             log.error("Error while backfilling job [{}]!", job.getJobId(), e);
         }
@@ -141,22 +144,29 @@ public class JobExecutionService {
 
     /**
      * Run a backfill for a provided job starting at the given time.
-     * This method will backfill from the given start date to the
-     * current time.
+     * This method will backfill from the given start time to the end time
+     * or till current time if end time is not specified.
      *
      * @param job       metadata for job to backfill
      * @param startTime the start time of backfilling as a ZonedDateTime
+     * @param endTime the end time of backfilling as a ZonedDateTime
      * @throws SherlockException if an error occurs during job execution
      */
     public void performBackfillJob(
         JobMetadata job,
-        ZonedDateTime startTime
+        ZonedDateTime startTime,
+        @Nullable ZonedDateTime endTime
     ) throws SherlockException {
         Granularity granularity = Granularity.getValue(job.getGranularity());
-        Integer intervalEndTime = granularity.getEndTimeForInterval(ZonedDateTime.now(ZoneOffset.UTC)
-                                                                        .minusHours(job.getHoursOfLag()));
+        if (endTime == null) {
+            endTime = ZonedDateTime.now(ZoneOffset.UTC).minusHours(job.getHoursOfLag());
+        }
+        Integer intervalEndTime = granularity.getEndTimeForInterval(endTime);
         Integer jobWindowStart = granularity.getEndTimeForInterval(startTime);
-        log.info("Job window start: " + jobWindowStart);
+        log.info("Job window start: {} , end : {}", jobWindowStart, intervalEndTime);
+        if ((intervalEndTime - jobWindowStart) < granularity.getMinutes()) {
+            throw new SherlockException("Backfill interval cannot be smaller than granularity!");
+        }
         Integer intervalStartTime = jobWindowStart
                                     - (granularity.getIntervalsFromSettings() * granularity.getMinutes());
         Query query = QueryBuilder.start()
@@ -215,7 +225,7 @@ public class JobExecutionService {
         List<Thread> threads = new ArrayList<>(fillSeriesList.length);
         List<EgadsTask> tasks = new ArrayList<>(fillSeriesList.length);
         Integer singleInterval = granularity.getMinutes();
-        Integer subEnd = start;
+        Integer subEnd = start + singleInterval;
         for (List<TimeSeries> fillSeries : fillSeriesList) {
             EgadsTask task = createTask(
                 job,

@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -915,7 +917,7 @@ public class RoutesTest {
         when(jm.getUserQuery()).thenReturn(queryString);
         DruidCluster dc = mock(DruidCluster.class);
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
-        doCallRealMethod().when(jes).performBackfillJob(any(), any());
+        doCallRealMethod().when(jes).performBackfillJob(any(), any(), any());
         assertEquals(Routes.debugRunBackfillJob(req, res), "Success");
         verify(dca, times(1)).getDruidCluster(anyInt());
         verify(jma, times(1)).getJobMetadata(anyString());
@@ -1001,6 +1003,57 @@ public class RoutesTest {
         assertTrue(params(mav).containsKey("data"));
         verify(ds, times(1)).detectWithResults(any(), anyDouble(), any(), any());
         verify(jes, times(1)).getReports(any(), any());
+    }
+
+    @Test
+    public void testCloneJob() throws Exception {
+        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        JobMetadata jm = new JobMetadata();
+        Request req = mock(Request.class);
+        when(req.params(Constants.ID)).thenReturn("1");
+        Response res = mock(Response.class);
+        inject("jobAccessor", jma);
+        jm.setJobId(1);
+        jm.setTestName("test1");
+        jm.setFrequency("day");
+        when(jma.getJobMetadata(anyString())).thenReturn(jm);
+        doAnswer(iom -> {
+                Object[] args = iom.getArguments();
+                ((JobMetadata) args[0]).setJobId(10);
+                assertEquals(((JobMetadata) args[0]).getJobId(), (Integer) 10);
+                assertEquals(((JobMetadata) args[0]).getTestName(), "test1_cloned");
+                return ((JobMetadata) args[0]).getJobId().toString();
+            }
+        ).when(jma).putJobMetadata(any(JobMetadata.class));
+        assertEquals(Routes.cloneJob(req, res), "10");
+        verify(res, times(1)).status(200);
+        when(jma.getJobMetadata(anyString())).thenThrow(new IOException("clone error"));
+        assertEquals(Routes.cloneJob(req, res), "clone error");
+        verify(res, times(1)).status(500);
+    }
+
+    @Test
+    public void testRerunJob() throws Exception {
+        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        ServiceFactory sf = mock(ServiceFactory.class);
+        JobExecutionService jes = mock(JobExecutionService.class);
+        Request req = mock(Request.class);
+        Response res = mock(Response.class);
+        JobMetadata jm = new JobMetadata();
+        when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\",\"jobId\":\"2\",\"timestamp\":\"20000000\"}");
+        inject("jobAccessor", jma);
+        inject("serviceFactory", sf);
+        jm.setJobId(2);
+        jm.setGranularity("day");
+        when(jma.getJobMetadata(anyString())).thenReturn(jm);
+        when(sf.newJobExecutionService()).thenReturn(jes);
+        doNothing().when(jes).performBackfillJob(any(JobMetadata.class), any(ZonedDateTime.class), any(ZonedDateTime.class));
+        assertEquals(Routes.rerunJob(req, res), "success");
+        verify(jma, times(1)).getJobMetadata(anyString());
+        verify(jes, times(1)).performBackfillJob(any(JobMetadata.class), any(ZonedDateTime.class), any(ZonedDateTime.class));
+        when(jma.getJobMetadata(anyString())).thenThrow(new IOException("rerun error"));
+        assertEquals(Routes.cloneJob(req, res), "rerun error");
+        verify(res, times(1)).status(500);
     }
 
 }

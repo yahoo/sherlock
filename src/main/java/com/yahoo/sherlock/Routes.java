@@ -531,6 +531,33 @@ public class Routes {
     }
 
     /**
+     * Rerun the job for given timestamp.
+     * Request consist of job id and timestamp
+     * @param request HTTP request
+     * @param response HTTP response
+     * @return status of request
+     */
+    public static String rerunJob(Request request, Response response) {
+        try {
+            Map<String, String> params = new Gson().fromJson(
+                request.body(),
+                new TypeToken<Map<String, String>>() { }.getType()
+            );
+            String jobId = params.get("jobId");
+            JobMetadata job = jobAccessor.getJobMetadata(jobId);
+            long start = Long.valueOf(params.get("timestamp"));
+            long end = start + Granularity.getValue(job.getGranularity()).getMinutes();
+            serviceFactory.newJobExecutionService().performBackfillJob(job, TimeUtils.zonedDateTimeFromMinutes(start), TimeUtils.zonedDateTimeFromMinutes(end));
+            response.status(200);
+            return Constants.SUCCESS;
+        } catch (SherlockException | IOException | JobNotFoundException e) {
+            log.error("Error occurred during job backfill!", e);
+            response.status(500);
+            return e.getMessage();
+        }
+    }
+
+    /**
      * Method to view cron job reports.
      *
      * @param request  User request to view report
@@ -547,11 +574,13 @@ public class Routes {
             List<AnomalyReport> report = reportAccessor.getAnomalyReportsForJob(jobId, frequency);
             JsonTimeline jsonTimeline = Utils.getAnomalyReportsAsTimeline(report);
             String jsonTimelinePoints = new Gson().toJson(jsonTimeline.getTimelinePoints());
+            JobMetadata jobMetadata = jobAccessor.getJobMetadata(jobId);
             // populate params for visualization
+            params.put(Constants.JOB_ID, jobId);
             params.put(Constants.FREQUENCY, frequency);
             params.put(Constants.HOURS_OF_LAG, jobAccessor.getJobMetadata(jobId).getHoursOfLag());
             params.put(Constants.TIMELINE_POINTS, jsonTimelinePoints);
-            params.put(Constants.TITLE, "Anomaly Detection Reports");
+            params.put(Constants.TITLE, jobMetadata.getTestName());
         } catch (Exception e) {
             log.error("Error while viewing job report!", e);
             params.put(Constants.ERROR, e.toString());
@@ -869,7 +898,8 @@ public class Routes {
             );
             JobMetadata job = jobAccessor.getJobMetadata(params.get("jobId"));
             ZonedDateTime startTime = TimeUtils.parseDateTime(params.get("fillStartTime"));
-            serviceFactory.newJobExecutionService().performBackfillJob(job, startTime);
+            ZonedDateTime endTime = ("".equals(params.get("fillEndTime")) || params.get("fillEndTime") == null) ? null : TimeUtils.parseDateTime(params.get("fillEndTime"));
+            serviceFactory.newJobExecutionService().performBackfillJob(job, startTime, endTime);
             response.status(200);
             return "Success";
         } catch (SherlockException | IOException | JobNotFoundException e) {

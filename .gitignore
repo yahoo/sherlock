@@ -6,3 +6,5 @@ dependency-reduced-pom.xml
 *.swo
 *.csv
 *.db
+pom.xml.releaseBackup
+release.properties

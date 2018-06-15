@@ -213,7 +213,7 @@ function calendarHeatmap() {
                     var selection = d3.select(this);
                     selection.attr('stroke', '#08c');
                     selection.attr('stroke-width', '2px');
-                    onClick({timestamp: getDateTimestamp(d)});
+                    onClick({timestamp: getDateTimestamp(d), type: typeForDate(d)});
                 });
             }
 
@@ -341,7 +341,7 @@ function calendarHeatmap() {
                     var selection = d3.select(this);
                     selection.attr('stroke', '#08c');
                     selection.attr('stroke-width', '2px');
-	                onClick({timestamp: getDateTimestamp(d)});
+	                onClick({timestamp: getDateTimestamp(d), type: typeForDate(d)});
                 });
             }
 
@@ -482,7 +482,7 @@ function calendarHeatmap() {
                     var selection = d3.select(this);
                     selection.attr('stroke', '#08c');
                     selection.attr('stroke-width', '2px');
-	                onClick({timestamp: getDateTimestamp(d)});
+	                onClick({timestamp: getDateTimestamp(d), type: typeForDate(d)});
                 });
             }
 
@@ -613,7 +613,7 @@ function calendarHeatmap() {
                     var selection = d3.select(this);
                     selection.attr('stroke', '#08c');
                     selection.attr('stroke-width', '2px');
-	                onClick({timestamp: getDateTimestamp(d)});
+	                onClick({timestamp: getDateTimestamp(d), type: typeForDate(d)});
                 });
             }
 

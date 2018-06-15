@@ -85,6 +85,7 @@ public class EgadsTask implements Runnable {
         List<AnomalyReport> reports = new ArrayList<>();
         try {
             proxyJob.setEffectiveQueryTime(effectiveQueryEndTime);
+            executionService.getAnomalyReportAccessor().deleteAnomalyReportsForJobAtTime(proxyJob.getJobId().toString(), proxyJob.getReportNominalTime().toString(), proxyJob.getFrequency());
             anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), null, proxyJob.getReportNominalTime(), proxyJob.getFrequency());
             reports = executionService.getReports(anomalies, proxyJob);
         } catch (Exception e) {

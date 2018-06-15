@@ -70,4 +70,17 @@ public interface AnomalyReportAccessor {
      */
     void deleteAnomalyReportsForJob(String jobId) throws IOException;
 
+    /**
+     * Delete all anomaly reports for a particular job at
+     * specified timestamp. This method should
+     * search the database for all anomaly reports
+     * whose job ID and generation time parameters match the given arguments, clear that index
+     * and delete each report in the index. This should delete the report IDs
+     * from their respective timestamp indices.
+     * @param jobId job ID for which to delete all associated reports
+     * @param time the time during which to find reports
+     * @param frequency frequency of the job
+     * @throws IOException if an error occurs during deletion
+     */
+    void deleteAnomalyReportsForJobAtTime(String jobId, String time, String frequency) throws IOException;
 }
