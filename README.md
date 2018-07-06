@@ -152,6 +152,7 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
       --from-mail $(FROM_MAIL) \
       --reply-to $(REPLY_TO) \
       --smtp-host $(SMTP_HOST) \
+      --interval-minutes $(INTERVAL_MINUTES) \
       --interval-hours $(INTERVAL_HOURS) \
       --interval-days $(INTERVAL_DAYS) \
       --interval-weeks $(INTERVAL_WEEKS) \
@@ -159,39 +160,42 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
       --egads-config-filename $(EGADS_CONFIG_FILENAME) \
       --redis-host $(REDIS_HOSTNAME) \
       --redis-port $(REDIS_PORT) \
-      --execution-delay $(EXECUTION_DELAY)
+      --execution-delay $(EXECUTION_DELAY) \
+      --timeseries-completeness $(TIMESERIES_COMPLETENESS)
 ```
 
 ### CLI args usage
 
-| args                    | required            | default     | description                                     |
-|-------------------------|---------------------|-------------|-------------------------------------------------|
-| --help                  |    -                | `false`     | [help](#help)                                   |
-| --config                |    -                | `null`      | [config](#config)                               |
-| --version               |    -                | `v0.0.0`    | [version](#version)                             |
-| --egads-config-filename |    -                | `provided`  | [egads-config-filename](#egads-config-filename) |
-| --port                  |    -                | `4080`      | [port](#port)                                   |
-| --interval-hours        |    -                | `672`       | [interval-hours](#interval-hours)               |
-| --interval-days         |    -                | `28`        | [interval-days](#interval-days)                 |
-| --interval-weeks        |    -                | `12`        | [interval-weeks](#interval-weeks)               |
-| --interval-months       |    -                | `6`         | [interval-months](#interval-months)             |
-| --enable-email          |    -                | `false`     | [enable-email](#enable-email)                   |
-| --from-mail             | if email `enabled`  |             | [from-mail](#from-mail)                         |
-| --reply-to              | if email `enabled`  |             | [reply-to](#reply-to)                           |
-| --smtp-host             | if email `enabled`  |             | [smtp-host](#smtp-host)                         |
-| --smtp-port             |    -                | `25`        | [smtp-port](#smtp-port)                         |
-| --failure-email         | if email `enabled`  |             | [failure-email](#failure-email)                 |
-| --execution-delay       |    -                | `30`        | [execution-delay](#execution-delay)             |
-| --valid-domains         |    -                | `null`      | [valid-domains](#valid-domains)                 |
-| --redis-host            |    -                | `127.0.0.1` | [redis-host](#redis-host)                       |
-| --redis-port            |    -                | `6379`      | [redis-port](#redis-port)                       |
-| --redis-ssl             |    -                | `false`     | [redis-ssl](#redis-ssl)                         |
-| --redis-timeout         |    -                | `5000`      | [redis-timeout](#redis-timeout)                 |
-| --redis-password        |    -                |  -          | [redis-password](#redis-password)               |
-| --redis-clustered       |    -                | `false`     | [redis-clustered](#redis-clustered)             |
-| --project-name          |    -                |  -          | [project-name](#project-name)                   |
-| --external-file-path    |    -                |  -          | [external-file-path](#external-file-path)       |
-| --debug-mode            |    -                | `false`     | [debug-mode](#debug-mode)                       |
+| args                      | required            | default     | description                                         |
+|-------------------------  |---------------------|-------------|-------------------------------------------------    |
+| --help                    |    -                | `false`     | [help](#help)                                       |
+| --config                  |    -                | `null`      | [config](#config)                                   |
+| --version                 |    -                | `v0.0.0`    | [version](#version)                                 |
+| --egads-config-filename   |    -                | `provided`  | [egads-config-filename](#egads-config-filename)     |
+| --port                    |    -                | `4080`      | [port](#port)                                       |
+| --interval-minutes        |    -                | `180`        | [interval-minutes](#interval-minutes)                   |
+| --interval-hours          |    -                | `672`       | [interval-hours](#interval-hours)                   |
+| --interval-days           |    -                | `28`        | [interval-days](#interval-days)                     |
+| --interval-weeks          |    -                | `12`        | [interval-weeks](#interval-weeks)                   |
+| --interval-months         |    -                | `6`         | [interval-months](#interval-months)                 |
+| --enable-email            |    -                | `false`     | [enable-email](#enable-email)                       |
+| --from-mail               | if email `enabled`  |             | [from-mail](#from-mail)                             |
+| --reply-to                | if email `enabled`  |             | [reply-to](#reply-to)                               |
+| --smtp-host               | if email `enabled`  |             | [smtp-host](#smtp-host)                             |
+| --smtp-port               |    -                | `25`        | [smtp-port](#smtp-port)                             |
+| --failure-email           | if email `enabled`  |             | [failure-email](#failure-email)                     |
+| --execution-delay         |    -                | `30`        | [execution-delay](#execution-delay)                 |
+| --valid-domains           |    -                | `null`      | [valid-domains](#valid-domains)                     |
+| --redis-host              |    -                | `127.0.0.1` | [redis-host](#redis-host)                           |
+| --redis-port              |    -                | `6379`      | [redis-port](#redis-port)                           |
+| --redis-ssl               |    -                | `false`     | [redis-ssl](#redis-ssl)                             |
+| --redis-timeout           |    -                | `5000`      | [redis-timeout](#redis-timeout)                     |
+| --redis-password          |    -                |  -          | [redis-password](#redis-password)                   |
+| --redis-clustered         |    -                | `false`     | [redis-clustered](#redis-clustered)                 |
+| --project-name            |    -                |  -          | [project-name](#project-name)                       |
+| --external-file-path      |    -                |  -          | [external-file-path](#external-file-path)           |
+| --debug-mode              |    -                | `false`     | [debug-mode](#debug-mode)                           |
+| --timeseries-completeness |    -                | `60`        | [timeseries-completeness](#timeseries-completeness) |
 
 #### help
 Prints commandline argument help message.
@@ -203,6 +207,8 @@ Version of `sherlock.jar` to display on the UI
 Path to a custom EGADS configuration file. If none is specified, the default configuration is used.
 #### port
 Port on which to host the Spark application.
+#### interval-minutes
+Number of historic data points to use for detection on time-series every minute.
 #### interval-hours
 Number of historic data points to use for detection on hourly time-series.
 #### interval-days
@@ -245,6 +251,8 @@ Name of the project to display on UI.
 Specify the path to external files for Spark framework via this argument.
 #### debug-mode
 Debug mode enables debug routes. Ex. '/DatabaseJson' (shows redis data as json dump). Look at `com.yahoo.sherlock.App` for more details. 
+#### timeseries-completeness
+This defines minimum fraction of datapoints needed in the timeseries to consider it as a valid timeseries o/w sherlock ignores such timeseries. (default value 60 i.e. 0.6 in fraction)
 
 ## Committers
 
