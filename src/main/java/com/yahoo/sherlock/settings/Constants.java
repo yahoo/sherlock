@@ -17,6 +17,11 @@ public class Constants {
     public static final String HELP_URL = "";
 
     /**
+     * Constant for Trigger name minute.
+     */
+    public static final String MINUTE = "MINUTE";
+
+    /**
      * Constant for Trigger name hour.
      */
     public static final String HOUR = "HOUR";
@@ -25,6 +30,16 @@ public class Constants {
      * Constant for Trigger name day.
      */
     public static final String DAY = "DAY";
+
+    /**
+     * Constant for Trigger name week.
+     */
+    public static final String WEEK = "WEEK";
+
+    /**
+     * Constant for Trigger name month.
+     */
+    public static final String MONTH = "MONTH";
 
     /**
      * Timestamp format.
@@ -202,6 +217,11 @@ public class Constants {
     public static final int REDIS_RETENTION_YEARS_IN_DAYS = 366;
 
     /**
+     * Retention time (unit is days) for redis keys.
+     */
+    public static final int REDIS_RETENTION_ONE_DAY = 1;
+
+    /**
      * Regex constant for whitespace.
      */
     public static final String WHITESPACE_REGEX = "\\s+";
@@ -211,4 +231,33 @@ public class Constants {
      */
     public static final String CLONED = "_cloned";
 
+    /**
+     * Maximum for minute in an hour value.
+     */
+    public static final int MAX_MINUTE = 60;
+
+    /**
+     * Maximum for hour in a day value.
+     */
+    public static final int MAX_HOUR = 24;
+
+    /**
+     * Maximum for day in a month value.
+     */
+    public static final int MAX_DAY = 7;
+
+    /**
+     * Maximum for week in a year value.
+     */
+    public static final int MAX_WEEK = 4;
+
+    /**
+     * Maximum for month in a year value.
+     */
+    public static final int MAX_MONTH = 12;
+
+    /**
+     * Number of seconds in a day.
+     */
+    public static final long SECONDS_IN_DAY = Constants.HOURS_IN_DAY * Constants.MINUTES_IN_HOUR * Constants.SECONDS_IN_MINUTE;
 }

@@ -29,11 +29,13 @@ import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.MetricMeta;
 import com.yahoo.egads.data.TimeSeries;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -135,7 +137,7 @@ public class JobExecutionServiceTest {
         when(jes.getReports(any(), any())).thenReturn(new ArrayList<>());
         AnomalyReport a = new AnomalyReport();
         a.setStatus(Constants.ERROR);
-        when(jes.getSingletonReport(any(), any())).thenReturn(a);
+        when(jes.getSingletonReport(any())).thenReturn(a);
         JobMetadata job = new JobMetadata();
         job.setGranularity(Granularity.HOUR.toString());
         job.setEffectiveQueryTime(123456);
@@ -170,13 +172,34 @@ public class JobExecutionServiceTest {
         job.setJobId(1);
         job.setGranularity(Granularity.HOUR.toString());
         job.setEffectiveQueryTime(123456);
-        List<Anomaly> anomalies = Collections.singletonList(an);
+        job.setFrequency("day");
+        job.setJobStatus(JobStatus.RUNNING.getValue());
+        List<Anomaly> anomalies = new ArrayList<>(Arrays.asList(an));
         initMocks();
         when(jes.getReports(any(), any())).thenCallRealMethod();
-        List<AnomalyReport> reports = jes.getReports(anomalies, job);
+        List<AnomalyReport> reports = jes.getReports(new ArrayList<>(), job);
+        Assert.assertEquals(reports.size(), 0);
+        reports = jes.getReports(anomalies, job);
         assertEquals(reports.size(), 1);
         AnomalyReport rep = reports.get(0);
         assertEquals(rep.getJobId(), (Integer) 1);
+        // test nodata and warning at the same time for single job
+        Anomaly an1 = new Anomaly();
+        an1.metricMetaData = new MetricMeta();
+        an1.metricMetaData.id = "4";
+        an1.metricMetaData.name = JobStatus.NODATA.getValue();
+        an1.metricMetaData.source = "source1";
+        an1.intervals = new Anomaly.IntervalSequence();
+        anomalies.add(an1);
+        List<AnomalyReport> allReports = jes.getReports(anomalies, job);
+        Assert.assertEquals(allReports.size(), 2);
+        Assert.assertEquals(job.getJobStatus(), JobStatus.RUNNING.getValue());
+        anomalies.remove(0);
+        Assert.assertEquals(anomalies.size(), 1);
+        Assert.assertEquals(anomalies.get(0).metricMetaData.name, JobStatus.NODATA.getValue());
+        allReports = jes.getReports(anomalies, job);
+        Assert.assertEquals(allReports.size(), 0);
+        Assert.assertEquals(job.getJobStatus(), JobStatus.NODATA.getValue());
     }
 
     @Test
@@ -193,8 +216,8 @@ public class JobExecutionServiceTest {
         an.metricMetaData.name = "name";
         an.metricMetaData.source = "source";
         initMocks();
-        when(jes.getSingletonReport(any(), any())).thenCallRealMethod();
-        AnomalyReport result = jes.getSingletonReport(job, an);
+        when(jes.getSingletonReport(any())).thenCallRealMethod();
+        AnomalyReport result = jes.getSingletonReport(job);
         assertEquals(result.getJobId(), (Integer) 1);
         assertEquals(result.getStatus(), Constants.ERROR);
         assertNotNull(result.getUniqueId());
@@ -207,7 +230,7 @@ public class JobExecutionServiceTest {
         DruidCluster c = mock(DruidCluster.class);
         doCallRealMethod().when(jes).executeJob(any(), any());
         List ml = mock(List.class);
-        when(ds.detect(any(), anyString(), any(), anyDouble(), anyInt(), anyString())).thenReturn(ml);
+        when(ds.detect(any(), any())).thenReturn(ml);
         JobMetadata jm = mock(JobMetadata.class);
         when(jm.getClusterId()).thenReturn(5);
         jes.executeJob(jm, c);
@@ -229,11 +252,12 @@ public class JobExecutionServiceTest {
     public void testPerformBackfillJob() throws Exception {
         initMocks();
         Query query = mock(Query.class);
+        when(query.getGranularityRange()).thenReturn(1);
         JsonArray response = new JsonArray();
         when(ds.queryDruid(any(), any())).thenReturn(response);
         @SuppressWarnings("unchecked")
         List<TimeSeries>[] fillSeriesList = (List<TimeSeries>[]) new List[3];
-        when(ps.subseries(any(), anyLong(), anyLong(), any())).thenReturn(fillSeriesList);
+        when(ps.subseries(any(), anyLong(), anyLong(), any(), anyInt())).thenReturn(fillSeriesList);
         doCallRealMethod().when(jes).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any());
         EgadsTask ftask = mock(EgadsTask.class);
         when(ftask.getReports()).thenReturn(Collections.singletonList(new AnomalyReport()));
@@ -255,11 +279,11 @@ public class JobExecutionServiceTest {
     @Test
     public void testExecuteJob() throws SherlockException, DruidException {
         initMocks();
-        when(ds.detect(any(), anyString(), any(), anyDouble(), anyInt(), anyString())).thenReturn(Collections.emptyList());
+        when(ds.detect(any(), any())).thenReturn(Collections.emptyList());
         when(jes.executeJob(any(), any())).thenCallRealMethod();
         List<Anomaly> res = jes.executeJob(new JobMetadata(), new DruidCluster());
         assertEquals(res.size(), 0);
-        when(ds.detect(any(), anyString(), any(), anyDouble(), anyInt(), anyString())).thenThrow(new SherlockException());
+        when(ds.detect(any(), any())).thenThrow(new SherlockException());
         try {
             jes.executeJob(new JobMetadata(), new DruidCluster());
         } catch (SherlockException e) {
@@ -271,16 +295,16 @@ public class JobExecutionServiceTest {
     @Test
     public void testExecuteJobConfigs() throws Exception {
         initMocks();
-        when(ds.detect(any(), anyDouble(), any(), any(EgadsConfig.class), anyString()))
+        when(ds.detect(any(), anyDouble(), any(), any(EgadsConfig.class), anyString(), anyInt()))
                 .thenReturn(Collections.singletonList(new Anomaly()));
         when(jes.executeJob(any(), any(), any(), any())).thenCallRealMethod();
         assertEquals(1, jes.executeJob(new JobMetadata(),
-                new DruidCluster(), mock(Query.class), mock(EgadsConfig.class)).size());
-        when(ds.detect(any(), anyDouble(), any(), any(EgadsConfig.class), anyString()))
+             new DruidCluster(), mock(Query.class), mock(EgadsConfig.class)).size());
+        when(ds.detect(any(), anyDouble(), any(), any(EgadsConfig.class), anyString(), anyInt()))
                 .thenThrow(new SherlockException());
         try {
             jes.executeJob(new JobMetadata(),
-                    new DruidCluster(), mock(Query.class), mock(EgadsConfig.class));
+                           new DruidCluster(), mock(Query.class), mock(EgadsConfig.class));
         } catch (SherlockException e) {
             return;
         }

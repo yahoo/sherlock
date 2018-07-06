@@ -112,7 +112,9 @@
 
                             <div class="form-group" id="granularitySection">
                                 <label class="control-label" for="granularity">Granularity: </label>
-                                <select id="granularity" class="form-control"  th:field="*{granularity}" th:required="true">
+                                <input id="granularityRange" name="granularityRange" type="number"
+                                       class="form-control input-md" size="25" min="1" th:value="${job.getGranularityRange()}"/>
+                                <select id="granularity" class="form-control"  th:field="*{granularity}" th:required="true" onchange="selectMax()">
                                     <option th:each="granularity : ${granularities}"
                                             th:value="${granularity}"
                                             th:selected="${granularity} == ${job.getGranularity()} ? true : false"
@@ -328,6 +330,7 @@
                         });
 
         cmResize(queryText);
+        selectMax();
 
         $("#sdSlider").slider({
             value: [[${job.getSigmaThreshold()}]]
@@ -351,6 +354,7 @@
             $('#ownerName').attr("disabled", true);
             $('#ownerEmail').attr("disabled", true);
             $('#queryUrl').attr("disabled", true);
+            $('#granularityRange').attr("disabled", true);
             $('#granularity').attr("disabled", true);
             $('#frequency').attr("disabled", true);
             $("#sdSlider").slider("disable");
@@ -373,15 +377,15 @@
             updateMode();
         });
 
-        $('#ownerEmail').on('input', function() {
-            updateMode();
-        });
-
         $('#queryUrl').on('input', function() {
             updateMode();
         });
 
         $('#granularity').change(function() {
+            updateMode();
+        });
+
+        $('#granularityRange').on('input', function() {
             updateMode();
         });
 
@@ -461,9 +465,10 @@
                 data.query = queryText.getValue();
                 data.testName = $('#testName').val();
                 data.owner = $('#ownerName').val();
-                data.ownerEmail = $('#ownerEmail').tokenfield('getTokensList', ',');
+                data.ownerEmail = $('#ownerEmail').tokenfield('getTokensList', ',');;
                 data.testDescription = $('#testDescription').val();
                 data.granularity = $('#granularity').val();
+                data.granularityRange = $('#granularityRange').val();
                 data.frequency = $('#frequency').val();
                 data.sigmaThreshold = $('#sdSliderVal').text();
                 data.clusterId = $('#clusterId').val();
@@ -507,6 +512,7 @@
                         updateMode();
                    });
 
+
         $("#launchConfirmModalYes").click(function() {
             $.ajax({
                 type: 'POST',
@@ -533,7 +539,7 @@
         }
 
         function continueLaunching() {
-            $('#launchConfirmModalCode').html("Do you really want to LAUNCH the job with <b>granularity</b> <code>'" + $('#granularity').val() + "'</code> and <b>frequency</b> <code>'" + $('#frequency').val() + "'</code>?");
+            $('#launchConfirmModalCode').html("Do you really want to LAUNCH the job with <b>granularity</b> <code>'" + $('#granularityRange').val() + " " + $('#granularity').val() + "'</code> and <b>frequency</b> <code>'" + $('#frequency').val() + "'</code>?");
             $('#launchConfirmModal').modal('show');
         }
 
@@ -574,6 +580,20 @@
             document.execCommand("copy");
             $temp.remove();
         });
+
+        function selectMax() {
+            if($('#granularity').val() === "minute") {
+                $('#granularityRange').attr("max", [[${MINUTE}]]);
+            } else if($('#granularity').val() === "hour") {
+                $('#granularityRange').attr("max", [[${HOUR}]]);
+            } else if($('#granularity').val() === "day") {
+                $('#granularityRange').attr("max", [[${DAY}]]);
+            } else if($('#granularity').val() === "week") {
+                $('#granularityRange').attr("max", [[${WEEK}]]);
+            } else if($('#granularity').val() === "month") {
+                $('#granularityRange').attr("max", [[${MONTH}]]);
+            }
+        }
 
 /*]]>*/
 </script>

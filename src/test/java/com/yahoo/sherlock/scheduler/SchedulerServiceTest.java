@@ -6,17 +6,24 @@
 
 package com.yahoo.sherlock.scheduler;
 
+import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.JobScheduler;
+import com.yahoo.sherlock.utils.TimeUtils;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -75,13 +82,15 @@ public class SchedulerServiceTest {
         init();
         doCallRealMethod().when(ss).rescheduleJob(any());
         when(ss.jobRescheduleTime(any())).thenReturn(new ImmutablePair<>(5, 5));
-        ss.rescheduleJob(mock(JobMetadata.class));
+        JobMetadata jobMetadata = mock(JobMetadata.class);
+        when(jobMetadata.getJobStatus()).thenReturn("RUNNING");
+        ss.rescheduleJob(jobMetadata);
         Mockito.verify(ss, Mockito.times(1)).jobRescheduleTime(any());
         Mockito.verify(js, Mockito.times(1)).pushQueue(anyLong(), anyString());
         IOException ioex = new IOException("error");
         Mockito.doThrow(ioex).when(js).pushQueue(anyLong(), anyString());
         try {
-            ss.rescheduleJob(mock(JobMetadata.class));
+            ss.rescheduleJob(jobMetadata);
         } catch (SchedulerException e) {
             Assert.assertEquals(e.getMessage(), "error");
             Assert.assertEquals(e.getCause(), ioex);
@@ -108,4 +117,40 @@ public class SchedulerServiceTest {
         Assert.fail();
     }
 
+    @Test
+    public void testJobScheduleTimeAndRescheduleTime() {
+        init();
+        int hoursOfLag = 36;
+        JobMetadata jobMetadata = new JobMetadata();
+        jobMetadata.setJobId(1);
+        jobMetadata.setGranularity("day");
+        jobMetadata.setFrequency("month");
+        jobMetadata.setHoursOfLag(hoursOfLag);
+        doCallRealMethod().when(ss).jobScheduleTime(jobMetadata);
+        Pair<Integer, Integer> imp = ss.jobScheduleTime(jobMetadata);
+        int expectedQueryTime = Granularity.MONTH.getEndTimeForInterval(ZonedDateTime.now(ZoneOffset.UTC).minusHours(hoursOfLag));
+        Assert.assertEquals(imp.getLeft(), (Integer) expectedQueryTime);
+        int expectedRunTime = expectedQueryTime + hoursOfLag * 60 + Math.abs(jobMetadata.getJobId()) % Constants.MINUTES_IN_HOUR;
+        Assert.assertEquals(imp.getRight(), (Integer) expectedRunTime);
+        jobMetadata.setEffectiveQueryTime(expectedQueryTime);
+        jobMetadata.setEffectiveRunTime(expectedRunTime);
+        doCallRealMethod().when(ss).jobRescheduleTime(jobMetadata);
+        imp = ss.jobRescheduleTime(jobMetadata);
+        Assert.assertEquals(imp.getLeft(), TimeUtils.addMonth(expectedQueryTime, 1));
+        Assert.assertEquals(imp.getRight(), TimeUtils.addMonth(expectedRunTime, 1));
+        jobMetadata.setFrequency("day");
+        imp = ss.jobRescheduleTime(jobMetadata);
+        Assert.assertEquals(imp.getLeft(), (Integer) (expectedQueryTime + Granularity.DAY.getMinutes()));
+        Assert.assertEquals(imp.getRight(), (Integer) (expectedRunTime + Granularity.DAY.getMinutes()));
+        // for minute frequency jobs
+        hoursOfLag = 0;
+        jobMetadata.setGranularity("minute");
+        jobMetadata.setFrequency("minute");
+        jobMetadata.setHoursOfLag(hoursOfLag);
+        imp = ss.jobScheduleTime(jobMetadata);
+        expectedQueryTime = Granularity.MINUTE.getEndTimeForInterval(ZonedDateTime.now(ZoneOffset.UTC).minusHours(hoursOfLag));
+        Assert.assertEquals(imp.getLeft(), (Integer) expectedQueryTime);
+        expectedRunTime = expectedQueryTime + hoursOfLag * 60 + 1;
+        Assert.assertEquals(imp.getRight(), (Integer) expectedRunTime);
+    }
 }

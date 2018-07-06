@@ -35,7 +35,7 @@ public class JobMetadataTest {
         JobMetadata m = new JobMetadata(
                 1, "b", "c", "d", "e", "f",
                 "g", "h", "i", 123, 1234,
-                "m", "n", 3.0, 2, 12);
+                "m", 1, "n", 3.0, 2, 12);
         assertEquals(m.getJobId(), (Integer) 1);
         assertEquals(m.getClusterId(), (Integer) 2);
         assertEquals(m.getOwner(), "b");
@@ -49,6 +49,7 @@ public class JobMetadataTest {
         assertEquals(m.getEffectiveRunTime(), (Integer) 123);
         assertEquals(m.getEffectiveQueryTime(), (Integer) 1234);
         assertEquals(m.getGranularity(), "m");
+        assertEquals(m.getGranularityRange(), (Integer) 1);
         assertEquals(m.getFrequency(), "n");
         assertEquals(m.getSigmaThreshold(), 3.0);
     }

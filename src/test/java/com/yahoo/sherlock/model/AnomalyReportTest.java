@@ -6,16 +6,22 @@
 
 package com.yahoo.sherlock.model;
 
+import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.settings.Constants;
+import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
 import com.yahoo.egads.data.Anomaly;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.StringJoiner;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -30,6 +36,7 @@ public class AnomalyReportTest {
     public void testGetFormattedTimestampsReturnsSingleAndRange() {
         String timestampStr = "337,554,557:560,3000,3200:3300";
         AnomalyReport rep = new AnomalyReport();
+        rep.setJobFrequency("hour");
         rep.setAnomalyTimestamps(timestampStr);
         String result = rep.getFormattedAnomalyTimestamps();
         String expected = String.format(
@@ -89,8 +96,22 @@ public class AnomalyReportTest {
         // Make some end times null
         seq.get(1).endTime = null;
         AnomalyReport rep = new AnomalyReport();
+        rep.setJobFrequency(Triggers.HOUR.toString());
         rep.setAnomalyTimestampsFromInterval(seq);
         assertEquals(rep.getAnomalyTimestamps(), expected);
+        seq.clear();
+        AnomalyReport rep1 = new AnomalyReport();
+        for (int[] pair : source) {
+            Anomaly.Interval interval = new Anomaly.Interval();
+            interval.startTime = pair[0] * 60;
+            interval.endTime = (long) pair[1] * 60;
+            interval.expectedVal = (float) interval.startTime;
+            interval.actualVal = (float) interval.endTime;
+            seq.add(interval);
+        }
+        rep1.setJobFrequency(Triggers.MINUTE.toString());
+        rep1.setAnomalyTimestampsFromInterval(seq);
+        assertEquals(rep1.getAnomalyTimestamps(), expected);
     }
 
     @Test
@@ -141,6 +162,73 @@ public class AnomalyReportTest {
         assertEquals(rep.getModelName(), "model");
         assertEquals(rep.getModelParam(), "3.0");
         assertEquals(rep.getTestName(), "xyz");
+
     }
 
+    @Test
+    public void testCreateReportAndSetAnomalyTimestampsFromBytes() {
+        Anomaly anomaly = new Anomaly();
+        Anomaly.IntervalSequence seq = new Anomaly.IntervalSequence();
+        Anomaly.Interval interval = new Anomaly.Interval();
+        interval.startTime = 60L;
+        interval.endTime = 120L;
+        interval.expectedVal = (float) interval.startTime;
+        interval.actualVal = (float) interval.endTime;
+        Anomaly.Interval interval2 = new Anomaly.Interval();
+        interval2.startTime = 0L;
+        interval2.endTime = 120L;
+        interval2.expectedVal = (float) 60;
+        interval2.actualVal = (float) interval2.endTime;
+        seq.add(interval);
+        seq.add(interval2);
+        anomaly.intervals = seq;
+        anomaly.metricMetaData.id = "123";
+        anomaly.metricMetaData.name = "m1";
+        anomaly.metricMetaData.source = "s1";
+        JobMetadata jobMetadata = mock(JobMetadata.class);
+        when(jobMetadata.getReportNominalTime()).thenReturn(123);
+        when(jobMetadata.getFrequency()).thenReturn("minute");
+        when(jobMetadata.getJobId()).thenReturn(1);
+        AnomalyReport report = AnomalyReport.createReport(anomaly, jobMetadata);
+        assertEquals(report.getJobId(), (Integer) 1);
+        assertEquals(report.getMetricName(), "m1");
+        assertEquals(report.getUniqueId(), "123");
+        assertEquals(report.getGroupByFilters(), "s1");
+        assertEquals(report.getAnomalyTimestamps(), "1:2@100,0:2@100");
+
+        List<int[]> timestamps = report.getAnomalyTimestampsHours();
+        byte[][] startTime = new byte[timestamps.size()][];
+        byte[][] endTime = new byte[timestamps.size()][];
+        for (int i = 0; i < timestamps.size(); i++) {
+            int[] timestamp = timestamps.get(i);
+            startTime[i] = NumberUtils.toBytesCompressed(timestamp[0]);
+            if (timestamp[1] != 0 && timestamp[1] != timestamp[0]) {
+                endTime[i] = NumberUtils.toBytesCompressed(timestamp[1]);
+            }
+        }
+        AnomalyReport report1 = new AnomalyReport();
+        report1.setDeviationString("23,56");
+        report1.setAnomalyTimestampsFromBytes(startTime, endTime);
+        assertEquals(report1.getAnomalyTimestamps(), "1:2@23,0:2@56");
+        report1.setDeviationString(null);
+        report1.setAnomalyTimestampsFromBytes(new byte[timestamps.size()][], endTime);
+        assertEquals(report1.getAnomalyTimestamps(), "2@null,2@null");
+    }
+
+    @Test
+    public void testGetMetricInfoAndModelInfo() {
+        AnomalyReport report = new AnomalyReport();
+        report.setMetricName("m1");
+        report.setTestName("test1");
+        report.setModelName("model1");
+        report.setModelParam("3.0");
+        StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
+        joiner.add("Metric: " + "m1");
+        joiner.add("Anomaly test: " + "test1");
+        Assert.assertEquals(report.getMetricInfo(), joiner.toString());
+        joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
+        joiner.add("Model: " + "model1");
+        joiner.add("Params: " + "3.0");
+        Assert.assertEquals(report.getModelInfo(), joiner.toString());
+    }
 }

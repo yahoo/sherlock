@@ -83,12 +83,11 @@ public class LettuceAnomalyReportAccessor
             }
             List<RedisFuture> arrFutures = new ArrayList<>(ready.size() + 1);
             RedisFuture[] saddFutures = new RedisFuture[ready.size() * 6];
-            long secondsInOneDay = Constants.HOURS_IN_DAY * Constants.MINUTES_IN_HOUR * Constants.SECONDS_IN_MINUTE;
             int i = 0;
+            long expirationTime = Constants.SECONDS_IN_DAY * (ready.get(0).getJobFrequency().equalsIgnoreCase(Constants.HOUR) ?
+                                                              Constants.REDIS_RETENTION_WEEKS_IN_DAYS : (ready.get(0).getJobFrequency().equalsIgnoreCase(Constants.MINUTE) ?
+                                                                                                         Constants.REDIS_RETENTION_ONE_DAY : Constants.REDIS_RETENTION_YEARS_IN_DAYS));
             for (AnomalyReport report : ready) {
-                long expirationTime = secondsInOneDay * (report.getJobFrequency().equalsIgnoreCase(Constants.HOUR) ?
-                                                         Constants.REDIS_RETENTION_WEEKS_IN_DAYS :
-                                                         Constants.REDIS_RETENTION_YEARS_IN_DAYS);
                 arrFutures.addAll(writeReport(bin, cmd, report, expirationTime, this));
                 saddFutures[i++] = cmd.sadd(index(jobIdName, report.getJobId()), report.getUniqueId());
                 saddFutures[i++] = cmd.expire(index(jobIdName, report.getJobId()), expirationTime);
@@ -255,7 +254,7 @@ public class LettuceAnomalyReportAccessor
         List<RedisFuture> futures = new ArrayList<>(3);
         futures.add(cmd.hmset(acc.key(report.getUniqueId()), reportMap));
         futures.add(cmd.expire(acc.key(report.getUniqueId()), expirationTime));
-        log.info("Report " + report.getUniqueId() + " will expire in " + expirationTime / (3600 * 24) + " days");
+        log.info("Report " + report.getUniqueId() + " will expire in " + expirationTime / Constants.SECONDS_IN_DAY + " days");
         if (!valuesStart.isEmpty()) {
             futures.add(bin.zadd(keyStart, valuesStart.toArray(new ScoredValue[valuesStart.size()])));
             futures.add(bin.expire(keyStart, expirationTime));

@@ -35,6 +35,7 @@ import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.JsonDumper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import spark.ModelAndView;
 import spark.QueryParamsMap;
 import spark.Request;
@@ -202,10 +203,10 @@ public class RoutesTest {
         Request req = mock(Request.class);
         Response res = mock(Response.class);
         when(req.body()).thenReturn(
-                "{" +
-                        "\"clusterId\":\"1\"," +
-                        "\"ownerEmail\":\"someone@something.com\"" +
-                        "}"
+            "{" +
+            "\"clusterId\":\"1\"," +
+            "\"ownerEmail\":\"someone@something.com\"" +
+            "}"
         );
         JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
         ServiceFactory sf = mock(ServiceFactory.class);
@@ -214,7 +215,7 @@ public class RoutesTest {
         Query query = mock(Query.class);
         JsonObject jo = new JsonObject();
         when(query.getQueryJsonObject()).thenReturn(jo);
-        when(dqs.build(anyString(), any(Granularity.class), anyInt())).thenReturn(query);
+        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt())).thenReturn(query);
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
         DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = mock(DruidCluster.class);
@@ -247,7 +248,7 @@ public class RoutesTest {
         ServiceFactory sf = mock(ServiceFactory.class);
         when(sf.newEmailServiceInstance()).thenCallRealMethod();
         DruidQueryService dqs = mock(DruidQueryService.class);
-        when(dqs.build(anyString(), any(Granularity.class), anyInt())).thenThrow(new SherlockException("exception"));
+        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt())).thenThrow(new SherlockException("exception"));
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
         inject("serviceFactory", sf);
         assertEquals(Routes.saveUserJob(req, res), "exception");
@@ -405,7 +406,7 @@ public class RoutesTest {
         JsonObject j = new JsonObject();
         when(sf.newEmailServiceInstance()).thenCallRealMethod();
         when(q.getQueryJsonObject()).thenReturn(j);
-        when(dqs.build(anyString(), any(Granularity.class), anyInt())).thenReturn(q);
+        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt())).thenReturn(q);
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
         inject("serviceFactory", sf);
         inject("jobAccessor", jma);
@@ -795,7 +796,7 @@ public class RoutesTest {
         mocks();
         Query query = mock(Query.class);
         when(query.getQueryJsonObject()).thenReturn(new JsonObject());
-        when(qs.build(anyString(), any(), anyInt())).thenReturn(query);
+        when(qs.build(anyString(), any(), anyInt(), anyInt())).thenReturn(query);
         QueryParamsMap map = mock(QueryParamsMap.class);
         Map<String, String[]> smap = new HashMap<>();
         when(map.toMap()).thenReturn(smap);
@@ -817,13 +818,13 @@ public class RoutesTest {
         when(eres.getData()).thenReturn(series);
         when(eres.getAnomalies()).thenReturn(Lists.newArrayList(new Anomaly()));
         List<EgadsResult> reslist = Lists.newArrayList(eres);
-        when(ds.detectWithResults(any(), anyDouble(), any(), any()))
+        when(ds.detectWithResults(any(), anyDouble(), any(), any(), any()))
                 .thenReturn(reslist);
         when(tte.render(any(ModelAndView.class))).thenReturn("<div></div>");
         ModelAndView mav = Routes.processInstantAnomalyJob(req, res);
         verify(tte, times(1)).render(any(ModelAndView.class));
         verify(jes, times(1)).getReports(any(), any());
-        when(qs.build(any(), any(), anyInt())).thenThrow(new SherlockException());
+        when(qs.build(any(), any(), anyInt(), anyInt())).thenThrow(new SherlockException());
         assertEquals(mav.getViewName(), "reportInstant");
         assertEquals(params(mav).get("tableHtml"), "<div></div>");
         mav = Routes.processInstantAnomalyJob(req, res);
@@ -906,12 +907,13 @@ public class RoutesTest {
     @Test
     public void testDebugRunBackfillJob() throws Exception {
         mocks();
-        when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\",\"fillStartTime\":\"2017-10-08T02:00\"}");
+        when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\",\"jobId\":\"1,2\",\"fillStartTime\":\"2017-10-08T02:00\"}");
         JobMetadata jm = mock(JobMetadata.class);
         when(jma.getJobMetadata(anyString())).thenReturn(jm);
         when(jm.getHoursOfLag()).thenReturn(0);
         when(jm.getGranularity()).thenReturn("day");
         when(jm.getClusterId()).thenReturn(1);
+        when(jm.getGranularityRange()).thenReturn(1);
         TestUtilities.inject(jes, JobExecutionService.class, "druidClusterAccessor", dca);
         String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_2.json")));
         when(jm.getUserQuery()).thenReturn(queryString);
@@ -919,15 +921,15 @@ public class RoutesTest {
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
         doCallRealMethod().when(jes).performBackfillJob(any(), any(), any());
         assertEquals(Routes.debugRunBackfillJob(req, res), "Success");
-        verify(dca, times(1)).getDruidCluster(anyInt());
-        verify(jma, times(1)).getJobMetadata(anyString());
-        verify(jes, times(1)).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any());
+        verify(dca, times(2)).getDruidCluster(anyInt());
+        verify(jma, times(2)).getJobMetadata(anyString());
+        verify(jes, times(2)).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any());
     }
 
     @Test
     public void testDebugRunBackfillJobException() throws Exception {
         mocks();
-        when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\"}");
+        when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\",\"jobId\":\"1,2\"}");
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("error"));
         assertEquals(Routes.debugRunBackfillJob(req, res), "error");
     }
@@ -996,12 +998,12 @@ public class RoutesTest {
         when(er.getAnomalies()).thenReturn(anomalies);
         List<EgadsResult> erlist = Lists.newArrayList(er);
         when(tte.render(any(ModelAndView.class))).thenReturn("html");
-        when(ds.detectWithResults(any(), anyDouble(), any(), any())).thenReturn(erlist);
+        when(ds.detectWithResults(any(), anyDouble(), any(), anyInt(), any())).thenReturn(erlist);
         ModelAndView mav = Routes.debugPerformEgadsQuery(req, res);
         assertTrue(params(mav).containsKey("tableHtml"));
         assertEquals(params(mav).get("tableHtml"), "html");
         assertTrue(params(mav).containsKey("data"));
-        verify(ds, times(1)).detectWithResults(any(), anyDouble(), any(), any());
+        verify(ds, times(1)).detectWithResults(any(), anyDouble(), any(), anyInt(), any());
         verify(jes, times(1)).getReports(any(), any());
     }
 
@@ -1055,5 +1057,4 @@ public class RoutesTest {
         assertEquals(Routes.cloneJob(req, res), "rerun error");
         verify(res, times(1)).status(500);
     }
-
 }

@@ -25,6 +25,10 @@ import java.nio.file.Paths;
 
 import java.util.List;
 
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 /**
  * Test for time-series service class.
  */
@@ -40,12 +44,15 @@ public class TimeSeriesParserServiceTest {
         jsonArray = gson.fromJson(druidResponse, JsonArray.class);
         String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_2.json")));
         JsonObject queryJsonObject = gson.fromJson(queryString, JsonObject.class);
-        query = new Query(queryJsonObject, 1234, Granularity.HOUR);
+        query = new Query(queryJsonObject, 123, 1234, Granularity.HOUR, 1);
     }
 
     @Test
     public void testParseTimeSeries() throws Exception {
-        List<TimeSeries> timeSeries = new TimeSeriesParserService().parseTimeSeries(jsonArray, query);
+        TimeSeriesParserService tsps = mock(TimeSeriesParserService.class);
+        doCallRealMethod().when(tsps).parseTimeSeries(jsonArray, query);
+        when(tsps.isValidTimeSeries(query)).thenReturn(timeSeries -> true);
+        List<TimeSeries> timeSeries = tsps.parseTimeSeries(jsonArray, query);
         Assert.assertEquals(timeSeries.size(), jsonArray.get(0).getAsJsonObject().getAsJsonArray("result").size());
         for (int i = 0; i < timeSeries.size(); i++) {
             Assert.assertEquals(timeSeries.get(i).size(), jsonArray.size());
@@ -80,13 +87,15 @@ public class TimeSeriesParserServiceTest {
     @Test
     public void testSubSeries() throws Exception {
         CLISettings.INTERVAL_HOURS = 7;
+        int granularityRange = 1;
         List<TimeSeries> sources = Lists.newArrayList(testSeries1(), testSeries2(), testSeries3());
         Assert.assertEquals(3, sources.size());
         Granularity granularity = Granularity.HOUR;
         long jobWindowStart = times[6];
         long end = times[times.length - 1];
         int fillIntervals = (int) ((end - jobWindowStart) / granularity.getMinutes());
-        List<TimeSeries>[] results = new TimeSeriesParserService().subseries(sources, jobWindowStart, end, granularity);
+        List<TimeSeries>[] results = new TimeSeriesParserService().subseries(sources, jobWindowStart, end, granularity,
+                                                                             granularityRange);
         Assert.assertEquals(fillIntervals, results.length);
         for (List<TimeSeries> result : results) {
             Assert.assertEquals(result.size(), 3);
@@ -112,6 +121,36 @@ public class TimeSeriesParserServiceTest {
         checkEquals(getValuesFor(results, 0, sources.size(), granularity.getIntervalsFromSettings()), expectedFirst);
         checkEquals(getValuesFor(results, 17, sources.size(), granularity.getIntervalsFromSettings()), expectedLast);
         checkEquals(getValuesFor(results, 11, sources.size(), granularity.getIntervalsFromSettings()), expectedMiddle);
+        granularityRange = 2;
+        List<TimeSeries>[] resultsForGranularityRange2 = new TimeSeriesParserService().subseries(sources, jobWindowStart, end, granularity,
+                                                                                                 granularityRange);
+
+        Assert.assertEquals(fillIntervals, resultsForGranularityRange2.length);
+        int intervals = granularity.getIntervalsFromSettings() - granularity.getIntervalsFromSettings() % granularityRange;
+        for (List<TimeSeries> result : resultsForGranularityRange2) {
+            Assert.assertEquals(result.size(), 3);
+            for (TimeSeries resultSeries : result) {
+                Assert.assertEquals(intervals / granularityRange, resultSeries.data.size());
+            }
+        }
+        float[][] expectedFirst2 = { // 0
+                                     {15.8f + 19.4f, 1.5f + 40.5f, 16.8f + 19.4f},
+                                     {2 + 3, 4 + 5, 6 + 7},
+                                     {-2.34f + 3.45f, -4.56f + 5.67f, -6.78f + 7.89f}
+        };
+        float[][] expectedLast2 = { // 17
+                                    {14.0f + 15.0f, 3.21f + 4.32f, 5.43f + 6.54f},
+                                    {19 + 20, 21 + 22, 23 + 24},
+                                    {4 + 5, 11 + -22, 33 + -44}
+        };
+        float[][] expectedMiddle2 = { // 11
+                                      {4.5f + 5.6f, 6.7f + 11.0f, 12.0f + 13.0f},
+                                      {13 + 14, 15 + 16, 17 + 18},
+                                      {-3 + -4, -5 + 1, 2 + 3}
+        };
+        checkEquals(getValuesFor(resultsForGranularityRange2, 0, sources.size(), intervals / granularityRange), expectedFirst2);
+        checkEquals(getValuesFor(resultsForGranularityRange2, 17, sources.size(), intervals / granularityRange), expectedLast2);
+        checkEquals(getValuesFor(resultsForGranularityRange2, 11, sources.size(), intervals / granularityRange), expectedMiddle2);
         CLISettings.INTERVAL_HOURS = 672;
     }
 

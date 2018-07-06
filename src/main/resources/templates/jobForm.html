@@ -95,14 +95,27 @@
                             <div class="form-group" id="granularitySection">
                                 <label class="control-label" for="granularity">Granularity: </label>
                                 <p id="defaultGranularityMsg" class="bg-info">Select the granularity of the data.
-                                    <code>Default: 'day'</code></p>
-                                <select id="granularity" name="granularity" class="form-control"
-                                        th:field="*{granularity}" th:required="true">
-                                    <option th:each="granularity : ${granularities}"
-                                            th:value="${granularity}"
-                                            th:selected="${granularity} == 'day' ? true : false"
-                                            th:text="${granularity}"></option>
-                                </select>
+                                    <code>Default: '1 day'</code></p>
+                                <div>
+                                    <input id="granularityRange" name="granularityRange" type="number"
+                                           class="form-control input-md" size="25" min="1" th:max="${DAY}" value="1" onchange="selectPeriod()"/>
+                                    <select id="granularity" name="granularity" class="form-control"
+                                            th:field="*{granularity}" th:required="true" onchange="selectPeriod()">
+                                        <option th:each="granularity : ${granularities}"
+                                                th:value="${granularity}"
+                                                th:selected="${granularity} == 'day' ? true : false"
+                                                th:text="${granularity}"></option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView != null}">
+                                <label class="control-label" for="detectionWindow">Detection Window:</label>
+                                <p id="textForDetectionWindowHelp" class="bg-info"></p>
+                                <div>
+                                    <input id="detectionWindow" name="detectionWindow" type="number"
+                                           class="form-control input-md" size="25" min="1" th:max="${day}" th:required="true"/>
+                                </div>
                             </div>
 
                             <div class="form-group" id="frequencySection"
@@ -111,7 +124,7 @@
                                 <p id="defaultFrequencyMsg" class="bg-info">Select the frequency of the cron job.
                                     <code>Default: 'day'</code></p>
                                 <select id="frequency" name="frequency" class="form-control"
-                                        th:field="*{frequency}" th:required="true">
+                                        th:field="*{frequency}" th:required="true" onchange="showFrequency()">
                                     <option th:each="frequency : ${frequencies}"
                                             th:value="${frequency}"
                                             th:selected="${frequency} == 'day' ? true : false"
@@ -203,6 +216,9 @@
 <script language="javascript" type="text/javascript" th:inline="javascript">
     /*<![CDATA[*/
 
+    var firstLoad = 0;
+    selectPeriod();
+
     $('#owner-email')
           .on('tokenfield:createdtoken', function (e) {
             // Über-simplistic e-mail validation
@@ -260,9 +276,10 @@
         data.query = queryText.getValue();
         data.testName = $('#test-name').val();
         data.owner = $('#owner-name').val();
-        data.ownerEmail = $('#owner-email').tokenfield('getTokensList', ',');;
+        data.ownerEmail = $('#owner-email').tokenfield('getTokensList', ',');
         data.testDescription = $('#test-description').val();
         data.granularity = $('#granularity').val();
+        data.granularityRange = $('#granularityRange').val();
         data.frequency = $('#frequency').val();
         data.sigmaThreshold = $('#sdSliderVal').text();
         data.clusterId = $druidCluster.val();
@@ -327,6 +344,44 @@
         document.execCommand("copy");
         $temp.remove();
     });
+
+    function selectPeriod() {
+        firstLoad++;
+        $('#textForDetectionWindowHelp').html("Enter number of past <code>" + $('#granularity').val() + "s</code> in timeseries for detection");
+        if($('#granularity').val() === "minute") {
+            $('#detectionWindow').attr("max", [[${minute}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${minute}]]);
+            $('#granularityRange').attr("max", [[${MINUTE}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " minute(s)")
+        } else if($('#granularity').val() === "hour") {
+            $('#detectionWindow').attr("max", [[${hour}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${hour}]]);
+            $('#granularityRange').attr("max", [[${HOUR}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " hour(s)")
+        } else if($('#granularity').val() === "day") {
+            $('#detectionWindow').attr("max", [[${day}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${day}]]);
+            $('#granularityRange').attr("max", [[${DAY}]]);
+            if(firstLoad > 1) {
+                $('#defaultGranularityMsg').html($('#granularityRange').val() + " day(s)")
+            }
+        } else if($('#granularity').val() === "week") {
+            $('#detectionWindow').attr("max", [[${week}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${week}]]);
+            $('#granularityRange').attr("max", [[${WEEK}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " week(s)")
+        } else if($('#granularity').val() === "month") {
+            $('#detectionWindow').attr("max", [[${month}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${month}]]);
+            $('#granularityRange').attr("max", [[${MONTH}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " month(s)")
+        }
+    }
+
+    function showFrequency() {
+        $('#defaultFrequencyMsg').html("Every " + $('#frequency').val())
+    }
+
 
     /*]]>*/
 </script>

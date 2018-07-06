@@ -12,6 +12,8 @@ import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.settings.Constants;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -84,6 +86,7 @@ public class DBTestHelper {
         anomalyReport.setReportQueryEndTime(REPORT_NOMINAL_TIME);
         anomalyReport.setUniqueId(UNIQUE_ID);
         anomalyReport.setJobId(JOB_ID);
+        anomalyReport.setJobFrequency(Constants.DAY);
         return anomalyReport;
     }
 

@@ -25,9 +25,9 @@ public class GranularityTest {
 
     @Test
     public void testGetMinutes() {
-        int[] vals = {60, 1440, 10080, 43800};
+        int[] vals = {1, 60, 1440, 10080, 43800};
         Granularity[] gs = Granularity.values();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             assertEquals(vals[i], gs[i].getMinutes());
         }
     }
@@ -44,6 +44,9 @@ public class GranularityTest {
      */
     @Test
     public void testGetValue() {
+        //minute
+        assertEquals(Granularity.MINUTE.getValue(), "PT1M");
+
         //hour
         assertEquals(Granularity.HOUR.getValue(), "PT1H");
 
@@ -62,6 +65,9 @@ public class GranularityTest {
      */
     @Test
     public void testToString() {
+        //minute
+        assertEquals(Granularity.MINUTE.toString(), "minute");
+
         //hour
         assertEquals(Granularity.HOUR.toString(), "hour");
 
@@ -81,15 +87,27 @@ public class GranularityTest {
     @Test
     public void testGetAllValues() {
         //compare all values with expected list of values
-        assertEquals(Granularity.getAllValues(), Arrays.asList("hour", "day", "week", "month"));
+        assertEquals(Granularity.getAllValues(), Arrays.asList("minute", "hour", "day", "week", "month"));
     }
 
     @Test
     public void testGetIntervals() {
+        assertEquals(CLISettings.INTERVAL_MINUTES, Granularity.MINUTE.getIntervalsFromSettings());
         assertEquals(CLISettings.INTERVAL_HOURS, Granularity.HOUR.getIntervalsFromSettings());
         assertEquals(CLISettings.INTERVAL_DAYS, Granularity.DAY.getIntervalsFromSettings());
         assertEquals(CLISettings.INTERVAL_WEEKS, Granularity.WEEK.getIntervalsFromSettings());
         assertEquals(CLISettings.INTERVAL_MONTHS, Granularity.MONTH.getIntervalsFromSettings());
+    }
+
+    @Test
+    public void testGetNextGranularityStartMinute() {
+        Date date = new Date();
+        date.setTime(15 * 60 * 1000);
+        long time = Granularity.MINUTE.getNextGranularityStart(date);
+        assertEquals(16, time);
+        date.setTime(16 * 60 * 60 * 1000 + 55 * 60 * 1000);
+        time = Granularity.MINUTE.getNextGranularityStart(date);
+        assertEquals(16 * 60 + 56, time);
     }
 
     @Test
@@ -143,8 +161,11 @@ public class GranularityTest {
     public void testGetEndTimeForInterval() {
         long time = 33 * 24 * 60L + 13 * 60L + 12L; // DayOfWeek = Tuesday
         ZonedDateTime zonedTime = TimeUtils.zonedDateTimeFromMinutes(time);
+        int expected = 33 * 24 * 60 + 13 * 60 + 12;
+        //test for minute
+        assertEquals(Granularity.MINUTE.getEndTimeForInterval(zonedTime), expected);
         //test for hour
-        int expected = 33 * 24 * 60 + 13 * 60;
+        expected = 33 * 24 * 60 + 13 * 60;
         assertEquals(Granularity.HOUR.getEndTimeForInterval(zonedTime), expected);
         //test for day
         expected = 33 * 24 * 60;
@@ -166,24 +187,28 @@ public class GranularityTest {
     public void testSubtractIntervals() {
         long minutes = 20000000L;
         ZonedDateTime start = TimeUtils.zonedDateTimeFromMinutes(minutes);
-        ZonedDateTime expected = TimeUtils.zonedDateTimeFromMinutes(minutes - Granularity.HOUR.getMinutes());
-        assertEquals(Granularity.HOUR.subtractIntervals(start, 1), expected);
+        ZonedDateTime expected = TimeUtils.zonedDateTimeFromMinutes(minutes - Granularity.MINUTE.getMinutes());
+        assertEquals(Granularity.MINUTE.subtractIntervals(start, 1, 1), expected);
+        expected = TimeUtils.zonedDateTimeFromMinutes(minutes - Granularity.HOUR.getMinutes());
+        assertEquals(Granularity.HOUR.subtractIntervals(start, 1, 1), expected);
         expected = TimeUtils.zonedDateTimeFromMinutes(minutes - Granularity.DAY.getMinutes());
-        assertEquals(Granularity.DAY.subtractIntervals(start, 1), expected);
+        assertEquals(Granularity.DAY.subtractIntervals(start, 1, 1), expected);
         expected = TimeUtils.zonedDateTimeFromMinutes(minutes - Granularity.WEEK.getMinutes());
-        assertEquals(Granularity.WEEK.subtractIntervals(start, 1), expected);
+        assertEquals(Granularity.WEEK.subtractIntervals(start, 1, 1), expected);
         expected = TimeUtils.zonedDateTimeFromMinutes(minutes).minusMonths(1L);
-        assertEquals(Granularity.MONTH.subtractIntervals(start, 1), expected);
+        assertEquals(Granularity.MONTH.subtractIntervals(start, 1, 1), expected);
     }
 
     @Test
     public void testIncrementAndDecrement() {
         long minutes = 20000000L;
         ZonedDateTime zonedTime = TimeUtils.zonedDateTimeFromMinutes(minutes);
+        assertEquals(Granularity.MINUTE.decrement(zonedTime, 1), zonedTime.minusMinutes(1L));
         assertEquals(Granularity.HOUR.decrement(zonedTime, 1), zonedTime.minusHours(1L));
         assertEquals(Granularity.DAY.decrement(zonedTime, 1), zonedTime.minusDays(1L));
         assertEquals(Granularity.WEEK.decrement(zonedTime, 1), zonedTime.minusWeeks(1L));
         assertEquals(Granularity.MONTH.decrement(zonedTime, 1), zonedTime.minusMonths(1L));
+        assertEquals(Granularity.MINUTE.increment(zonedTime, 1), zonedTime.plusMinutes(1L));
         assertEquals(Granularity.HOUR.increment(zonedTime, 1), zonedTime.plusHours(1L));
         assertEquals(Granularity.DAY.increment(zonedTime, 1), zonedTime.plusDays(1L));
         assertEquals(Granularity.WEEK.increment(zonedTime, 1), zonedTime.plusWeeks(1L));
@@ -192,6 +217,7 @@ public class GranularityTest {
 
     @Test
     public void testLookForwardPeriods() {
+        assertEquals(Granularity.MINUTE.lookForwardPeriods(), 12);
         assertEquals(Granularity.HOUR.lookForwardPeriods(), 12);
         assertEquals(Granularity.DAY.lookForwardPeriods(), 14);
         assertEquals(Granularity.WEEK.lookForwardPeriods(), 13);

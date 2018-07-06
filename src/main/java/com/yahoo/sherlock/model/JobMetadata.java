@@ -51,6 +51,7 @@ public class JobMetadata implements Serializable {
                 null,
                 null,
                 userQuery.getGranularity(),
+                userQuery.getGranularityRange(),
                 userQuery.getFrequency(),
                 userQuery.getSigmaThreshold(),
                 userQuery.getClusterId(),
@@ -78,6 +79,7 @@ public class JobMetadata implements Serializable {
                 null,
                 null,
                 job.getGranularity(),
+                job.getGranularityRange(),
                 job.getFrequency(),
                 job.getSigmaThreshold(),
                 job.getClusterId(),
@@ -171,6 +173,12 @@ public class JobMetadata implements Serializable {
     private String granularity;
 
     /**
+     * Granularity range to aggregate on.
+     */
+    @Attribute
+    private Integer granularityRange = 1;
+
+    /**
      * Frequency of cron job.
      */
     @Attribute
@@ -215,6 +223,7 @@ public class JobMetadata implements Serializable {
      * @param effectiveRunTime   Next run time of job
      * @param effectiveQueryTime Report Nominal time for job reports
      * @param granularity        Granularity of data in the timeseries
+     * @param granularityRange   Granularity range to aggregate on.
      * @param frequency          Frequency of cron job
      * @param sigmaThreshold     Threshold for standard deviation
      * @param clusterId          associated Cluster ID
@@ -233,6 +242,7 @@ public class JobMetadata implements Serializable {
             @Nullable Integer effectiveRunTime,
             @Nullable Integer effectiveQueryTime,
             String granularity,
+            Integer granularityRange,
             String frequency,
             Double sigmaThreshold,
             Integer clusterId,
@@ -250,6 +260,7 @@ public class JobMetadata implements Serializable {
         this.effectiveRunTime = effectiveRunTime;
         this.effectiveQueryTime = effectiveQueryTime;
         this.granularity = granularity;
+        this.granularityRange = granularityRange;
         this.frequency = frequency;
         this.sigmaThreshold = sigmaThreshold;
         this.clusterId = clusterId;
@@ -281,6 +292,7 @@ public class JobMetadata implements Serializable {
         setTestDescription(newJob.getTestDescription());
         setUrl(newJob.getUrl());
         setGranularity(newJob.getGranularity());
+        setGranularityRange(newJob.getGranularityRange());
         setFrequency(newJob.getFrequency());
         setSigmaThreshold(newJob.getSigmaThreshold());
     }
@@ -329,7 +341,7 @@ public class JobMetadata implements Serializable {
      * @return the effective query end time minus one granularity
      */
     public Integer getReportNominalTime() {
-        return effectiveQueryTime - Granularity.getValue(granularity).getMinutes();
+        return effectiveQueryTime - Granularity.getValue(granularity).getMinutes() * granularityRange;
     }
 
     @Override

@@ -49,7 +49,7 @@
                 .height(600)
                 .useInteractiveGuideline(true)
                 .showLegend(true);
-            const timeFormat = d3.time.format.utc("%b %d, %H:00");
+            const timeFormat = d3.time.format.utc("%a %b %d, %H:%M");
             chart.xAxis
                 .axisLabel('Time')
                 .tickFormat(function (x) {

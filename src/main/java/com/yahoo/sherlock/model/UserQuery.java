@@ -66,6 +66,12 @@ public class UserQuery {
     /** Id of the associated cluster for this job. */
     private Integer clusterId;
 
+    /** Detection window for Instant anomaly job.*/
+    private Integer detectionWindow;
+
+    /** Granularity range to aggregate on. */
+    private Integer granularityRange;
+
     /**
      * Removing duplicate emails and return set of comma separated emails.
      * @return comma separated set of emails

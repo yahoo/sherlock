@@ -143,6 +143,7 @@ function calendarHeatmap() {
         d3.select(chart.selector()).selectAll('svg.calendar-heatmap').remove(); // remove the existing chart, if it exists
 
         var now = moment.utc(moment()).subtract(LAG_IN_HOUR, 'hour').toDate();
+        var sixHoursAgo = moment.utc(moment()).startOf('minute').subtract(LAG_IN_HOUR + 6, 'hour').toDate();
         var yearAgo = moment.utc(moment()).startOf('month').subtract(1, 'year').toDate();
         var twoWeeksAgo = moment.utc(moment()).startOf('day').subtract(2, 'week').toDate();
 
@@ -152,11 +153,15 @@ function calendarHeatmap() {
         var twoWeeksRange = d3.utcHours(twoWeeksAgo, now); // generates an array of hourly date objects within the specified range for hourly heatmap
         var firstDateForHour = moment.utc(twoWeeksRange[0]);
 
+        var sixHoursRange = d3.utcMinutes(sixHoursAgo, now) // generates an array of every minute date objects within the specified range for minute heatmap
+        var firstHourForMinute = moment.utc(sixHoursRange[0]);
+
         var weekIntervalRange = d3.utcMondays(yearAgo, moment.utc(now).subtract(1, 'week')); // generates an array of weekly date objects within the specified range for weekly heatmap
         var firstDateForWeek = moment.utc(weekIntervalRange[0]);
 
         var monthRange = d3.utcMonths(yearAgo, now); // generates an array of monthly date objects within the specified range for month labels
         var dayRange = d3.utcDays(twoWeeksAgo, now); // generates an array of daily date objects within the specified range for day labels
+        var hourRange = d3.utcHours(sixHoursAgo.setHours(sixHoursAgo.getHours() - 1), now); // generates an array of hourly date objects within the specified range for hour labels
 
         var tooltip;
         var dayRects;
@@ -164,7 +169,9 @@ function calendarHeatmap() {
         var weekRects;
         var monthRects;
 
-        if (frequency === "hour") {
+        if (frequency === "minute") {
+            drawMinuteChart();
+        } else if (frequency === "hour") {
             drawHourlyChart();
         } else if (frequency === "day") {
             drawDailyChart();
@@ -173,6 +180,146 @@ function calendarHeatmap() {
             drawWeeklyChart();
         } else if (frequency === "month") {
             drawMonthyChart();
+        }
+
+        // Draw the minute chart
+        function drawMinuteChart() {
+
+            height = 7 * (SQUARE_LENGTH + SQUARE_PADDING) + 3;
+
+            var svg = d3.select(chart.selector())
+                .style('position', 'relative')
+                .append('svg')
+                .attr('transform', 'translate(0,0)')
+                .attr('width', width)
+                .attr('class', 'calendar-heatmap')
+                .attr('height', height)
+                .style('padding', '71px');
+
+            minuteRects = svg.selectAll('.cell')
+                .data(sixHoursRange);
+
+            minuteRects.enter().append('rect')
+                .attr('class', 'cell')
+                .attr('width', SQUARE_LENGTH)
+                .attr('height', SQUARE_LENGTH)
+                .attr('fill', function(d) { return colorMap.get(typeForDate(d)); })
+                .attr('x', function (d, i) {
+                    var cellDate = moment.utc(d);
+                    var result = (cellDate.minute() % 60) * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return result + 10;
+                })
+                .attr('y', function (d, i) {
+                    var cellDate = moment.utc(d);
+                    var diff = (cellDate.hour() - firstHourForMinute.hour());
+                    if (diff < 0) {
+                        diff = 24 + diff;
+                    }
+                    return diff * (SQUARE_LENGTH + SQUARE_PADDING) + MONTH_LABEL_PADDING;
+                });
+
+            if (typeof onClick === 'function') {
+                minuteRects.on('click', function (d) {
+                    svg.selectAll('.cell').attr('stroke', null).attr('stroke-width', null);
+                    var selection = d3.select(this);
+                    selection.attr('stroke', '#08c');
+                    selection.attr('stroke-width', '2px');
+                    onClick({timestamp: getDateTimestamp(d), type: typeForDate(d)});
+                });
+            }
+
+            if (chart.tooltipEnabled()) {
+                minuteRects.on('mouseover', function (d, i) {
+                    var cellDate = moment.utc(d);
+                    tooltip = d3.select(chart.selector())
+                        .append('div')
+                        .attr('class', 'cell-tooltip')
+                        .html(tooltipHTMLForDate(d))
+                        .style('left', function () {
+                            return (cellDate.minute() % 60) * (SQUARE_LENGTH) + 'px';
+                        })
+                        .style('top', function () {
+                            var cellDate = moment.utc(d);
+                            var diff = (cellDate.hour() - firstHourForMinute.hour());
+                            if (diff < 0) {
+                                diff = 24 + diff;
+                            }
+                            return (diff + 1) * (SQUARE_LENGTH + SQUARE_PADDING) + 'px';
+                        });
+                })
+                .on('mouseout', function (d, i) {
+                    tooltip.remove();
+                });
+            }
+
+            if (chart.legendEnabled()) {
+                var colorRange = [];
+                colorMap.forEach(function(value, key, map) {
+                    colorRange.push({key: key, value: value})
+                });
+
+                var legendGroup = svg.selectAll('.calendar-heatmap-legend').data(colorRange);
+
+                legendGroup.enter()
+                    .append('g')
+                    .attr("class", "legend");
+
+                legendGroup.append('rect')
+                    .attr('class', 'calendar-heatmap-legend')
+                    .attr('width', SQUARE_LENGTH)
+                    .attr('height', SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + 10; })
+                    .attr('y', height + SQUARE_PADDING + SQUARE_LENGTH)
+                    .attr('fill', function (d) { return d.value; });
+
+                legendGroup.append('text')
+                    .attr('class', 'calendar-heatmap-legend-text calendar-heatmap-legend-text-less')
+                    .text(function(d) { return (d.key === 'warning' ? locale.Anomaly : (d.key === 'success' ? locale.NoAnomaly : (d.key === 'error' ? locale.Error : (d.key === 'nodata' ? locale.NoData : locale.defaultMsg)))); })
+                    .attr('x', function (d, i) { return ((SQUARE_LENGTH + SQUARE_PADDING) * (1 + i * legendSpacing)) + 10; })
+                    .attr('y', height + 2 * SQUARE_LENGTH)
+            }
+
+            var minuteRange = Array.apply(null, {length: 60}).map(Number.call, Number);
+            minuteRects.exit().remove();
+            var minuteLabels = svg.selectAll('.day')
+                .data(minuteRange)
+                .enter().append('text')
+                .attr('class', 'month-name')
+                .style()
+                .text(function (d) {
+                    return d;
+                })
+                .attr('x', function (d, i) {
+                    return (d % 60) * (SQUARE_LENGTH + SQUARE_PADDING) + 10;
+                })
+                .attr('y', 0)
+                .style('fill', function (d) { return d % 2 === 0 ? '#ff0000' : 'white';});
+
+            hourRange.forEach(function (date, index) {
+                var dateformat = 'MMM DD, HH a';
+                svg.append('text')
+                    .attr('class', 'day-initial')
+                    .attr('transform', 'translate(-71,' + (((SQUARE_LENGTH + SQUARE_PADDING) * (index + 1)) - SQUARE_PADDING) + ')')
+                    .style('text-anchor', 'left')
+                    .attr('dy', '2')
+                    .text(moment.utc(date).format(dateformat));
+            });
+
+            var barRange = Array.apply(null, {length: 4}).map(Number.call, Number);
+            var bars = svg.selectAll(".bars")
+                    .data(barRange)
+                    .enter().append("path")
+                    .attr("class", "bars")
+                    .attr("d", minutePath);
+
+            function minutePath(d) {
+                var size = SQUARE_LENGTH + SQUARE_PADDING;
+                var x = (15 * size) * d + 8;
+                var y = (MONTH_LABEL_PADDING - 2);
+                var xLen = (15 * size) * (d + 1) + 9;
+                var yLen = (MONTH_LABEL_PADDING - 2) + (size * 7) + 1;
+                return "M" + x + "," + y + "H" + xLen + "V" + yLen + "H" + x + "Z";
+            }
         }
 
         // Draw the hourly chart
@@ -692,7 +839,7 @@ function calendarHeatmap() {
 
     // Function to show tooltip on mouseover
     function tooltipHTMLForDate(d) {
-        var dateformat = 'DD MMM HH:00';
+        var dateformat = 'DD MMM HH:mm';
         var end = moment.utc(d).add(1, frequency).format(dateformat);
         var start = moment.utc(d).format(dateformat);
         var type = typeForDate(d);
@@ -718,7 +865,9 @@ function calendarHeatmap() {
 
     // Method for matching dates according to frequency
     function matchDates(dataDate, timelineDate) {
-        if (frequency === 'hour') {
+        if (frequency === 'minute') {
+            return moment.utc(dataDate.date).isSame(timelineDate, 'day') && moment.utc(dataDate.date).isSame(timelineDate, 'hour') && moment.utc(dataDate.date).isSame(timelineDate, 'minute');
+        } else if (frequency === 'hour') {
             return moment.utc(dataDate.date).isSame(timelineDate, 'day') && moment.utc(dataDate.date).isSame(timelineDate, 'hour');
         } else if (frequency === 'day') {
             return moment.utc(dataDate.date).isSame(timelineDate, 'day');

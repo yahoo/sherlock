@@ -59,7 +59,7 @@ public class HashMapper extends Mapper<String> {
             // Get and set the field value
             String value = hash.get(field.getName());
             try {
-                field.set(obj, wrapType(field, value).get());
+                field.set(obj, wrapType(field, value, field.get(obj)).get());
             } catch (IllegalAccessException e) {
                 // Inaccessible fields will not stop the method
                 log.error("Could not set field {}, inaccessible", field.getName());

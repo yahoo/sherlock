@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 @Slf4j
 public enum Granularity {
 
-    HOUR("PT1H", 60), DAY("P1D", 1440), WEEK("P1W", 10080), MONTH("P1M", 43800);
+    MINUTE("PT1M", 1), HOUR("PT1H", 60), DAY("P1D", 1440), WEEK("P1W", 10080), MONTH("P1M", 43800);
 
     /**
      * Granularity value in druid query.
@@ -85,6 +85,8 @@ public enum Granularity {
      */
     public int getIntervalsFromSettings() {
         switch (this) {
+            case MINUTE:
+                return CLISettings.INTERVAL_MINUTES;
             case HOUR:
                 return CLISettings.INTERVAL_HOURS;
             case DAY:
@@ -104,20 +106,24 @@ public enum Granularity {
      *
      * @param now       the time to subtract intervals from
      * @param intervals the number of intervals to subtract
+     * @param granularityRange range of granularity to aggregate on
      * @return a copied ZonedDateTime with the intervals subtracted
      */
-    public ZonedDateTime subtractIntervals(ZonedDateTime now, int intervals) {
+    public ZonedDateTime subtractIntervals(ZonedDateTime now, int intervals, int granularityRange) {
+        int n = intervals - (intervals % granularityRange);
         switch (this) {
+            case MINUTE:
+                return now.minusMinutes(n);
             case HOUR:
-                return now.minusHours(intervals);
+                return now.minusHours(n);
             case DAY:
-                return now.minusDays(intervals);
+                return now.minusDays(n);
             case WEEK:
-                return now.minusWeeks(intervals);
+                return now.minusWeeks(n);
             case MONTH:
-                return now.minusMonths(intervals);
+                return now.minusMonths(n);
             default:
-                return now.minusHours(intervals);
+                return now.minusHours(n);
         }
     }
 
@@ -132,22 +138,28 @@ public enum Granularity {
         cal.setTime(date);
         cal.set(Calendar.MILLISECOND, 0);
         cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MINUTE, 0);
         switch (this) {
+            case MINUTE:
+                cal.add(Calendar.MINUTE, 1);
+                break;
             case HOUR:
+                cal.set(Calendar.MINUTE, 0);
                 cal.add(Calendar.HOUR_OF_DAY, 1);
                 break;
             case DAY:
+                cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 cal.add(Calendar.HOUR_OF_DAY, 24);
                 break;
             case WEEK:
+                cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 // Want jobs to run on Mondays
                 cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
                 cal.add(Calendar.WEEK_OF_YEAR, 1);
                 break;
             case MONTH:
+                cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 cal.set(Calendar.DAY_OF_MONTH, 1);
                 cal.add(Calendar.MONTH, 1);
@@ -167,14 +179,18 @@ public enum Granularity {
         cal.setTime(nowDate);
         cal.set(Calendar.MILLISECOND, 0);
         cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MINUTE, 0);
         switch (this) {
+            case MINUTE:
+                break;
             case HOUR:
+                cal.set(Calendar.MINUTE, 0);
                 break;
             case DAY:
+                cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 break;
             case WEEK:
+                cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 // Want jobs to run on Mondays
                 if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
@@ -183,6 +199,7 @@ public enum Granularity {
                 cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
                 break;
             case MONTH:
+                cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.HOUR_OF_DAY, 0);
                 cal.set(Calendar.DAY_OF_MONTH, 1);
                 break;
@@ -200,6 +217,8 @@ public enum Granularity {
      */
     public ZonedDateTime increment(ZonedDateTime date, int amount) {
         switch (this) {
+            case MINUTE:
+                return date.plusMinutes(amount);
             case HOUR:
                 return date.plusHours(amount);
             case DAY:
@@ -223,6 +242,8 @@ public enum Granularity {
      */
     public ZonedDateTime decrement(ZonedDateTime date, int amount) {
         switch (this) {
+            case MINUTE:
+                return date.minusMinutes(amount);
             case HOUR:
                 return date.minusHours(amount);
             case DAY:
@@ -244,6 +265,8 @@ public enum Granularity {
      */
     public int lookForwardPeriods() {
         switch (this) {
+            case MINUTE:
+                return 12;
             case HOUR:
                 // Half a day
                 return 12;

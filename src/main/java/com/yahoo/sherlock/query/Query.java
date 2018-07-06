@@ -34,10 +34,16 @@ public class Query {
     private JsonObject queryObj;
 
     /**
+     * The start time of the query's execution in
+     * seconds since epoch.
+     */
+    private Integer startTime;
+
+    /**
      * The relative time of the query's execution in
      * seconds since epoch.
      */
-    private Integer runtime;
+    private Integer runTime;
 
     /**
      * Granularity of the query.
@@ -45,17 +51,25 @@ public class Query {
     private Granularity granularity;
 
     /**
-     * Construct a query with a JsonObject representation
-     * and a runtime.
-     *
-     * @param query       query as json Object
-     * @param runtime     runtime in seconds as a string
-     * @param granularity the granularity of the query
+     * Granularity range to aggregate on.
      */
-    public Query(JsonObject query, Integer runtime, Granularity granularity) {
+    private Integer granularityRange;
+
+    /**
+     * Construct a query with a JsonObject representation
+     * and a runTime.
+     * @param query            query as json Object
+     * @param startTime        startTime in seconds as a string
+     * @param runTime          runTime in seconds as a string
+     * @param granularity      the granularity of the query
+     * @param granularityRange granularity range to aggregate on
+     */
+    public Query(JsonObject query, Integer startTime, Integer runTime, Granularity granularity, Integer granularityRange) {
         this.queryObj = query;
-        this.runtime = runtime;
+        this.startTime = startTime;
+        this.runTime = runTime;
         this.granularity = granularity;
+        this.granularityRange = granularityRange;
     }
 
     /**

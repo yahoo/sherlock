@@ -155,6 +155,16 @@ public class Routes {
         Map<String, Object> params = new HashMap<>(defaultParams);
         // set instant form view
         params.put(Constants.INSTANTVIEW, "true");
+        params.put(Triggers.MINUTE.toString(), CLISettings.INTERVAL_MINUTES);
+        params.put(Triggers.HOUR.toString(), CLISettings.INTERVAL_HOURS);
+        params.put(Triggers.DAY.toString(), CLISettings.INTERVAL_DAYS);
+        params.put(Triggers.WEEK.toString(), CLISettings.INTERVAL_WEEKS);
+        params.put(Triggers.MONTH.toString(), CLISettings.INTERVAL_MONTHS);
+        params.put(Constants.MINUTE, Constants.MAX_MINUTE);
+        params.put(Constants.HOUR, Constants.MAX_HOUR);
+        params.put(Constants.DAY, Constants.MAX_DAY);
+        params.put(Constants.WEEK, Constants.MAX_WEEK);
+        params.put(Constants.MONTH, Constants.MAX_MONTH);
         try {
             params.put(Constants.DRUID_CLUSTERS, clusterAccessor.getDruidClusterList());
         } catch (IOException e) {
@@ -212,16 +222,19 @@ public class Routes {
             Map<String, String> paramsMap = Utils.queryParamsToStringMap(request.queryMap());
             UserQuery userQuery = UserQuery.fromQueryParams(request.queryMap());
             Granularity granularity = Granularity.getValue(paramsMap.get("granularity"));
+            Integer granularityRange = userQuery.getGranularityRange();
             Integer hoursOfLag = clusterAccessor.getDruidCluster(paramsMap.get("clusterId")).getHoursOfLag();
             Integer intervalEndTime = granularity.getEndTimeForInterval(
                 ZonedDateTime.now(ZoneOffset.UTC).minusHours(hoursOfLag));
-            Query query = serviceFactory.newDruidQueryServiceInstance().build(userQuery.getQuery(), granularity, intervalEndTime);
+            Query query = serviceFactory.newDruidQueryServiceInstance().build(userQuery.getQuery(), granularity, granularityRange, intervalEndTime);
             JobMetadata job = JobMetadata.fromQuery(userQuery, query);
+            job.setFrequency(granularity.toString());
             job.setEffectiveQueryTime(intervalEndTime);
             List<EgadsResult> egadsResult = serviceFactory.newDetectorServiceInstance().detectWithResults(
                     query,
                     job.getSigmaThreshold(),
                     clusterAccessor.getDruidCluster(job.getClusterId()),
+                    userQuery.getDetectionWindow(),
                     null
             );
             List<Anomaly> anomalies = new ArrayList<>();
@@ -263,7 +276,7 @@ public class Routes {
             }
             log.info("User request parsing successful.");
             DruidQueryService queryService = serviceFactory.newDruidQueryServiceInstance();
-            Query query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), null);
+            Query query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), userQuery.getGranularityRange(), null);
             log.info("Query generation successful.");
             // Create and store job metadata
             JobMetadata jobMetadata = JobMetadata.fromQuery(userQuery, query);
@@ -359,6 +372,11 @@ public class Routes {
             params.put("job", job);
             params.put("clusterName", clusterAccessor.getDruidCluster(job.getClusterId()).getClusterName());
             params.put(Constants.TITLE, "Job Details");
+            params.put(Constants.MINUTE, Constants.MAX_MINUTE);
+            params.put(Constants.HOUR, Constants.MAX_HOUR);
+            params.put(Constants.DAY, Constants.MAX_DAY);
+            params.put(Constants.WEEK, Constants.MAX_WEEK);
+            params.put(Constants.MONTH, Constants.MAX_MONTH);
         } catch (Exception e) {
             // add the error to the params
             params.put(Constants.ERROR, e.getMessage());
@@ -419,7 +437,7 @@ public class Routes {
             if (!oldQuery.equals(newQuery)) {
                 log.info("Validating altered user query");
                 DruidQueryService queryService = serviceFactory.newDruidQueryServiceInstance();
-                query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), null);
+                query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), userQuery.getGranularityRange(), null);
             }
             JobMetadata updatedJob = JobMetadata.fromQuery(userQuery, query);
             boolean isRerunRequired = (currentJob.userQueryChangeSchedule(userQuery) || query != null) && currentJob.isRunning();
@@ -612,7 +630,7 @@ public class Routes {
             );
             List<AnomalyReport> anomalousReports = new ArrayList<>(reports.size());
             for (AnomalyReport report : reports) {
-                if (report.getAnomalyTimestamps() != null && !report.getAnomalyTimestamps().isEmpty()) {
+                if (report.getAnomalyTimestamps() != null) {
                     anomalousReports.add(report);
                 }
             }
@@ -896,10 +914,13 @@ public class Routes {
                     request.body(),
                     new TypeToken<Map<String, String>>() { }.getType()
             );
-            JobMetadata job = jobAccessor.getJobMetadata(params.get("jobId"));
+            String[] jobIds = params.get("jobId").split(Constants.COMMA_DELIMITER);
             ZonedDateTime startTime = TimeUtils.parseDateTime(params.get("fillStartTime"));
             ZonedDateTime endTime = ("".equals(params.get("fillEndTime")) || params.get("fillEndTime") == null) ? null : TimeUtils.parseDateTime(params.get("fillEndTime"));
-            serviceFactory.newJobExecutionService().performBackfillJob(job, startTime, endTime);
+            for (String jobId : jobIds) {
+                JobMetadata job = jobAccessor.getJobMetadata(jobId);
+                serviceFactory.newJobExecutionService().performBackfillJob(job, startTime, endTime);
+            }
             response.status(200);
             return "Success";
         } catch (SherlockException | IOException | JobNotFoundException e) {
@@ -1006,6 +1027,7 @@ public class Routes {
                     query,
                     job.getSigmaThreshold(),
                     clusterAccessor.getDruidCluster(job.getClusterId()),
+                    1,
                     egadsConfig
             );
             List<Anomaly> anomalies = new ArrayList<>();

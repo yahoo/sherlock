@@ -7,6 +7,8 @@
 package com.yahoo.sherlock.scheduler;
 
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.enums.JobStatus;
+import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
@@ -14,6 +16,8 @@ import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.JobScheduler;
 import com.yahoo.sherlock.store.Store;
+import com.yahoo.sherlock.utils.TimeUtils;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -173,16 +177,18 @@ public class SchedulerService {
      * @throws SchedulerException if an error occurs while scheduling the job
      */
     public void rescheduleJob(JobMetadata jobMetadata) throws SchedulerException {
-        Pair<Integer, Integer> nextTimes = jobRescheduleTime(jobMetadata);
-        Integer nextQueryTime = nextTimes.getLeft();
-        Integer nextRunTime = nextTimes.getRight();
-        jobMetadata.setEffectiveQueryTime(nextQueryTime);
-        jobMetadata.setEffectiveRunTime(nextRunTime);
-        try {
-            jobScheduler.pushQueue(nextRunTime, jobMetadata.getJobId().toString());
-        } catch (IOException e) {
-            log.error("Error while adding job to queue", e);
-            throw new SchedulerException(e.getMessage(), e);
+        if (!jobMetadata.getJobStatus().equals(JobStatus.ERROR.getValue())) {
+            Pair<Integer, Integer> nextTimes = jobRescheduleTime(jobMetadata);
+            Integer nextQueryTime = nextTimes.getLeft();
+            Integer nextRunTime = nextTimes.getRight();
+            jobMetadata.setEffectiveQueryTime(nextQueryTime);
+            jobMetadata.setEffectiveRunTime(nextRunTime);
+            try {
+                jobScheduler.pushQueue(nextRunTime, jobMetadata.getJobId().toString());
+            } catch (IOException e) {
+                log.error("Error while adding job to queue", e);
+                throw new SchedulerException(e.getMessage(), e);
+            }
         }
     }
 
@@ -253,13 +259,13 @@ public class SchedulerService {
         }
         // Take the current time, subtract the hours of lag
         // and then floor to the nearest granularity
-        Integer effectiveQueryTime = granularity.getEndTimeForInterval(
-                ZonedDateTime.now(ZoneOffset.UTC).minusHours(hoursOfLag));
+        Integer effectiveQueryTime = granularity.getEndTimeForInterval(ZonedDateTime.now(ZoneOffset.UTC).minusHours(hoursOfLag));
         // Obtain a hash value between 0 and 60 (minutes) to offset the job
         int idInt = job.getJobId() == null ? 30 : job.getJobId();
         // Return the effective run time as the effective query time plus
         // the hours of lag (in minutes)
-        Integer effectiveRunTime = effectiveQueryTime + hoursOfLag * 60 + Math.abs(idInt) % Constants.MINUTES_IN_HOUR;
+        Integer offset = job.getFrequency().equalsIgnoreCase(Triggers.MINUTE.toString()) ? Triggers.MINUTE.getMinutes() : Math.abs(idInt) % Constants.MINUTES_IN_HOUR;
+        Integer effectiveRunTime = effectiveQueryTime + hoursOfLag * 60 + offset;
         return new ImmutablePair<>(effectiveQueryTime, effectiveRunTime);
     }
 
@@ -281,9 +287,16 @@ public class SchedulerService {
         if (granularity == null) {
             granularity = Granularity.DAY;
         }
-        Integer rescheduleTime = lastRunTime + granularity.getMinutes();
-        // update query interval for next job execution
-        Integer rescheduleQueryTime = job.getEffectiveQueryTime() + granularity.getMinutes();
+        Integer rescheduleTime;
+        Integer rescheduleQueryTime;
+        // update query interval time and next schedule time for next job execution
+        if (Constants.MONTH.equalsIgnoreCase(granularity.toString())) {
+            rescheduleTime = TimeUtils.addMonth(lastRunTime, 1);
+            rescheduleQueryTime = TimeUtils.addMonth(job.getEffectiveQueryTime(), 1);
+        } else {
+            rescheduleTime = lastRunTime + granularity.getMinutes();
+            rescheduleQueryTime = job.getEffectiveQueryTime() + granularity.getMinutes();
+        }
         return new ImmutablePair<>(rescheduleQueryTime, rescheduleTime);
     }
 

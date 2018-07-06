@@ -11,10 +11,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Triggers for hourly, daily, weekly and monthly cron jobs.
+ * Triggers for every minute, hourly, daily, weekly and monthly cron jobs.
  */
 public enum Triggers {
-    HOUR, DAY, WEEK, MONTH;
+    MINUTE(1), HOUR(60), DAY(1440), WEEK(10080), MONTH(43800);
+
+    /**
+     * Trigger value in minutes for job scheduling.
+     */
+    private final int minutes;
 
     /**
      * Name of Trigger.
@@ -23,8 +28,11 @@ public enum Triggers {
 
     /**
      * Initialization.
+     *
+     * @param minutes minutes for given Trigger
      */
-    Triggers() {
+    Triggers(int minutes) {
+        this.minutes = minutes;
         this.name = name().toLowerCase();
     }
 
@@ -34,10 +42,38 @@ public enum Triggers {
     }
 
     /**
+     * Get the time in minutes.
+     *
+     * @return time in minutes
+     */
+    public int getMinutes() {
+        return minutes;
+    }
+
+    /**
      * Method to get all the trigger frequency values.
      * @return list of trigger frequency values
      */
     public static List<String> getAllValues() {
         return Stream.of(values()).map(Triggers::toString).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the Trigger corresponding to a provided name.
+     *
+     * @param name trigger name
+     * @return the corresponding trigger or null
+     */
+    public static Triggers getValue(String name) {
+        if (name == null) {
+            return null;
+        }
+        name = name.toLowerCase();
+        for (Triggers triggers : Triggers.values()) {
+            if (name.equals(triggers.name)) {
+                return triggers;
+            }
+        }
+        return null;
     }
 }
