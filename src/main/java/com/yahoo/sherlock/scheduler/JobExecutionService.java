@@ -174,7 +174,7 @@ public class JobExecutionService {
             .queryString(job.getUserQuery())
             .granularity(granularity)
             .granularityRange(job.getGranularityRange())
-            .isBackFillQuery(true)
+            .setIsBackFillQuery(true)
             .build();
         try {
             DruidCluster cluster = druidClusterAccessor.getDruidCluster(job.getClusterId());

@@ -52,6 +52,10 @@ public class DetectorService {
      */
     private EgadsService egads = new EgadsService();
 
+    /**
+     * Constant for AD_MODEL egads property.
+     */
+    private static final String AD_MODEL = "AD_MODEL";
 
     /**
      * Empty constructor.
@@ -213,7 +217,7 @@ public class DetectorService {
         anomaly.metricMetaData.source = timeSeries.meta.source;
         anomaly.id = timeSeries.meta.id;
         anomaly.intervals = new Anomaly.IntervalSequence();
-        anomaly.modelName = egads.getP().getProperty("AD_MODEL");
+        anomaly.modelName = egads.getP().getProperty(AD_MODEL);
         return anomaly;
     }
 

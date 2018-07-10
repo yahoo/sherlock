@@ -181,15 +181,21 @@ public class AnomalyReport implements Serializable {
         for (String anomalyTime : anomalyTimes) {
             String[] timeAndValueSplit = anomalyTime.split(Constants.AT_DELIMITER);
             String[] interval = timeAndValueSplit[0].split(Constants.COLON_DELIMITER);
-            if (!NumberUtils.isInteger(interval[0])) {
+            String intervalStart = interval[0];
+            String intervalEnd = interval.length > 1 ? interval[1] : null;
+            if (!NumberUtils.isInteger(intervalStart)) {
                 continue;
             }
-            long startSeconds = jobFrequency.equals(Triggers.MINUTE.toString()) ? TimeUtils.getTimestampInSecondsFromMinutes(Long.parseLong(interval[0])) : TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(interval[0]));
+            long startSeconds = jobFrequency.equals(Triggers.MINUTE.toString())
+                                ? TimeUtils.getTimestampInSecondsFromMinutes(Long.parseLong(intervalStart))
+                                : TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(intervalStart));
             String startTime = TimeUtils.getTimeFromSeconds(startSeconds, Constants.TIMESTAMP_FORMAT);
-            if (interval.length == 1) {
+            if (intervalEnd == null) {
                 joiner.add(startTime);
-            } else if (NumberUtils.isInteger(interval[1])) {
-                long endSeconds = jobFrequency.equals(Triggers.MINUTE.toString()) ? TimeUtils.getTimestampInSecondsFromMinutes(Long.parseLong(interval[1])) : TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(interval[1]));
+            } else if (NumberUtils.isInteger(intervalEnd)) {
+                long endSeconds = jobFrequency.equals(Triggers.MINUTE.toString())
+                                  ? TimeUtils.getTimestampInSecondsFromMinutes(Long.parseLong(intervalEnd))
+                                  : TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(intervalEnd));
                 String endTime = TimeUtils.getTimeFromSeconds(endSeconds, Constants.TIMESTAMP_FORMAT);
                 joiner.add(String.format("%s to %s", startTime, endTime));
             }

@@ -1027,7 +1027,7 @@ public class Routes {
                     query,
                     job.getSigmaThreshold(),
                     clusterAccessor.getDruidCluster(job.getClusterId()),
-                    1,
+                    null,
                     egadsConfig
             );
             List<Anomaly> anomalies = new ArrayList<>();

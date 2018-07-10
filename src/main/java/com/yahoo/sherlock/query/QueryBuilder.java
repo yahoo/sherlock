@@ -259,7 +259,7 @@ public class QueryBuilder {
     /**
      * @return query builder instance
      */
-    public QueryBuilder isBackFillQuery(boolean isBackFillQuery) {
+    public QueryBuilder setIsBackFillQuery(boolean isBackFillQuery) {
         this.isBackFillQuery = isBackFillQuery;
         return this;
     }

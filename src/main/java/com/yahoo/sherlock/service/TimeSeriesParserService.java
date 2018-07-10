@@ -76,7 +76,7 @@ public class TimeSeriesParserService {
      * @return true if valid timeseries else false
      */
     public Predicate<TimeSeries> isValidTimeSeries(Query query) {
-        return timeSeries -> (timeSeries.startTime() == query.getStartTime()) && isComplete(timeSeries.size(), query);
+        return timeSeries -> (timeSeries.startTime() == query.getStartTime()) && isCompleteEnough(timeSeries.size(), query);
     }
 
     /**
@@ -85,7 +85,7 @@ public class TimeSeriesParserService {
      * @param query query
      * @return true if timeseries passes completeness check else false
      */
-    public boolean isComplete(int size, Query query) {
+    public boolean isCompleteEnough(int size, Query query) {
         float completeness = CLISettings.TIMESERIES_COMPLETENESS / 100.0f;
         float interval = ((query.getRunTime() - query.getStartTime()) / 60.0f);
         int totalDatapoints =  Math.round(interval / (query.getGranularity().getMinutes() * query.getGranularityRange()));
