@@ -141,7 +141,7 @@ class App {
         // Route for viewing deleted job
         get("/DeletedJobs/:id", Routes::viewDeletedJobInfo, new ThymeleafTemplateEngine());
 
-        // Route for cloning job
+        // Route for cloning selected job
         post("/CloneJob/:id", Routes::cloneJob);
 
         // Route for updating selected job detail
