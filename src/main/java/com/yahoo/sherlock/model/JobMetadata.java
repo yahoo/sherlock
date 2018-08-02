@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.utils.TimeUtils;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.query.Query;
@@ -51,11 +52,14 @@ public class JobMetadata implements Serializable {
                 null,
                 null,
                 userQuery.getGranularity(),
+                userQuery.getTimeseriesRange(),
                 userQuery.getGranularityRange(),
                 userQuery.getFrequency(),
                 userQuery.getSigmaThreshold(),
                 userQuery.getClusterId(),
-                0
+                0,
+                userQuery.getTsModels(),
+                userQuery.getAdModels()
         );
     }
 
@@ -79,11 +83,14 @@ public class JobMetadata implements Serializable {
                 null,
                 null,
                 job.getGranularity(),
+                job.getTimeseriesRange(),
                 job.getGranularityRange(),
                 job.getFrequency(),
                 job.getSigmaThreshold(),
                 job.getClusterId(),
-                job.getHoursOfLag()
+                job.getHoursOfLag(),
+                job.getTimeseriesModel(),
+                job.getAnomalyDetectionModel()
         );
     }
 
@@ -173,6 +180,12 @@ public class JobMetadata implements Serializable {
     private String granularity;
 
     /**
+     * Range of the data to lookback.
+     */
+    @Attribute
+    private Integer timeseriesRange;
+
+    /**
      * Granularity range to aggregate on.
      */
     @Attribute
@@ -203,6 +216,18 @@ public class JobMetadata implements Serializable {
     private Integer hoursOfLag;
 
     /**
+     * Timeseries Model to use for given job.
+     */
+    @Attribute
+    private String timeseriesModel = EgadsConfig.TimeSeriesModel.OlympicModel.toString();
+
+    /**
+     * Anomaly Detection Model to use for given job.
+     */
+    @Attribute
+    private String anomalyDetectionModel = EgadsConfig.AnomalyDetectionModel.KSigmaModel.toString();
+
+    /**
      * Empty Constructor.
      */
     public JobMetadata() {
@@ -211,23 +236,26 @@ public class JobMetadata implements Serializable {
     /**
      * Data initializer constructor.
      *
-     * @param jobId              Unique job id
-     * @param owner              Owner of the anomaly test
-     * @param ownerEmail         Email id of the owner
-     * @param userQuery          User query to be stored
-     * @param query              Parsed user query to be stored
-     * @param testName           Test name entered by user
-     * @param testDescription    Description of the test
-     * @param url                Superset url for the query
-     * @param jobStatus          Job status
-     * @param effectiveRunTime   Next run time of job
-     * @param effectiveQueryTime Report Nominal time for job reports
-     * @param granularity        Granularity of data in the timeseries
-     * @param granularityRange   Granularity range to aggregate on.
-     * @param frequency          Frequency of cron job
-     * @param sigmaThreshold     Threshold for standard deviation
-     * @param clusterId          associated Cluster ID
-     * @param hoursOfLag         job hours of lag from cluster
+     * @param jobId                 Unique job id
+     * @param owner                 Owner of the anomaly test
+     * @param ownerEmail            Email id of the owner
+     * @param userQuery             User query to be stored
+     * @param query                 Parsed user query to be stored
+     * @param testName              Test name entered by user
+     * @param testDescription       Description of the test
+     * @param url                   Superset url for the query
+     * @param jobStatus             Job status
+     * @param effectiveRunTime      Next run time of job
+     * @param effectiveQueryTime    Report Nominal time for job reports
+     * @param granularity           Granularity of data in the timeseries
+     * @param timeseriesRange       Range of the data to lookback
+     * @param granularityRange      Granularity range to aggregate on.
+     * @param frequency             Frequency of cron job
+     * @param sigmaThreshold        Threshold for standard deviation
+     * @param clusterId             associated Cluster ID
+     * @param hoursOfLag            job hours of lag from cluster
+     * @param timeseriesModel       timeseries model to use
+     * @param anomalyDetectionModel anomaly detection model to use
      */
     public JobMetadata(
             @Nullable Integer jobId,
@@ -242,11 +270,14 @@ public class JobMetadata implements Serializable {
             @Nullable Integer effectiveRunTime,
             @Nullable Integer effectiveQueryTime,
             String granularity,
+            Integer timeseriesRange,
             Integer granularityRange,
             String frequency,
             Double sigmaThreshold,
             Integer clusterId,
-            Integer hoursOfLag
+            Integer hoursOfLag,
+            String timeseriesModel,
+            String anomalyDetectionModel
     ) {
         this.jobId = jobId;
         this.owner = owner;
@@ -260,11 +291,14 @@ public class JobMetadata implements Serializable {
         this.effectiveRunTime = effectiveRunTime;
         this.effectiveQueryTime = effectiveQueryTime;
         this.granularity = granularity;
+        this.timeseriesRange = timeseriesRange;
         this.granularityRange = granularityRange;
         this.frequency = frequency;
         this.sigmaThreshold = sigmaThreshold;
         this.clusterId = clusterId;
         this.hoursOfLag = hoursOfLag;
+        this.timeseriesModel = timeseriesModel;
+        this.anomalyDetectionModel = anomalyDetectionModel;
     }
 
     /**
@@ -292,9 +326,12 @@ public class JobMetadata implements Serializable {
         setTestDescription(newJob.getTestDescription());
         setUrl(newJob.getUrl());
         setGranularity(newJob.getGranularity());
+        setTimeseriesRange(newJob.getTimeseriesRange());
         setGranularityRange(newJob.getGranularityRange());
         setFrequency(newJob.getFrequency());
         setSigmaThreshold(newJob.getSigmaThreshold());
+        setTimeseriesModel(newJob.getTimeseriesModel());
+        setAnomalyDetectionModel(newJob.getAnomalyDetectionModel());
     }
 
     /**
@@ -306,8 +343,7 @@ public class JobMetadata implements Serializable {
      */
     public boolean userQueryChangeSchedule(UserQuery userQuery) {
         return !getGranularity().equals(userQuery.getGranularity()) ||
-                !getFrequency().equals(userQuery.getFrequency()) ||
-                !getSigmaThreshold().equals(userQuery.getSigmaThreshold());
+               !getFrequency().equals(userQuery.getFrequency());
     }
 
     /**

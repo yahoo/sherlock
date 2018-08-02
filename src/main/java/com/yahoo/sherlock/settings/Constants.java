@@ -9,7 +9,12 @@ package com.yahoo.sherlock.settings;
 /**
  * Constants for the project.
  */
-public class Constants {
+public final class Constants {
+
+    /**
+     * Constructor.
+     */
+    private Constants() { }
 
     /**
      * Constant for help url.
@@ -260,4 +265,19 @@ public class Constants {
      * Number of seconds in a day.
      */
     public static final long SECONDS_IN_DAY = Constants.HOURS_IN_DAY * Constants.MINUTES_IN_HOUR * Constants.SECONDS_IN_MINUTE;
+
+    /**
+     * Constant for 'anomalyDetectionModels'.
+     */
+    public static final String ANOMALY_DETECTION_MODELS = "anomalyDetectionModels";
+
+    /**
+     * Constant for 'timeseriesModels'.
+     */
+    public static final String TIMESERIES_MODELS = "timeseriesModels";
+
+    /**
+     * Constant for 'http'.
+     */
+    public static final String HTTP = "http";
 }

@@ -132,7 +132,7 @@ public class JobExecutionService {
      * @param job metadata of the job to backfill
      */
     public void backfillJobFromIntervalEnd(JobMetadata job) {
-        Integer timestampMinutes = job.getEffectiveQueryTime();
+        Integer timestampMinutes = job.getReportNominalTime();
         ZonedDateTime startTime = TimeUtils.zonedDateTimeFromMinutes(timestampMinutes);
         try {
             performBackfillJob(job, startTime, null);
@@ -160,12 +160,12 @@ public class JobExecutionService {
         if (endTime == null) {
             endTime = ZonedDateTime.now(ZoneOffset.UTC).minusHours(job.getHoursOfLag());
         }
-        Integer intervalEndTime = granularity.getEndTimeForInterval(endTime);
-        Integer jobWindowStart = granularity.getEndTimeForInterval(startTime);
+        Integer intervalEndTime = granularity.getEndTimeForInterval(endTime) + granularity.getMinutes() * (job.getGranularityRange() - 1);
+        Integer jobWindowStart = granularity.getEndTimeForInterval(startTime) + granularity.getMinutes() * (job.getGranularityRange() - 1);
         if ((intervalEndTime - jobWindowStart) < granularity.getMinutes()) {
             throw new SherlockException("Backfill interval cannot be smaller than granularity!");
         }
-        int intervals = granularity.getIntervalsFromSettings();
+        int intervals = job.getTimeseriesRange() == null ? granularity.getIntervalsFromSettings() : job.getTimeseriesRange();
         ZonedDateTime intervalStartTime = granularity.subtractIntervals(TimeUtils.zonedDateTimeFromMinutes(jobWindowStart), intervals, job.getGranularityRange());
         log.info("Querying druid starting from {}", intervalStartTime.toString());
         Query query = QueryBuilder.start()
@@ -182,7 +182,8 @@ public class JobExecutionService {
                 job, cluster, query,
                 jobWindowStart,
                 intervalEndTime,
-                granularity
+                granularity,
+                intervals
             );
         } catch (IOException | InterruptedException | ClusterNotFoundException | DruidException e) {
             log.info("Error occurred during backfill execution!", e);
@@ -201,6 +202,7 @@ public class JobExecutionService {
      * @param start            start of backfill job window
      * @param end              end of backfill job window
      * @param granularity      the data granularity
+     * @param intervals        intervals to lookback
      * @throws SherlockException    if an error occurs during processing
      * @throws DruidException       if an error occurs during quering druid
      * @throws InterruptedException if an error occurs in the thread
@@ -212,7 +214,8 @@ public class JobExecutionService {
         Query query,
         Integer start,
         Integer end,
-        Granularity granularity
+        Granularity granularity,
+        int intervals
     ) throws SherlockException, DruidException, InterruptedException, IOException {
         log.info("Performing backfill for job [{}] for time range ({}, {})", job.getJobId(),
                  TimeUtils.getTimeFromSeconds(start * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS),
@@ -222,7 +225,7 @@ public class JobExecutionService {
         TimeSeriesParserService parserService = serviceFactory.newTimeSeriesParserServiceInstance();
         JsonArray druidResponse = detectorService.queryDruid(query, cluster);
         List<TimeSeries> sourceSeries = parserService.parseTimeSeries(druidResponse, query);
-        List<TimeSeries>[] fillSeriesList = parserService.subseries(sourceSeries, start, end, granularity, query.getGranularityRange());
+        List<TimeSeries>[] fillSeriesList = parserService.subseries(sourceSeries, start, end, granularity, query.getGranularityRange(), intervals);
         List<Thread> threads = new ArrayList<>(fillSeriesList.length);
         List<EgadsTask> tasks = new ArrayList<>(fillSeriesList.length);
         Integer singleInterval = granularity.getMinutes();

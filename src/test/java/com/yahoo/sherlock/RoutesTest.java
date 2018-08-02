@@ -215,7 +215,7 @@ public class RoutesTest {
         Query query = mock(Query.class);
         JsonObject jo = new JsonObject();
         when(query.getQueryJsonObject()).thenReturn(jo);
-        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt())).thenReturn(query);
+        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt(), anyInt())).thenReturn(query);
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
         DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = mock(DruidCluster.class);
@@ -248,7 +248,7 @@ public class RoutesTest {
         ServiceFactory sf = mock(ServiceFactory.class);
         when(sf.newEmailServiceInstance()).thenCallRealMethod();
         DruidQueryService dqs = mock(DruidQueryService.class);
-        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt())).thenThrow(new SherlockException("exception"));
+        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt(), anyInt())).thenThrow(new SherlockException("exception"));
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
         inject("serviceFactory", sf);
         assertEquals(Routes.saveUserJob(req, res), "exception");
@@ -406,7 +406,7 @@ public class RoutesTest {
         JsonObject j = new JsonObject();
         when(sf.newEmailServiceInstance()).thenCallRealMethod();
         when(q.getQueryJsonObject()).thenReturn(j);
-        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt())).thenReturn(q);
+        when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt(), anyInt())).thenReturn(q);
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
         inject("serviceFactory", sf);
         inject("jobAccessor", jma);
@@ -796,7 +796,7 @@ public class RoutesTest {
         mocks();
         Query query = mock(Query.class);
         when(query.getQueryJsonObject()).thenReturn(new JsonObject());
-        when(qs.build(anyString(), any(), anyInt(), anyInt())).thenReturn(query);
+        when(qs.build(anyString(), any(), anyInt(), anyInt(), anyInt())).thenReturn(query);
         QueryParamsMap map = mock(QueryParamsMap.class);
         Map<String, String[]> smap = new HashMap<>();
         when(map.toMap()).thenReturn(smap);
@@ -804,6 +804,7 @@ public class RoutesTest {
         smap.put("granularity", new String[]{"hour"});
         smap.put("clusterId", new String[]{"1"});
         smap.put("sigmaThreshold", new String[]{"3.5"});
+        smap.put("queryEndTimeText", new String[]{"2017-06-02T12:00"});
         DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = mock(DruidCluster.class);
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
@@ -824,7 +825,7 @@ public class RoutesTest {
         ModelAndView mav = Routes.processInstantAnomalyJob(req, res);
         verify(tte, times(1)).render(any(ModelAndView.class));
         verify(jes, times(1)).getReports(any(), any());
-        when(qs.build(any(), any(), anyInt(), anyInt())).thenThrow(new SherlockException());
+        when(qs.build(any(), any(), anyInt(), anyInt(), anyInt())).thenThrow(new SherlockException());
         assertEquals(mav.getViewName(), "reportInstant");
         assertEquals(params(mav).get("tableHtml"), "<div></div>");
         mav = Routes.processInstantAnomalyJob(req, res);
@@ -923,7 +924,7 @@ public class RoutesTest {
         assertEquals(Routes.debugRunBackfillJob(req, res), "Success");
         verify(dca, times(2)).getDruidCluster(anyInt());
         verify(jma, times(2)).getJobMetadata(anyString());
-        verify(jes, times(2)).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any());
+        verify(jes, times(2)).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any(), anyInt());
     }
 
     @Test

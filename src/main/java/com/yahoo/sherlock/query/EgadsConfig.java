@@ -13,7 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -64,6 +66,60 @@ public class EgadsConfig {
          */
         FilteringMethod(String param) {
             this.param = param;
+        }
+    }
+
+    /**
+     * EGADS timeseries models.
+     */
+    public enum TimeSeriesModel {
+        AutoForecastModel,
+        DoubleExponentialSmoothingModel,
+        MovingAverageModel,
+        MultipleLinearRegressionModel,
+        NaiveForecastingModel,
+        OlympicModel,
+        PolynomialRegressionModel,
+        RegressionModel,
+        SimpleExponentialSmoothingModel,
+        TripleExponentialSmoothingModel,
+        WeightedMovingAverageModel,
+        SpectralSmoother;
+
+        /**
+         * get all the model names.
+         * @return list of name of the models
+         */
+        public static List<String> getAllValues() {
+            List<String> timeseriesModels = new ArrayList<>();
+            for (TimeSeriesModel timeSeriesModel : TimeSeriesModel.values()) {
+                timeseriesModels.add(timeSeriesModel.toString());
+            }
+            return timeseriesModels;
+        }
+    }
+
+    /**
+     * EGADS anomaly detection models.
+     */
+    public enum AnomalyDetectionModel {
+        ExtremeLowDensityModel,
+        AdaptiveKernelDensityChangePointDetector,
+        KSigmaModel,
+        NaiveModel,
+        DBScanModel,
+        SimpleThresholdModel;
+
+        /**
+         * get all the model names.
+         * @return list of name of the models
+         */
+        public static List<String> getAllValues() {
+            List<String> anomalyDetectionModels = new ArrayList<>();
+            for (AnomalyDetectionModel anomalyDetectionModel : AnomalyDetectionModel.values()) {
+                anomalyDetectionModels.add(anomalyDetectionModel.toString());
+            }
+            return anomalyDetectionModels;
         }
     }
 
@@ -742,7 +798,7 @@ public class EgadsConfig {
      * The number of the highest and lowest points
      * to drop in the series.
      */
-    @EgadsParam(name = "NUM_TO_DROP", def = "0")
+    @EgadsParam(name = "NUM_TO_DROP", def = "1")
     private String numToDrop;
 
     /**

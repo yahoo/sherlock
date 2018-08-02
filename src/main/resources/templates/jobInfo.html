@@ -122,6 +122,14 @@
                                 </select>
                             </div>
 
+                            <div class="form-group">
+                                <label class="control-label" for="timeseriesRange">Timeseries Range:</label>
+                                <div>
+                                    <input id="timeseriesRange" name="timeseriesRange" type="number"
+                                           class="form-control input-md" size="25" th:required="true"/>
+                                </div>
+                            </div>
+
                             <div class="form-group" id="frequencySection">
                                 <label class="control-label" for="frequency">Job Frequency:</label>
                                 <select id="frequency" class="form-control" th:field="*{frequency}"
@@ -130,6 +138,28 @@
                                             th:value="${frequency}"
                                             th:selected="${frequency} == ${job.getFrequency()} ? true : false"
                                             th:text="${frequency}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="timeseriesModelSection">
+                                <label class="control-label" for="tsModels">Timeseries Model:</label>
+                                <select id="tsModels" name="tsModels" class="form-control"
+                                        th:field="*{timeseriesModel}">
+                                    <option th:each="timeseriesModel : ${timeseriesModels}"
+                                            th:value="${timeseriesModel}"
+                                            th:selected="${timeseriesModel} == ${job.getTimeseriesModel()} ? true : false"
+                                            th:text="${timeseriesModel}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="anomalyDetectionModelSection">
+                                <label class="control-label" for="adModels">Anomaly Detection Model:</label>
+                                <select id="adModels" name="adModels" class="form-control"
+                                        th:field="*{anomalyDetectionModel}">
+                                    <option th:each="anomalyDetectionModel : ${anomalyDetectionModels}"
+                                            th:value="${anomalyDetectionModel}"
+                                            th:selected="${anomalyDetectionModel} == ${job.getAnomalyDetectionModel()} ? true : false"
+                                            th:text="${anomalyDetectionModel}"></option>
                                 </select>
                             </div>
 
@@ -355,9 +385,12 @@
             $('#ownerEmail').attr("disabled", true);
             $('#queryUrl').attr("disabled", true);
             $('#granularityRange').attr("disabled", true);
+            $('#timeseriesRange').attr("disabled", true);
             $('#granularity').attr("disabled", true);
             $('#frequency').attr("disabled", true);
             $("#sdSlider").slider("disable");
+            $('#tsModels').attr("disabled", true);
+            $('#adModels').attr("disabled", true);
         }
 
         $("#sdSlider").on("slideStop", function(slideEvent) {
@@ -383,6 +416,11 @@
 
         $('#granularity').change(function() {
             updateMode();
+            updateTimeseriesRange();
+        });
+
+        $('#timeseriesRange').on('input', function() {
+            updateMode();
         });
 
         $('#granularityRange').on('input', function() {
@@ -390,6 +428,14 @@
         });
 
         $('#frequency').change(function() {
+            updateMode();
+        });
+
+        $('#tsModels').change(function() {
+            updateMode();
+        });
+
+        $('#adModels').change(function() {
             updateMode();
         });
 
@@ -460,6 +506,10 @@
                     showWarningMessage("The granularity must be less than or equal to the frequency!");
                     return;
                 }
+                if(parseInt($('#timeseriesRange').val()) < parseInt($('#granularityRange').val())) {
+                    showWarningMessage("The granularity range must be less than or equal to the timeseries range!");
+                    return;
+                }
                 var data = {};
                 data.queryUrl = $('#queryUrl').val();
                 data.query = queryText.getValue();
@@ -468,10 +518,13 @@
                 data.ownerEmail = $('#ownerEmail').tokenfield('getTokensList', ',');;
                 data.testDescription = $('#testDescription').val();
                 data.granularity = $('#granularity').val();
+                data.timeseriesRange = $('#timeseriesRange').val();
                 data.granularityRange = $('#granularityRange').val();
                 data.frequency = $('#frequency').val();
                 data.sigmaThreshold = $('#sdSliderVal').text();
                 data.clusterId = $('#clusterId').val();
+                data.tsModels = $('#tsModels').val();
+                data.adModels = $('#adModels').val();
                 $.ajax({
                     type: 'POST',
                     url: '/UpdateJobInfo/' + $('#jobId').val(),
@@ -595,6 +648,29 @@
             }
         }
 
+        function updateTimeseriesRange() {
+            if($('#granularity').val() === "minute") {
+                $('#timeseriesRange').val([[${minute}]]);
+            } else if($('#granularity').val() === "hour") {
+                $('#timeseriesRange').val([[${hour}]]);
+            } else if($('#granularity').val() === "day") {
+                $('#timeseriesRange').val([[${day}]]);
+            } else if($('#granularity').val() === "week") {
+                $('#timeseriesRange').val([[${week}]]);
+            } else if($('#granularity').val() === "month") {
+                $('#timeseriesRange').val([[${month}]]);
+            }
+        }
+
+        setTimeseriesRange();
+
+        function setTimeseriesRange() {
+            if([[${job.getTimeseriesRange() == null}]]) {
+                updateTimeseriesRange();
+            } else {
+                $('#timeseriesRange').val([[${job.getTimeseriesRange()}]]);
+            }
+        }
 /*]]>*/
 </script>
 

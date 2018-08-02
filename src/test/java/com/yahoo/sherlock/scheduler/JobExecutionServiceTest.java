@@ -257,14 +257,14 @@ public class JobExecutionServiceTest {
         when(ds.queryDruid(any(), any())).thenReturn(response);
         @SuppressWarnings("unchecked")
         List<TimeSeries>[] fillSeriesList = (List<TimeSeries>[]) new List[3];
-        when(ps.subseries(any(), anyLong(), anyLong(), any(), anyInt())).thenReturn(fillSeriesList);
-        doCallRealMethod().when(jes).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any());
+        when(ps.subseries(any(), anyLong(), anyLong(), any(), anyInt(), anyInt())).thenReturn(fillSeriesList);
+        doCallRealMethod().when(jes).performBackfillJob(any(), any(), any(), anyInt(), anyInt(), any(), anyInt());
         EgadsTask ftask = mock(EgadsTask.class);
         when(ftask.getReports()).thenReturn(Collections.singletonList(new AnomalyReport()));
         when(jes.createTask(any(), anyInt(), any(), any())).thenReturn(ftask);
         JobMetadata j = new JobMetadata();
         DruidCluster c = new DruidCluster();
-        jes.performBackfillJob(j, c, query, 123, 128, Granularity.HOUR);
+        jes.performBackfillJob(j, c, query, 123, 128, Granularity.HOUR, 10);
         verify(ara, times(1)).putAnomalyReports(any());
     }
 

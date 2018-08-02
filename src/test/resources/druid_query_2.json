@@ -50,12 +50,11 @@
   ],
   "dimension": "dim1",
   "intervals": "2017-09-15T20:48:28+00:00/2017-10-13T20:48:28+00:00",
-  "dataSource": "s1",
-  "granularity": {
-    "timeZone": "UTC",
-    "type": "period",
-    "period": "P1D"
+  "dataSource": {
+    "type":"table",
+    "name":"s1"
   },
+  "granularity": "day",
   "threshold": 50,
   "postAggregations": [
     {

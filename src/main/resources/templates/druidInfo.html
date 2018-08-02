@@ -44,6 +44,15 @@
 								</div>
 							</div>
 							<div class="form-group">
+								<label class="control-label" for="Http/Https">Http/Https:</label>
+								<div id="Http/Https">
+									<input type="radio" id="http" name="protocol" value="http"/>
+									<label class="control-label" for="http">Http</label>
+									<input type="radio" id="https" name="protocol" value="https"/>
+									<label class="control-label" for="https">Https</label>
+								</div>
+							</div>
+							<div class="form-group">
 								<label class="control-label" for="brokerHost">Broker Host:</label>
 								<div>
 									<input id="brokerHost" name="brokerHost" type="text"
@@ -133,7 +142,12 @@
 			e.preventDefault();
 			$('#deleteConfirmModalCode').html();
 			$('#deleteConfirmModal').modal('show');
-		})
+		});
+		if ([[${cluster.getProtocol()}]] === "http") {
+		    $('input[id=http]', '#clusterForm').attr('checked', true);
+		} else {
+		    $('input[id=https]', '#clusterForm').attr('checked', true);
+		}
 	});
 
 	$('#deleteConfirmModalYes').click(function() {
@@ -161,7 +175,8 @@
 			brokerHost: $('#brokerHost').val(),
 			brokerPort: $('#brokerPort').val(),
 			brokerEndpoint: $('#brokerEndpoint').val(),
-			hoursOfLag: $('#hoursOfLag').val()
+			hoursOfLag: $('#hoursOfLag').val(),
+			protocol: $('input[name=protocol]:checked', '#clusterForm').val()
 		};
 		$.ajax({
 			type: 'POST',

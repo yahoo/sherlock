@@ -7,7 +7,6 @@
 package com.yahoo.sherlock.query;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
@@ -215,8 +214,10 @@ public class QueryBuilder {
      * @param intervals number of intervals
      * @return query builder instance
      */
-    public QueryBuilder intervals(int intervals) {
-        this.intervals = intervals;
+    public QueryBuilder intervals(Integer intervals) {
+        if (intervals != null) {
+            this.intervals = intervals;
+        }
         return this;
     }
 
@@ -348,15 +349,10 @@ public class QueryBuilder {
      * @throws SherlockException if some parameters are missing
      */
     protected static void validateJsonObject(JsonObject object) throws SherlockException {
-        if (!(object.has(QueryConstants.POSTAGGREGATIONS) &&
-              object.has(QueryConstants.AGGREGATIONS) &&
+        if (!(object.has(QueryConstants.AGGREGATIONS) &&
               object.has(QueryConstants.INTERVALS) &&
               object.has(QueryConstants.GRANULARITY))) {
             throw new SherlockException("Druid query is missing parameters");
-        }
-        JsonElement granularityElement = object.get(QueryConstants.GRANULARITY);
-        if (!granularityElement.isJsonObject()) {
-            throw new SherlockException("Granularity is not a JSON object");
         }
     }
 
@@ -417,17 +413,14 @@ public class QueryBuilder {
      * @param granularityRange granularity range to aggregate on
      * @param startTime start time of query
      */
-    protected static void setObjectPeriod(JsonObject object, String period, Integer granularityRange, ZonedDateTime startTime, Boolean isBackFillQuery) {
-        JsonObject granularityObj = object.getAsJsonObject(QueryConstants.GRANULARITY);
-        granularityObj.remove(QueryConstants.PERIOD);
-        granularityObj.remove(QueryConstants.DURATION);
+    protected static void setObjectGranularity(JsonObject object, String period, Integer granularityRange, ZonedDateTime startTime, Boolean isBackFillQuery) {
         period = isBackFillQuery ? period : period.replace("1", granularityRange.toString());
-        granularityObj.addProperty(QueryConstants.PERIOD, period);
-        if (granularityObj.has(QueryConstants.ORIGIN)) {
-            granularityObj.remove(QueryConstants.ORIGIN);
-        }
-        granularityObj.addProperty(QueryConstants.ORIGIN, asDruidOrigin(startTime));
         object.remove(QueryConstants.GRANULARITY);
+        JsonObject granularityObj = new JsonObject();
+        granularityObj.addProperty(QueryConstants.TYPE, QueryConstants.PERIOD);
+        granularityObj.addProperty(QueryConstants.PERIOD, period);
+        granularityObj.addProperty(QueryConstants.TIMEZONE, QueryConstants.UTC);
+        granularityObj.addProperty(QueryConstants.ORIGIN, asDruidOrigin(startTime));
         object.add(QueryConstants.GRANULARITY, granularityObj);
     }
 
@@ -440,7 +433,7 @@ public class QueryBuilder {
         JsonObject queryObj = toJson(queryString);
         validateJsonObject(queryObj);
         setObjectInterval(queryObj, getInterval(startTime, endTime));
-        setObjectPeriod(queryObj, granularity.getValue(), granularityRange, startTime, isBackFillQuery);
+        setObjectGranularity(queryObj, granularity.getValue(), granularityRange, startTime, isBackFillQuery);
         return new Query(queryObj, getStartTime(), getRunTime(), granularity, granularityRange);
     }
 

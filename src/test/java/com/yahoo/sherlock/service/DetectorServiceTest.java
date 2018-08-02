@@ -115,7 +115,7 @@ public class DetectorServiceTest {
         HttpService mockHttpService = mock(HttpService.class);
         TimeSeriesParserService mockTimeSeriesParserService = mock(TimeSeriesParserService.class);
         EgadsService mockEgadsService = mock(EgadsService.class);
-        when(mockDruidQueryService.build(anyString(), any(), Mockito.anyObject(), anyInt())).thenReturn(query);
+        when(mockDruidQueryService.build(anyString(), any(), Mockito.anyObject(), anyInt(), anyInt())).thenReturn(query);
         when(mockHttpService.queryDruidDatasources(Mockito.anyObject())).thenReturn(fakeDataSources);
         when(mockHttpService.queryDruid(Mockito.anyObject(), Mockito.anyObject())).thenReturn(jsonArray);
         when(mockTimeSeriesParserService.parseTimeSeries(Mockito.anyObject(), Mockito.anyObject())).thenReturn(Collections.singletonList(timeseries));
@@ -230,8 +230,8 @@ public class DetectorServiceTest {
         List<EgadsResult> reslist = ds.detectWithResults(query, 3.0, new DruidCluster(), 1, new EgadsConfig());
         assertEquals(5, reslist.size());
         verify(egads, times(1)).configureWith(any());
-        verify(egads, times(5)).preRunConfigure(any(), any(), anyInt());
-        verify(egads, times(5)).configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), 2);
+        verify(egads, times(1)).preRunConfigure(any(), any(), anyInt());
+        verify(egads, times(1)).configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), 2);
         verify(egads, times(5)).detectAnomaliesResult(any());
     }
 }

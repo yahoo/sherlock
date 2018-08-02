@@ -162,7 +162,11 @@ public class Query {
         }
         // Check if the datasource key exists
         if (this.queryObj.has(QueryConstants.DATASOURCE)) {
-            return this.queryObj.get(QueryConstants.DATASOURCE);
+            if (this.queryObj.get(QueryConstants.DATASOURCE).isJsonPrimitive()) {
+                return this.queryObj.get(QueryConstants.DATASOURCE);
+            } else if (this.queryObj.get(QueryConstants.DATASOURCE).isJsonObject()) {
+                return this.queryObj.getAsJsonObject(QueryConstants.DATASOURCE).get(QueryConstants.NAME);
+            }
         }
         return null;
     }

@@ -26,15 +26,17 @@ public class DruidQueryService {
      * @param granularity input granularity value for query
      * @param granularityRange range of granularity to aggregate on
      * @param intervalEndTime interval end time of query
+     * @param intervals number of intervals to lookback
      * @return query object with new generated query
      * @throws SherlockException exception while parsing user query
      */
-    public Query build(String queryString, Granularity granularity, Integer granularityRange, Integer intervalEndTime) throws SherlockException {
+    public Query build(String queryString, Granularity granularity, Integer granularityRange, Integer intervalEndTime, Integer intervals) throws SherlockException {
         return QueryBuilder.start()
             .endAt(intervalEndTime)
             .granularity(granularity)
             .granularityRange(granularityRange)
             .queryString(queryString)
+            .intervals(intervals)
             .build();
     }
 }

@@ -27,6 +27,7 @@ public class QueryConstants {
     public static final String PERIOD = "period";
     public static final String DATASOURCE = "dataSource";
     public static final String ORIGIN = "origin";
-
-    public static final String DURATION = "duration";
+    public static final String TYPE = "type";
+    public static final String TIMEZONE = "timeZone";
+    public static final String UTC = "UTC";
 }

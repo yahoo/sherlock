@@ -95,7 +95,7 @@ public class TimeSeriesParserServiceTest {
         long end = times[times.length - 1];
         int fillIntervals = (int) ((end - jobWindowStart) / granularity.getMinutes());
         List<TimeSeries>[] results = new TimeSeriesParserService().subseries(sources, jobWindowStart, end, granularity,
-                                                                             granularityRange);
+                                                                             granularityRange, CLISettings.INTERVAL_HOURS);
         Assert.assertEquals(fillIntervals, results.length);
         for (List<TimeSeries> result : results) {
             Assert.assertEquals(result.size(), 3);
@@ -123,7 +123,7 @@ public class TimeSeriesParserServiceTest {
         checkEquals(getValuesFor(results, 11, sources.size(), granularity.getIntervalsFromSettings()), expectedMiddle);
         granularityRange = 2;
         List<TimeSeries>[] resultsForGranularityRange2 = new TimeSeriesParserService().subseries(sources, jobWindowStart, end, granularity,
-                                                                                                 granularityRange);
+                                                                             granularityRange, CLISettings.INTERVAL_HOURS);
 
         Assert.assertEquals(fillIntervals, resultsForGranularityRange2.length);
         int intervals = granularity.getIntervalsFromSettings() - granularity.getIntervalsFromSettings() % granularityRange;

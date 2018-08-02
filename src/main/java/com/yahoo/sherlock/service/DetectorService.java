@@ -78,7 +78,7 @@ public class DetectorService {
         JobMetadata jobMetadata
     ) throws SherlockException, DruidException {
         Granularity granularity = Granularity.getValue(jobMetadata.getGranularity());
-        Query query = queryService.build(jobMetadata.getQuery(), granularity, jobMetadata.getGranularityRange(), jobMetadata.getEffectiveQueryTime());
+        Query query = queryService.build(jobMetadata.getQuery(), granularity, jobMetadata.getGranularityRange(), jobMetadata.getEffectiveQueryTime(), jobMetadata.getTimeseriesRange());
         log.info("Query generation successful.");
         return detect(query, jobMetadata.getSigmaThreshold(), cluster, jobMetadata.getFrequency(), jobMetadata.getGranularityRange());
     }
@@ -161,7 +161,7 @@ public class DetectorService {
     ) throws SherlockException {
         List<TimeSeries> timeSeriesList = parserService.parseTimeSeries(druidResponse, query);
         // The value of the last timestamp expected to be returned by Druid
-        Integer expectedEnd = query.getRunTime() / 60 - query.getGranularity().getMinutes();
+        Integer expectedEnd = (query.getRunTime() / 60) - (query.getGranularity().getMinutes() * granularityRange);
         List<Anomaly> anomalies = runDetection(timeSeriesList, sigmaThreshold, config, expectedEnd, frequency, query.getGranularity(), granularityRange);
         log.info("Generated anomaly list with {} anomalies", anomalies.size());
         return anomalies;
@@ -194,7 +194,7 @@ public class DetectorService {
             egads.preRunConfigure(sigmaThreshold, granularity, granularityRange);
         }
         // Configure the detection window for anomaly detection
-        egads.configureDetectionWindow(endTimeMinutes, frequency, 170);
+        egads.configureDetectionWindow(endTimeMinutes, frequency, granularityRange);
         List<Anomaly> anomalies = new ArrayList<>(timeSeriesList.size());
         for (TimeSeries timeSeries : timeSeriesList) {
             if (timeSeries.data.isEmpty() ||
@@ -297,11 +297,11 @@ public class DetectorService {
         if (config != null) {
             egads.configureWith(config);
         }
+        egads.preRunConfigure(sigmaThreshold, query.getGranularity(), query.getGranularityRange());
+        if (detectionWindow != null) {
+            egads.configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), detectionWindow + 1);
+        }
         for (TimeSeries timeSeries : timeSeriesList) {
-            egads.preRunConfigure(sigmaThreshold, query.getGranularity(), query.getGranularityRange());
-            if (detectionWindow != null) {
-                egads.configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), detectionWindow + 1);
-            }
             results.add(egads.detectAnomaliesResult(timeSeries));
         }
         return results;

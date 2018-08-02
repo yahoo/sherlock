@@ -104,11 +104,11 @@ public class TimeSeriesParserService {
      * @param end              end of backfill job window
      * @param granularity      the data granularity
      * @param granularityRange granularity range to aggregate on
+     * @param intervals        intervals to lookback
      * @return an array of time series lists
      */
-    public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity, Integer granularityRange) {
-        long interval = granularity.getIntervalsFromSettings();
-        long singleInterval = (interval - (interval % granularityRange)) * granularity.getMinutes();
+    public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity, Integer granularityRange, int intervals) {
+        long singleInterval = (long) (intervals - (intervals % granularityRange)) * granularity.getMinutes();
         int fillIntervals = (int) ((end - start) / granularity.getMinutes());
         @SuppressWarnings("unchecked") List<TimeSeries>[] result = (List<TimeSeries>[]) new List[fillIntervals];
         if (sources.isEmpty()) {
