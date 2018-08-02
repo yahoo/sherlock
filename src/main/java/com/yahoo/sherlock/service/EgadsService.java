@@ -16,7 +16,10 @@ import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.EgadsResult;
 import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.settings.CLISettings;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.utils.EgadsUtils;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
@@ -29,6 +32,7 @@ import java.util.Properties;
  * Service class for Egads API.
  */
 @Slf4j
+@Data
 public class EgadsService {
 
     /**
@@ -46,19 +50,34 @@ public class EgadsService {
     /**
      * Method to update base window of Olympic model based on period of timeseries.
      *
-     * @param period granularity of data
+     * @param granularity granularity of data
+     * @param granularityRange granularity to aggregate on
      */
-    private void updateBaseWindow(long period) {
-        if (period / 3600 <= 1) {
-            p.setProperty("BASE_WINDOWS", "24,168");
-        } else if (period / (3600 * 24) <= 1) {
-            p.setProperty("BASE_WINDOWS", "1,7");
-        } else if (period / (3600 * 24 * 7) <= 1) {
-            p.setProperty("BASE_WINDOWS", "1,4");
-        } else {
-            p.setProperty("BASE_WINDOWS", "1,12");
+    private void updateBaseWindow(Granularity granularity, Integer granularityRange) {
+        String w1 = "1", w2 = "1";
+        switch (granularity) {
+            case MINUTE:
+                w2 = String.valueOf(Math.round(60.0f / granularityRange));
+                break;
+            case HOUR:
+                w1 = String.valueOf(Math.round(24.0f / granularityRange));
+                w2 = String.valueOf(Math.round(168.0f / granularityRange));
+                break;
+            case DAY:
+                w2 = String.valueOf(Math.round(7.0f / granularityRange));
+                break;
+            case WEEK:
+                w2 = String.valueOf(Math.round(4.0f / granularityRange));
+                break;
+            case MONTH:
+                w2 = String.valueOf(Math.round(12.0f / granularityRange));
+                p.setProperty("PERIOD", "-1");
+                break;
+            default:
+                break;
         }
-        log.debug("Updated BASE_WINDOWS: {}", p.getProperty("BASE_WINDOWS"));
+        p.setProperty("BASE_WINDOWS", w1 + Constants.COMMA_DELIMITER + w2);
+        log.info("Updated BASE_WINDOWS: {}", p.getProperty("BASE_WINDOWS"));
     }
 
     /**
@@ -71,7 +90,6 @@ public class EgadsService {
      */
     @SuppressWarnings("unchecked")
     public List<Anomaly> runEGADS(TimeSeries timeseries, Double sigmaThreshold) throws SherlockException {
-        preRunConfigure(timeseries, sigmaThreshold);
         // list to store anomalies
         List<Anomaly> anomalies;
         log.debug("Call to egads API for sigma [{}] and timeseries [{}]", sigmaThreshold, timeseries.meta.id);
@@ -91,10 +109,11 @@ public class EgadsService {
      * there is an existing properties object
      * and updates the base windows based
      * on the time series.
-     * @param timeseries the time series to analyze
      * @param sigmaThreshold the sigma threshold
+     * @param granularity timeseries granularity
+     * @param granularityRange granularity range to aggregate on
      */
-    public void preRunConfigure(TimeSeries timeseries, Double sigmaThreshold) {
+    public void preRunConfigure(Double sigmaThreshold, Granularity granularity, Integer granularityRange) {
         if (p == null) {
             log.error("Egads properties have not been set! Attempting to load from file.");
             configureFromFile();
@@ -103,7 +122,7 @@ public class EgadsService {
             }
         }
         p.setProperty("AUTO_SENSITIVITY_SD", sigmaThreshold.toString());
-        updateBaseWindow(timeseries.time(1) - timeseries.time(0));
+        updateBaseWindow(granularity, granularityRange);
     }
 
     /**

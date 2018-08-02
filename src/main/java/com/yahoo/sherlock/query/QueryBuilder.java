@@ -7,7 +7,6 @@
 package com.yahoo.sherlock.query;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
@@ -75,6 +74,16 @@ public class QueryBuilder {
     private Integer queryEndPos;
 
     /**
+     * Range of granularity to aggregate on.
+     */
+    private Integer granularityRange;
+
+    /**
+     * Boolean to indicate the query is for backfill or not.
+     */
+    private boolean isBackFillQuery = false;
+
+    /**
      * Private query constructor initializes all
      * values to invalid.
      */
@@ -86,6 +95,7 @@ public class QueryBuilder {
         intervals = -1;
         queryStartPos = null;
         queryEndPos = null;
+        granularityRange = 1;
     }
 
     /**
@@ -204,8 +214,10 @@ public class QueryBuilder {
      * @param intervals number of intervals
      * @return query builder instance
      */
-    public QueryBuilder intervals(int intervals) {
-        this.intervals = intervals;
+    public QueryBuilder intervals(Integer intervals) {
+        if (intervals != null) {
+            this.intervals = intervals;
+        }
         return this;
     }
 
@@ -226,10 +238,31 @@ public class QueryBuilder {
     }
 
     /**
+     * Set the granularityRange to aggregate on.
+     * @param granularityRange granularity range value
+     * @return query builder instance
+     */
+    public QueryBuilder granularityRange(Integer granularityRange) {
+        if (granularityRange == null || granularityRange < 1) {
+            return this;
+        }
+        this.granularityRange = granularityRange;
+        return this;
+    }
+
+    /**
      * @return the number of intervals in the query
      */
     public int getIntervals() {
         return intervals;
+    }
+
+    /**
+     * @return query builder instance
+     */
+    public QueryBuilder setIsBackFillQuery(boolean isBackFillQuery) {
+        this.isBackFillQuery = isBackFillQuery;
+        return this;
     }
 
     /**
@@ -286,7 +319,7 @@ public class QueryBuilder {
         }
         if (intervals >= 0) {
             // Prefer intervals over start time
-            startTime = granularity.subtractIntervals(endTime, intervals);
+            startTime = granularity.subtractIntervals(endTime, intervals, granularityRange);
         }
         if (!findQueryPosition()) {
             throw new SherlockException("Invalid query syntax! Check JSON brackets");
@@ -316,15 +349,10 @@ public class QueryBuilder {
      * @throws SherlockException if some parameters are missing
      */
     protected static void validateJsonObject(JsonObject object) throws SherlockException {
-        if (!(object.has(QueryConstants.POSTAGGREGATIONS) &&
-              object.has(QueryConstants.AGGREGATIONS) &&
+        if (!(object.has(QueryConstants.AGGREGATIONS) &&
               object.has(QueryConstants.INTERVALS) &&
               object.has(QueryConstants.GRANULARITY))) {
             throw new SherlockException("Druid query is missing parameters");
-        }
-        JsonElement granularityElement = object.get(QueryConstants.GRANULARITY);
-        if (!granularityElement.isJsonObject()) {
-            throw new SherlockException("Granularity is not a JSON object");
         }
     }
 
@@ -341,6 +369,21 @@ public class QueryBuilder {
             preq = preq.substring(0, preq.length() - 1);
         }
         return preq + QueryConstants.DATE_TIME_ZERO;
+    }
+
+    /**
+     * @param date zoned date time object to format
+     * @return a date formatted as a druid origin data
+     */
+    public static String asDruidOrigin(ZonedDateTime date) {
+        if (date == null) {
+            return null;
+        }
+        String preq = date.toString().split(QueryConstants.DATE_TIME_SPLIT)[0];
+        if (preq.charAt(preq.length() - 1) == 'Z') {
+            preq = preq.substring(0, preq.length() - 1);
+        }
+        return preq;
     }
 
     /**
@@ -367,15 +410,17 @@ public class QueryBuilder {
     /**
      * @param object query json object whose period to set
      * @param period granularity to set
+     * @param granularityRange granularity range to aggregate on
+     * @param startTime start time of query
      */
-    protected static void setObjectPeriod(JsonObject object, String period) {
-        JsonObject granularityObj = object.getAsJsonObject(QueryConstants.GRANULARITY);
-        granularityObj.remove(QueryConstants.PERIOD);
-        granularityObj.addProperty(QueryConstants.PERIOD, period);
-        if (granularityObj.has(QueryConstants.ORIGIN)) {
-            granularityObj.remove(QueryConstants.ORIGIN);
-        }
+    protected static void setObjectGranularity(JsonObject object, String period, Integer granularityRange, ZonedDateTime startTime, Boolean isBackFillQuery) {
+        period = isBackFillQuery ? period : period.replace("1", granularityRange.toString());
         object.remove(QueryConstants.GRANULARITY);
+        JsonObject granularityObj = new JsonObject();
+        granularityObj.addProperty(QueryConstants.TYPE, QueryConstants.PERIOD);
+        granularityObj.addProperty(QueryConstants.PERIOD, period);
+        granularityObj.addProperty(QueryConstants.TIMEZONE, QueryConstants.UTC);
+        granularityObj.addProperty(QueryConstants.ORIGIN, asDruidOrigin(startTime));
         object.add(QueryConstants.GRANULARITY, granularityObj);
     }
 
@@ -388,17 +433,25 @@ public class QueryBuilder {
         JsonObject queryObj = toJson(queryString);
         validateJsonObject(queryObj);
         setObjectInterval(queryObj, getInterval(startTime, endTime));
-        setObjectPeriod(queryObj, granularity.getValue());
-        return new Query(queryObj, getRuntime(), granularity);
+        setObjectGranularity(queryObj, granularity.getValue(), granularityRange, startTime, isBackFillQuery);
+        return new Query(queryObj, getStartTime(), getRunTime(), granularity, granularityRange);
     }
 
     /**
-     * Get the effective runtime of the query, which
+     * Get the effective runTime of the query, which
      * will be at the end time.
-     * @return runtime as a string of timestamp in seconds
+     * @return runTime timestamp value in seconds
      */
-    public Integer getRuntime() {
+    public Integer getRunTime() {
         return (int) (endTime.toInstant().toEpochMilli() / 1000L);
+    }
+
+    /**
+     * Get the effective start time of the query.
+     * @return start time timestamp value in seconds
+     */
+    public Integer getStartTime() {
+        return (int) (startTime.toInstant().toEpochMilli() / 1000L);
     }
 
 }

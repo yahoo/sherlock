@@ -92,7 +92,7 @@ public class JobExecutionService {
     public void execute(JobMetadata job) {
         log.debug("Executing job [{}]", job.getJobId());
         try {
-            List<Anomaly> anomalies = new ArrayList<>();
+            List<Anomaly> anomalies;
             List<AnomalyReport> reports = new ArrayList<>();
             job.setJobStatus(JobStatus.RUNNING.getValue());
             try {
@@ -104,8 +104,7 @@ public class JobExecutionService {
             }
             EmailService emailService = serviceFactory.newEmailServiceInstance();
             if (reports.isEmpty()) {
-                AnomalyReport report = getSingletonReport(job, anomalies.size() > 0 ? anomalies.get(0) : null);
-                report.setReportQueryEndTime(job.getReportNominalTime());
+                AnomalyReport report = getSingletonReport(job);
                 reports.add(report);
                 if (report.getStatus().equals(Constants.ERROR) && CLISettings.ENABLE_EMAIL) {
                     if (!emailService.sendEmail(CLISettings.FAILURE_EMAIL, CLISettings.FAILURE_EMAIL, reports)) {
@@ -133,7 +132,7 @@ public class JobExecutionService {
      * @param job metadata of the job to backfill
      */
     public void backfillJobFromIntervalEnd(JobMetadata job) {
-        Integer timestampMinutes = job.getEffectiveQueryTime();
+        Integer timestampMinutes = job.getReportNominalTime();
         ZonedDateTime startTime = TimeUtils.zonedDateTimeFromMinutes(timestampMinutes);
         try {
             performBackfillJob(job, startTime, null);
@@ -161,19 +160,21 @@ public class JobExecutionService {
         if (endTime == null) {
             endTime = ZonedDateTime.now(ZoneOffset.UTC).minusHours(job.getHoursOfLag());
         }
-        Integer intervalEndTime = granularity.getEndTimeForInterval(endTime);
-        Integer jobWindowStart = granularity.getEndTimeForInterval(startTime);
-        log.info("Job window start: {} , end : {}", jobWindowStart, intervalEndTime);
+        Integer intervalEndTime = granularity.getEndTimeForInterval(endTime) + granularity.getMinutes() * (job.getGranularityRange() - 1);
+        Integer jobWindowStart = granularity.getEndTimeForInterval(startTime) + granularity.getMinutes() * (job.getGranularityRange() - 1);
         if ((intervalEndTime - jobWindowStart) < granularity.getMinutes()) {
             throw new SherlockException("Backfill interval cannot be smaller than granularity!");
         }
-        Integer intervalStartTime = jobWindowStart
-                                    - (granularity.getIntervalsFromSettings() * granularity.getMinutes());
+        int intervals = job.getTimeseriesRange() == null ? granularity.getIntervalsFromSettings() : job.getTimeseriesRange();
+        ZonedDateTime intervalStartTime = granularity.subtractIntervals(TimeUtils.zonedDateTimeFromMinutes(jobWindowStart), intervals, job.getGranularityRange());
+        log.info("Querying druid starting from {}", intervalStartTime.toString());
         Query query = QueryBuilder.start()
             .startAt(intervalStartTime)
             .endAt(intervalEndTime)
             .queryString(job.getUserQuery())
             .granularity(granularity)
+            .granularityRange(job.getGranularityRange())
+            .setIsBackFillQuery(true)
             .build();
         try {
             DruidCluster cluster = druidClusterAccessor.getDruidCluster(job.getClusterId());
@@ -181,7 +182,8 @@ public class JobExecutionService {
                 job, cluster, query,
                 jobWindowStart,
                 intervalEndTime,
-                granularity
+                granularity,
+                intervals
             );
         } catch (IOException | InterruptedException | ClusterNotFoundException | DruidException e) {
             log.info("Error occurred during backfill execution!", e);
@@ -194,12 +196,13 @@ public class JobExecutionService {
      * then at each incremented granularity after that
      * date a certain number of times.
      *
-     * @param job         the job details
-     * @param cluster     the druid cluster for the job
-     * @param query       druid query to get the data
-     * @param start       start of backfill job window
-     * @param end         end of backfill job window
-     * @param granularity the data granularity
+     * @param job              the job details
+     * @param cluster          the druid cluster for the job
+     * @param query            druid query to get the data
+     * @param start            start of backfill job window
+     * @param end              end of backfill job window
+     * @param granularity      the data granularity
+     * @param intervals        intervals to lookback
      * @throws SherlockException    if an error occurs during processing
      * @throws DruidException       if an error occurs during quering druid
      * @throws InterruptedException if an error occurs in the thread
@@ -211,7 +214,8 @@ public class JobExecutionService {
         Query query,
         Integer start,
         Integer end,
-        Granularity granularity
+        Granularity granularity,
+        int intervals
     ) throws SherlockException, DruidException, InterruptedException, IOException {
         log.info("Performing backfill for job [{}] for time range ({}, {})", job.getJobId(),
                  TimeUtils.getTimeFromSeconds(start * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS),
@@ -221,7 +225,7 @@ public class JobExecutionService {
         TimeSeriesParserService parserService = serviceFactory.newTimeSeriesParserServiceInstance();
         JsonArray druidResponse = detectorService.queryDruid(query, cluster);
         List<TimeSeries> sourceSeries = parserService.parseTimeSeries(druidResponse, query);
-        List<TimeSeries>[] fillSeriesList = parserService.subseries(sourceSeries, start, end, granularity);
+        List<TimeSeries>[] fillSeriesList = parserService.subseries(sourceSeries, start, end, granularity, query.getGranularityRange(), intervals);
         List<Thread> threads = new ArrayList<>(fillSeriesList.length);
         List<EgadsTask> tasks = new ArrayList<>(fillSeriesList.length);
         Integer singleInterval = granularity.getMinutes();
@@ -281,14 +285,7 @@ public class JobExecutionService {
         // Detect the anomalies in the timeseries
         try {
             DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
-            return detectorService.detect(
-                cluster,
-                job.getQuery(),
-                Granularity.getValue(job.getGranularity()),
-                job.getSigmaThreshold(),
-                job.getEffectiveQueryTime(),
-                job.getFrequency()
-            );
+            return detectorService.detect(cluster, job);
         } catch (Exception e) {
             log.error("Error during job execution [{}]", job.getJobId(), e);
             throw new SherlockException(e.getMessage(), e);
@@ -334,7 +331,8 @@ public class JobExecutionService {
                 job.getSigmaThreshold(),
                 cluster,
                 config,
-                job.getFrequency()
+                job.getFrequency(),
+                job.getGranularityRange()
             );
         } catch (Exception e) {
             log.error("Error during job execution [{}]", job.getJobId(), e);
@@ -365,18 +363,25 @@ public class JobExecutionService {
      * @return a list of reports, which may be empty
      */
     public synchronized List<AnomalyReport> getReports(List<Anomaly> anomalies, JobMetadata job) {
-        // if no data was returned from druid datasource
-        // set the job status to 'NODATA'
-        if (anomalies.size() > 0 && anomalies.get(0).metricMetaData.source.equals(JobStatus.NODATA.getValue())) {
-            job.setJobStatus(JobStatus.NODATA.getValue());
+        if (anomalies.isEmpty()) {
             return Lists.newArrayList(0);
         }
+        boolean allReportWithNoData = true;
         List<AnomalyReport> reports = new ArrayList<>(anomalies.size());
         for (Anomaly anomaly : anomalies) {
+            if (!anomaly.metricMetaData.name.equals(JobStatus.NODATA.getValue())) {
+                allReportWithNoData = false;
+            }
             AnomalyReport report = AnomalyReport.createReport(anomaly, job);
             if (report.isHasAnomaly()) {
                 reports.add(report);
             }
+        }
+        // if no data was returned from druid datasource
+        // set the job status to 'NODATA'
+        if (allReportWithNoData) {
+            job.setJobStatus(JobStatus.NODATA.getValue());
+            return Lists.newArrayList(0);
         }
         return reports;
     }
@@ -385,29 +390,21 @@ public class JobExecutionService {
      * Get a single report, which happens if no anomalies were detected
      * or if the job errored.
      *
-     * @param job     the detection job
-     * @param anomaly an anomaly if there is one
-     * @return a SUCCESS or ERROR report
+     * @param job the detection job
+     * @return a SUCCESS or ERROR or NODATA report
      */
-    public synchronized AnomalyReport getSingletonReport(JobMetadata job, @Nullable Anomaly anomaly) {
+    public synchronized AnomalyReport getSingletonReport(JobMetadata job) {
         AnomalyReport report = new AnomalyReport();
         report.setJobFrequency(job.getFrequency());
         report.setJobId(job.getJobId());
-        report.setUniqueId(null);
         report.setQueryURL(job.getUrl());
         report.setReportQueryEndTime(job.getReportNominalTime());
-        if (anomaly != null) {
-            report.setUniqueId(anomaly.metricMetaData.id);
-            report.setMetricName(anomaly.metricMetaData.name);
-            report.setGroupByFilters(anomaly.metricMetaData.source);
-        } else {
-            UUID uuid = UUID.randomUUID();
-            report.setUniqueId(uuid.toString());
-        }
+        UUID uuid = UUID.randomUUID();
+        report.setUniqueId(uuid.toString());
         if (JobStatus.ERROR.getValue().equals(job.getJobStatus())) {
             log.info("Job [{}] completed with error", job.getJobId());
             report.setStatus(Constants.ERROR);
-        } else if (anomaly != null && anomaly.metricMetaData.source.equals(JobStatus.NODATA.getValue())) {
+        } else if (JobStatus.NODATA.getValue().equals(job.getJobStatus())) {
             log.info("No data returned from druid for Job [{}]", job.getJobId());
             report.setStatus(Constants.NODATA);
         } else {

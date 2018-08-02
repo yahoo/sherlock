@@ -8,6 +8,7 @@ package com.yahoo.sherlock.model;
 
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.service.HttpService;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.Attribute;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,10 @@ public class DruidCluster implements Serializable {
     /** An optional description for the Druid cluster. */
     @Attribute
     private String clusterDescription;
+
+    /** Variable to store http or https for the druid broker url.*/
+    @Attribute
+    private String protocol = Constants.HTTP;
 
     /** Druid cluster broker host name. */
     @Attribute
@@ -166,6 +171,7 @@ public class DruidCluster implements Serializable {
         setBrokerPort(newCluster.getBrokerPort());
         setBrokerEndpoint(newCluster.getBrokerEndpoint());
         setHoursOfLag(newCluster.getHoursOfLag());
+        setProtocol(newCluster.getProtocol());
     }
 
     /**
@@ -173,7 +179,7 @@ public class DruidCluster implements Serializable {
      * @return base broker URL
      */
     public String getBaseUrl() {
-        return String.format("http://%s:%s/", brokerHost, brokerPort);
+        return String.format("%s://%s:%s/", protocol, brokerHost, brokerPort);
     }
 
     /**

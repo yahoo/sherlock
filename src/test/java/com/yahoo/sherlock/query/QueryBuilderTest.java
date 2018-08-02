@@ -4,16 +4,21 @@ import com.google.gson.JsonObject;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.settings.QueryConstants;
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.utils.TimeUtils;
 
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class QueryBuilderTest {
@@ -85,29 +90,55 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testValidateJsonObject() {
+    public void testValidateJsonObjectException() {
         JsonObject o = new JsonObject();
         try {
             QueryBuilder.validateJsonObject(o);
         } catch (SherlockException e) {
             assertEquals(e.getMessage(), "Druid query is missing parameters");
-            o.addProperty(QueryConstants.POSTAGGREGATIONS, "");
-            o.addProperty(QueryConstants.AGGREGATIONS, "");
-            o.addProperty(QueryConstants.INTERVALS, "");
-            o.addProperty(QueryConstants.GRANULARITY, "");
-            try {
-                QueryBuilder.validateJsonObject(o);
-            } catch (SherlockException j) {
-                assertEquals(j.getMessage(), "Granularity is not a JSON object");
-                return;
-            }
+            return;
         }
         fail();
     }
 
     @Test
+    public void testValidateJsonObject() throws SherlockException {
+        JsonObject o = new JsonObject();
+        o.addProperty(QueryConstants.AGGREGATIONS, "");
+        o.addProperty(QueryConstants.INTERVALS, "");
+        o.addProperty(QueryConstants.GRANULARITY, "");
+        QueryBuilder.validateJsonObject(o);
+    }
+
+    @Test
     public void testAsDruidDateNull() {
         assertNull(QueryBuilder.asDruidDate(null));
+    }
+
+    @Test
+    public void testBuild() throws IOException, SherlockException {
+        String expectedStart = "2018-04-05T00:00";
+        String expectedEnd = "2018-04-07T00:00";
+        String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_2.json")));
+        Query query = QueryBuilder.start()
+            .endAt(TimeUtils.parseDateTime(expectedEnd))
+            .granularity(Granularity.DAY)
+            .granularityRange(1)
+            .queryString(queryString)
+            .intervals(2)
+            .build();
+        String expectedInterval = QueryBuilder.getInterval(TimeUtils.parseDateTime(expectedStart), TimeUtils.parseDateTime(expectedEnd));
+        String expectedOrigin = QueryBuilder.asDruidOrigin(TimeUtils.parseDateTime(expectedStart));
+        JsonObject granularityJsonObject = query.getQueryJsonObject().getAsJsonObject(QueryConstants.GRANULARITY);
+        assertEquals(query.getQueryJsonObject().getAsJsonPrimitive(QueryConstants.INTERVALS).getAsString(), expectedInterval);
+        assertTrue(granularityJsonObject.has(QueryConstants.PERIOD));
+        assertTrue(granularityJsonObject.getAsJsonPrimitive(QueryConstants.PERIOD).getAsString().equals(Granularity.DAY.getValue()));
+        assertTrue(granularityJsonObject.has(QueryConstants.TYPE));
+        assertTrue(granularityJsonObject.getAsJsonPrimitive(QueryConstants.TYPE).getAsString().equals(QueryConstants.PERIOD));
+        assertTrue(granularityJsonObject.has(QueryConstants.TIMEZONE));
+        assertTrue(granularityJsonObject.getAsJsonPrimitive(QueryConstants.TIMEZONE).getAsString().equals(QueryConstants.UTC));
+        assertTrue(granularityJsonObject.has(QueryConstants.ORIGIN));
+        assertTrue(granularityJsonObject.getAsJsonPrimitive(QueryConstants.ORIGIN).getAsString().equals(expectedOrigin));
     }
 
 }

@@ -147,6 +147,26 @@ public class TimeUtils {
     }
 
     /**
+     * Method to convert timestamp in seconds to timestamp to minutes.
+     *
+     * @param seconds timestamp in seconds
+     * @return timestamp to minutes
+     */
+    public static Long getTimestampInMinutesFromSeconds(Long seconds) {
+        return seconds / 60;
+    }
+
+    /**
+     * Method to convert timestamp in minutes to timestamp in seconds.
+     *
+     * @param minutes timestamp in minutes
+     * @return timestamp in seconds
+     */
+    public static Long getTimestampInSecondsFromMinutes(Long minutes) {
+        return minutes * 60;
+    }
+
+    /**
      * Parses the date time as a zoned date time
      * from a {@code datetime-local} input element.
      *
@@ -193,5 +213,29 @@ public class TimeUtils {
      */
     public static String getDateTimestamp(ZonedDateTime date) {
         return String.valueOf(zonedDateTimestamp(date));
+    }
+
+    /**
+     * Method to add month in given timestamp.
+     * @param timestamp timestamp in minutes
+     * @param n number of months to add
+     * @return timestamp with added months
+     */
+    public static Integer addMonth(Integer timestamp, int n) {
+        ZonedDateTime zonedDateTime = TimeUtils.zonedDateTimeFromMinutes(timestamp);
+        zonedDateTime = zonedDateTime.plusMonths(n);
+        return (int) TimeUtils.zonedDateTimestamp(zonedDateTime) / 60;
+    }
+
+    /**
+     * Method to subtract month from given timestamp.
+     * @param timestamp timestamp in minutes
+     * @param n number of months to subtract
+     * @return timestamp with subtracted months
+     */
+    public static Integer subtractMonth(Integer timestamp, int n) {
+        ZonedDateTime zonedDateTime = TimeUtils.zonedDateTimeFromMinutes(timestamp);
+        zonedDateTime = zonedDateTime.minusMonths(n);
+        return (int) TimeUtils.zonedDateTimestamp(zonedDateTime) / 60;
     }
 }

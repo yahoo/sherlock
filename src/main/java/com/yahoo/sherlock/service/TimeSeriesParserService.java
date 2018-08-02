@@ -8,6 +8,7 @@ package com.yahoo.sherlock.service;
 
 import com.google.gson.JsonArray;
 import com.yahoo.sherlock.query.JsonTimeSeries;
+import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.utils.EgadsUtils;
 import com.yahoo.egads.data.MetricMeta;
 import com.yahoo.egads.data.TimeSeries;
@@ -63,19 +64,32 @@ public class TimeSeriesParserService {
             jsonTimeSeries.getUniqueTimeSeriesMap()
                 .values()
                 .stream()
-                .filter(isValidTimeSeries())
+                .filter(isValidTimeSeries(query))
                 .forEach(timeSeriesList::add);                      // get the list of timeseries
         }
         return timeSeriesList;
     }
 
     /**
-     * "A temporary" filter for bad timeseries. Will make it robust in future. //TODO
-     *
+     * Filter for bad timeseries.
+     * @param query input Query for timeseries
      * @return true if valid timeseries else false
      */
-    public Predicate<TimeSeries> isValidTimeSeries() {
-        return x -> x.size() >= 7;
+    public Predicate<TimeSeries> isValidTimeSeries(Query query) {
+        return timeSeries -> (timeSeries.startTime() == query.getStartTime()) && isCompleteEnough(timeSeries.size(), query);
+    }
+
+    /**
+     * Checks the completeness of timeseries(at least 60% of datapoints).
+     * @param size size of the timeseries
+     * @param query query
+     * @return true if timeseries passes completeness check else false
+     */
+    public boolean isCompleteEnough(int size, Query query) {
+        float completeness = CLISettings.TIMESERIES_COMPLETENESS / 100.0f;
+        float interval = ((query.getRunTime() - query.getStartTime()) / 60.0f);
+        int totalDatapoints =  Math.round(interval / (query.getGranularity().getMinutes() * query.getGranularityRange()));
+        return (size >= totalDatapoints * completeness);
     }
 
     /**
@@ -85,14 +99,16 @@ public class TimeSeriesParserService {
      * is used to parition Druid query results into time series for each
      * backfill period.
      *
-     * @param sources     the source time series
-     * @param start       start of backfill job window
-     * @param end         end of backfill job window
-     * @param granularity the data granularity
+     * @param sources          the source time series
+     * @param start            start of backfill job window
+     * @param end              end of backfill job window
+     * @param granularity      the data granularity
+     * @param granularityRange granularity range to aggregate on
+     * @param intervals        intervals to lookback
      * @return an array of time series lists
      */
-    public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity) {
-        long singleInterval = granularity.getMinutes() * granularity.getIntervalsFromSettings();
+    public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity, Integer granularityRange, int intervals) {
+        long singleInterval = (long) (intervals - (intervals % granularityRange)) * granularity.getMinutes();
         int fillIntervals = (int) ((end - start) / granularity.getMinutes());
         @SuppressWarnings("unchecked") List<TimeSeries>[] result = (List<TimeSeries>[]) new List[fillIntervals];
         if (sources.isEmpty()) {
@@ -125,8 +141,7 @@ public class TimeSeriesParserService {
                             });
                     return subTimeseries;
                 })
-                .filter(isValidTimeSeries())
-                .map(timeSeries ->  EgadsUtils.fillMissingData(timeSeries, 1, 1))
+                .map(timeSeries ->  EgadsUtils.fillMissingData(timeSeries, granularityRange, 1))
                 .collect(Collectors.toList());
             result[intervalIndex] = subTimeseriesList;
             intervalIndex += 1;

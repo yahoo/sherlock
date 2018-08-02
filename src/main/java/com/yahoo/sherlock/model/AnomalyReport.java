@@ -7,6 +7,8 @@
 package com.yahoo.sherlock.model;
 
 import com.yahoo.egads.data.Anomaly;
+import com.yahoo.sherlock.enums.JobStatus;
+import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.Attribute;
 import com.yahoo.sherlock.utils.NumberUtils;
@@ -49,7 +51,7 @@ public class AnomalyReport implements Serializable {
             String.valueOf(job.getSigmaThreshold()),
             job.getTestName()
         );
-        report.setHasAnomaly(anomaly.intervals.size() > 0);
+        report.setHasAnomaly(anomaly.intervals.size() > 0 || JobStatus.NODATA.getValue().equals(anomaly.metricMetaData.name));
         report.setAnomalyTimestampsFromInterval(anomaly.intervals);
         return report;
     }
@@ -107,8 +109,8 @@ public class AnomalyReport implements Serializable {
     @Attribute
     private String deviationString;
 
-    @Attribute
     /** Anomaly test name associated with this report. **/
+    @Attribute
     private String testName;
 
     /** Whether this anomaly report contains an anomaly. */
@@ -171,20 +173,29 @@ public class AnomalyReport implements Serializable {
      * @return readable timestamps separated by new lines
      */
     public String getFormattedAnomalyTimestamps() {
+        if (anomalyTimestamps == null) {
+            return "";
+        }
         String[] anomalyTimes = anomalyTimestamps.split(Constants.COMMA_DELIMITER);
         StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
         for (String anomalyTime : anomalyTimes) {
             String[] timeAndValueSplit = anomalyTime.split(Constants.AT_DELIMITER);
             String[] interval = timeAndValueSplit[0].split(Constants.COLON_DELIMITER);
-            if (!NumberUtils.isInteger(interval[0])) {
+            String intervalStart = interval[0];
+            String intervalEnd = interval.length > 1 ? interval[1] : null;
+            if (!NumberUtils.isInteger(intervalStart)) {
                 continue;
             }
-            long startSeconds = TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(interval[0]));
+            long startSeconds = jobFrequency.equals(Triggers.MINUTE.toString())
+                                ? TimeUtils.getTimestampInSecondsFromMinutes(Long.parseLong(intervalStart))
+                                : TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(intervalStart));
             String startTime = TimeUtils.getTimeFromSeconds(startSeconds, Constants.TIMESTAMP_FORMAT);
-            if (interval.length == 1) {
+            if (intervalEnd == null) {
                 joiner.add(startTime);
-            } else if (NumberUtils.isInteger(interval[1])) {
-                long endSeconds = TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(interval[1]));
+            } else if (NumberUtils.isInteger(intervalEnd)) {
+                long endSeconds = jobFrequency.equals(Triggers.MINUTE.toString())
+                                  ? TimeUtils.getTimestampInSecondsFromMinutes(Long.parseLong(intervalEnd))
+                                  : TimeUtils.getTimestampInSecondsFromHours(Long.parseLong(intervalEnd));
                 String endTime = TimeUtils.getTimeFromSeconds(endSeconds, Constants.TIMESTAMP_FORMAT);
                 joiner.add(String.format("%s to %s", startTime, endTime));
             }
@@ -206,9 +217,7 @@ public class AnomalyReport implements Serializable {
      * as a list of Long pairs. If there is no end time,
      * i.e. the end time is the same as the start time,
      * then the returned pair second value is zero.
-     * <p>
-     * We will use integer since the value is in hours
-     * since epoch.
+     *
      * @return a list of timestamp pairs
      */
     public List<int[]> getAnomalyTimestampsHours() {
@@ -243,16 +252,16 @@ public class AnomalyReport implements Serializable {
      * Sets the anomaly timestamps string from an interval
      * that describes the start and end time in seconds since epoch.
      * This method will set the timestamp string as a comma
-     * delimited list of hours since epoch.
+     * delimited list of hours/minutes since epoch.
      * @param intervals the intervals to set
      */
     public void setAnomalyTimestampsFromInterval(Anomaly.IntervalSequence intervals) {
         StringJoiner joiner = new StringJoiner(Constants.COMMA_DELIMITER);
         for (Anomaly.Interval interval : intervals) {
-            long startHours = TimeUtils.getTimestampInHoursFromSeconds(interval.startTime);
+            long startHours = jobFrequency.equals(Triggers.MINUTE.toString()) ? TimeUtils.getTimestampInMinutesFromSeconds(interval.startTime) : TimeUtils.getTimestampInHoursFromSeconds(interval.startTime);
             long endHours = 0;
             if (interval.endTime != null && interval.endTime != 0) {
-                endHours = TimeUtils.getTimestampInHoursFromSeconds(interval.endTime);
+                endHours = jobFrequency.equals(Triggers.MINUTE.toString()) ? TimeUtils.getTimestampInMinutesFromSeconds(interval.endTime) : TimeUtils.getTimestampInHoursFromSeconds(interval.endTime);
             }
             String intervalStr;
             if (endHours == 0 || startHours == endHours) {
@@ -334,6 +343,9 @@ public class AnomalyReport implements Serializable {
      * @return html string with deviation values
      */
     public String getFormattedDeviation() {
+        if (anomalyTimestamps == null) {
+            return "";
+        }
         String[] anomalyTimes = anomalyTimestamps.split(Constants.COMMA_DELIMITER);
         StringJoiner joiner = new StringJoiner(Constants.HTML_LINEBREAK_DELIMITER);
         for (String anomalyTime : anomalyTimes) {

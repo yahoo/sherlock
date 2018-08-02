@@ -60,6 +60,12 @@ public class CLISettings {
     public static int PORT = 4080;
 
     /**
+     * Number of minutes to lookback.
+     */
+    @Parameter(names = "--interval-minutes", description = "training period for egads model for minute granularity. (default 240)")
+    public static int INTERVAL_MINUTES = 180;
+
+    /**
      * Number of hours to lookback.
      */
     @Parameter(names = "--interval-hours", description = "training period for egads model for hour granularity. (default 672)")
@@ -174,6 +180,12 @@ public class CLISettings {
      */
     @Parameter(names = "--debug-mode", description = "Set to true to enable debug mode")
     public static boolean DEBUG_MODE = false;
+
+    /**
+     * The Project name to display on UI.
+     */
+    @Parameter(names = "--timeseries-completeness", description = "This defines minimum fraction of datapoints needed in the timeseries to consider it as a valid timeseries o/w sherlock ignores such timeseries. (default value 60 i.e. 0.6 in fraction)")
+    public static int TIMESERIES_COMPLETENESS = 60;
 
     /**
      * The Project name to display on UI.

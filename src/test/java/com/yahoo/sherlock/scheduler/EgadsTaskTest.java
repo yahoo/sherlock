@@ -38,8 +38,8 @@ public class EgadsTaskTest {
         DetectorService ds = mock(DetectorService.class);
         JobExecutionService jes = mock(JobExecutionService.class);
         EgadsTask et = new EgadsTask(j, runtime, tslist, ds, jes);
-        when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString())).thenThrow(new SherlockException());
-        when(jes.getSingletonReport(any(), any())).thenReturn(ar);
+        when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(), anyInt())).thenThrow(new SherlockException());
+        when(jes.getSingletonReport(any())).thenReturn(ar);
         et.run();
         assertEquals(et.getReports().get(0).getStatus(), Constants.ERROR);
     }
@@ -57,9 +57,9 @@ public class EgadsTaskTest {
         JobExecutionService jes = mock(JobExecutionService.class);
         EgadsTask et = new EgadsTask(j, runtime, tslist, ds, jes);
         List<AnomalyReport> arlist = Lists.newArrayList(new AnomalyReport(), new AnomalyReport(), new AnomalyReport());
-        when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString())).thenReturn(new ArrayList<>());
+        when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(), anyInt())).thenReturn(new ArrayList<>());
         when(jes.getReports(any(), any())).thenReturn(arlist);
-        when(jes.getSingletonReport(any(), any())).thenReturn(new AnomalyReport());
+        when(jes.getSingletonReport(any())).thenReturn(new AnomalyReport());
         when(jes.getAnomalyReportAccessor()).thenReturn(ara);
         doNothing().when(ara).deleteAnomalyReportsForJobAtTime(anyString(), anyString(), anyString());
         et.run();

@@ -51,6 +51,9 @@ public class UserQuery {
     /** Email id of the owner. */
     private String ownerEmail;
 
+    /** Query end time for custom time-range. */
+    private String queryEndTimeText;
+
     /** Granularity of data. */
     private String granularity;
 
@@ -65,6 +68,21 @@ public class UserQuery {
 
     /** Id of the associated cluster for this job. */
     private Integer clusterId;
+
+    /** Timeseries range to query in druid. */
+    private Integer timeseriesRange;
+
+    /** Detection window for Instant anomaly job.*/
+    private Integer detectionWindow;
+
+    /** Granularity range to aggregate on. */
+    private Integer granularityRange;
+
+    /** Timeseries model. */
+    private String tsModels;
+
+    /** Anomaly detection model. */
+    private String adModels;
 
     /**
      * Removing duplicate emails and return set of comma separated emails.

@@ -14,6 +14,7 @@ import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.EgadsResult;
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.model.DruidCluster;
+import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.egads.data.Anomaly;
@@ -51,6 +52,10 @@ public class DetectorService {
      */
     private EgadsService egads = new EgadsService();
 
+    /**
+     * Constant for AD_MODEL egads property.
+     */
+    private static final String AD_MODEL = "AD_MODEL";
 
     /**
      * Empty constructor.
@@ -62,27 +67,20 @@ public class DetectorService {
      * Method to detect anomalies.
      * This method handles the control/data flow between the components of detection system.
      *
-     * @param cluster         the Druid query to issue the query
-     * @param userQuery       parsed user input
-     * @param granularity     granularity specified by user
-     * @param sigmaThreshold  Threshold for standard deviation
-     * @param intervalEndTime End time of druid query interval
-     * @param frequency       Frequency of the job
+     * @param cluster           the Druid query to issue the query
+     * @param jobMetadata       job metadata
      * @return list of anomalies
      * @throws SherlockException exeption thrown while runnig the anomaly detector components
      * @throws DruidException    if an error querying druid occurs
      */
     public List<Anomaly> detect(
-            DruidCluster cluster,
-            String userQuery,
-            Granularity granularity,
-            Double sigmaThreshold,
-            Integer intervalEndTime,
-            String frequency
+        DruidCluster cluster,
+        JobMetadata jobMetadata
     ) throws SherlockException, DruidException {
-        Query query = queryService.build(userQuery, granularity, intervalEndTime);
+        Granularity granularity = Granularity.getValue(jobMetadata.getGranularity());
+        Query query = queryService.build(jobMetadata.getQuery(), granularity, jobMetadata.getGranularityRange(), jobMetadata.getEffectiveQueryTime(), jobMetadata.getTimeseriesRange());
         log.info("Query generation successful.");
-        return detect(query, sigmaThreshold, cluster, frequency);
+        return detect(query, jobMetadata.getSigmaThreshold(), cluster, jobMetadata.getFrequency(), jobMetadata.getGranularityRange());
     }
 
     /**
@@ -124,29 +122,32 @@ public class DetectorService {
     /**
      * Run the detection job on a predefined query.
      *
-     * @param druidResponse  the response from druid
-     * @param query          the query that was used
-     * @param sigmaThreshold the job sigma threshold
+     * @param druidResponse    the response from druid
+     * @param query            the query that was used
+     * @param sigmaThreshold   the job sigma threshold
+     * @param granularityRange granularity range to aggregate on
      * @return the anomaly list from egads
      * @throws SherlockException if an error occurs during analysis
      */
     public List<Anomaly> runDetection(
-            JsonArray druidResponse,
-            Query query,
-            Double sigmaThreshold
+        JsonArray druidResponse,
+        Query query,
+        Double sigmaThreshold,
+        Integer granularityRange
     ) throws SherlockException {
-        return runDetection(druidResponse, query, sigmaThreshold, null, null);
+        return runDetection(druidResponse, query, sigmaThreshold, null, null, granularityRange);
     }
 
     /**
      * Run detection with a provided EGADS configuration and
      * Druid query.
      *
-     * @param druidResponse  response from Druid
-     * @param query          the Druid query
-     * @param sigmaThreshold job sigma threshold
-     * @param config         EGADS configuration
-     * @param frequency      Frequency of the job
+     * @param druidResponse    response from Druid
+     * @param query            the Druid query
+     * @param sigmaThreshold   job sigma threshold
+     * @param config           EGADS configuration
+     * @param frequency        frequency of the job
+     * @param granularityRange granularity range to aggregate on
      * @return anomalies from detection
      * @throws SherlockException if an error occurs during analysis
      */
@@ -155,12 +156,13 @@ public class DetectorService {
             Query query,
             Double sigmaThreshold,
             EgadsConfig config,
-            String frequency
+            String frequency,
+            Integer granularityRange
     ) throws SherlockException {
         List<TimeSeries> timeSeriesList = parserService.parseTimeSeries(druidResponse, query);
         // The value of the last timestamp expected to be returned by Druid
-        Integer expectedEnd = query.getRuntime() / 60 - query.getGranularity().getMinutes();
-        List<Anomaly> anomalies = runDetection(timeSeriesList, sigmaThreshold, config, expectedEnd, frequency);
+        Integer expectedEnd = (query.getRunTime() / 60) - (query.getGranularity().getMinutes() * granularityRange);
+        List<Anomaly> anomalies = runDetection(timeSeriesList, sigmaThreshold, config, expectedEnd, frequency, query.getGranularity(), granularityRange);
         log.info("Generated anomaly list with {} anomalies", anomalies.size());
         return anomalies;
     }
@@ -168,11 +170,12 @@ public class DetectorService {
     /**
      * Run detection on a list of time series.
      *
-     * @param timeSeriesList time series to analyze
-     * @param sigmaThreshold job sigma threshold
-     * @param egadsConfig    the EGADS configuration
-     * @param endTimeMinutes the expected last data point time in minutes
-     * @param frequency      Frequency of the job
+     * @param timeSeriesList   time series to analyze
+     * @param sigmaThreshold   job sigma threshold
+     * @param egadsConfig      the EGADS configuration
+     * @param endTimeMinutes   the expected last data point time in minutes
+     * @param frequency        frequency of the job
+     * @param granularityRange granularity range to aggregate on
      * @return list of anomalies from the detection job
      * @throws SherlockException if an error occurs during analysis
      */
@@ -181,19 +184,21 @@ public class DetectorService {
             Double sigmaThreshold,
             EgadsConfig egadsConfig,
             Integer endTimeMinutes,
-            String frequency
+            String frequency,
+            Granularity granularity,
+            Integer granularityRange
     ) throws SherlockException {
         if (egadsConfig != null) {
             egads.configureWith(egadsConfig);
         } else {
-            egads.configureFromFile();
+            egads.preRunConfigure(sigmaThreshold, granularity, granularityRange);
         }
         // Configure the detection window for anomaly detection
-        egads.configureDetectionWindow(endTimeMinutes, frequency, 1);
+        egads.configureDetectionWindow(endTimeMinutes, frequency, granularityRange);
         List<Anomaly> anomalies = new ArrayList<>(timeSeriesList.size());
         for (TimeSeries timeSeries : timeSeriesList) {
             if (timeSeries.data.isEmpty() ||
-                    timeSeries.data.get(timeSeries.data.size() - 1).time != endTimeMinutes * 60L) {
+                timeSeries.data.get(timeSeries.data.size() - 1).time != endTimeMinutes * 60L) {
                 anomalies.add(getNoDataAnomaly(timeSeries));
             } else {
                 anomalies.addAll(egads.runEGADS(timeSeries, sigmaThreshold));
@@ -206,11 +211,13 @@ public class DetectorService {
      * @param timeSeries time series for which to generate empty anomaly
      * @return an anomaly that represents no data
      */
-    protected static Anomaly getNoDataAnomaly(TimeSeries timeSeries) {
+    private Anomaly getNoDataAnomaly(TimeSeries timeSeries) {
         Anomaly anomaly = new Anomaly();
-        anomaly.metricMetaData.source = JobStatus.NODATA.getValue();
+        anomaly.metricMetaData.name = JobStatus.NODATA.getValue();
+        anomaly.metricMetaData.source = timeSeries.meta.source;
         anomaly.id = timeSeries.meta.id;
         anomaly.intervals = new Anomaly.IntervalSequence();
+        anomaly.modelName = egads.getP().getProperty(AD_MODEL);
         return anomaly;
     }
 
@@ -218,10 +225,11 @@ public class DetectorService {
      * Perform a detection job with a specified query
      * on a cluster.
      *
-     * @param query          the query to use
-     * @param sigmaThreshold the sigma threshold for the detection
-     * @param cluster        the cluster to query
-     * @param frequency      Frequency of the job
+     * @param query            the query to use
+     * @param sigmaThreshold   the sigma threshold for the detection
+     * @param cluster          the cluster to query
+     * @param frequency        frequency of the job
+     * @param granularityRange granularity range to aggregate on
      * @return a list of anomalies
      * @throws SherlockException if an error occurs during detection
      * @throws DruidException    if an error occurs while contacting Druid
@@ -230,19 +238,21 @@ public class DetectorService {
             Query query,
             Double sigmaThreshold,
             DruidCluster cluster,
-            String frequency
+            String frequency,
+            Integer granularityRange
     ) throws SherlockException, DruidException {
-        return detect(query, sigmaThreshold, cluster, null, frequency);
+        return detect(query, sigmaThreshold, cluster, null, frequency, granularityRange);
     }
 
     /**
      * Run a detection job with a provided EGADS configuration.
      *
-     * @param query          Druid query to use
-     * @param sigmaThreshold Job sigma threshold
-     * @param cluster        Druid cluster to query
-     * @param config         EGADS configuration
-     * @param frequency      Frequency of the job
+     * @param query            Druid query to use
+     * @param sigmaThreshold   Job sigma threshold
+     * @param cluster          Druid cluster to query
+     * @param config           EGADS configuration
+     * @param frequency        Frequency of the job
+     * @param granularityRange granularity range to aggregate on
      * @return list of anomalies from the detection
      * @throws SherlockException if an error occurs during analysis
      * @throws DruidException    if an error occurs while contacting Druid
@@ -252,21 +262,23 @@ public class DetectorService {
             Double sigmaThreshold,
             DruidCluster cluster,
             EgadsConfig config,
-            String frequency
+            String frequency,
+            Integer granularityRange
     ) throws SherlockException, DruidException {
         checkDatasource(query, cluster);
         JsonArray druidResponse = queryDruid(query, cluster);
-        return runDetection(druidResponse, query, sigmaThreshold, config, frequency);
+        return runDetection(druidResponse, query, sigmaThreshold, config, frequency, granularityRange);
     }
 
     /**
      * Perform an egads detection and return the results
      * as an {@code EgadsResult}.
      *
-     * @param query          druid query
-     * @param sigmaThreshold sigma threshold to use
-     * @param cluster        the druid cluster to query
-     * @param config         the egads configuration
+     * @param query           druid query
+     * @param sigmaThreshold  sigma threshold to use
+     * @param cluster         the druid cluster to query
+     * @param detectionWindow detection window for anomalies
+     * @param config          the egads configuration
      * @return a list of egads results
      * @throws SherlockException if an error during processing occurs
      * @throws DruidException    if an error during querying occurs
@@ -275,6 +287,7 @@ public class DetectorService {
             Query query,
             Double sigmaThreshold,
             DruidCluster cluster,
+            @Nullable Integer detectionWindow,
             @Nullable EgadsConfig config
     ) throws SherlockException, DruidException {
         checkDatasource(query, cluster);
@@ -284,9 +297,11 @@ public class DetectorService {
         if (config != null) {
             egads.configureWith(config);
         }
+        egads.preRunConfigure(sigmaThreshold, query.getGranularity(), query.getGranularityRange());
+        if (detectionWindow != null) {
+            egads.configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), detectionWindow + 1);
+        }
         for (TimeSeries timeSeries : timeSeriesList) {
-            egads.preRunConfigure(timeSeries, sigmaThreshold);
-            //egads.configureDetectionWindow(query.getRuntime() / 60, query.getGranularity().toString(), 1);
             results.add(egads.detectAnomaliesResult(timeSeries));
         }
         return results;

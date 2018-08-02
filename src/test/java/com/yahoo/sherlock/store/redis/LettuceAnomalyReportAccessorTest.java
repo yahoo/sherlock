@@ -110,10 +110,10 @@ public class LettuceAnomalyReportAccessorTest {
     @Test
     public void testPutAnomalyReports() throws IOException {
         List<AnomalyReport> reports = Lists.newArrayList(
-                make(1, "100", 1234, "day"),
-                make(2, "100", 2345, "day"),
-                make(null, "120", 1234, "hour"),
-                make(null, "120", 2345, "hour")
+            make(1, "100", 1234, "day"),
+            make(2, "100", 2345, "day"),
+            make(null, "120", 1234, "hour"),
+            make(null, "120", 2345, "hour")
         );
         mocks();
         when(ara.newIds(anyInt())).thenReturn(new Integer[] {3, 4});
@@ -122,7 +122,15 @@ public class LettuceAnomalyReportAccessorTest {
         verify(ara).newIds(2);
         verify(async, times(12)).sadd(anyString(), anyString());
         verify(async, times(4)).hmset(anyString(), anyMap());
+        verify(binAsync, times(4)).zadd(any(), any());
         verify(ara).awaitRaw(anyCollection());
+        // verify reports with no anomaly timestamps
+        reports.get(0).setAnomalyTimestamps(null);
+        ara.putAnomalyReports(reports);
+        verify(ara).newIds(2);
+        verify(async, times(24)).sadd(anyString(), anyString());
+        verify(async, times(8)).hmset(anyString(), anyMap());
+        verify(binAsync, times(7)).zadd(any(), any());
     }
 
     @Test

@@ -24,9 +24,10 @@ public class QueryConstants {
     public static final String DIMENSION = "dimension";
     public static final String DATE_TIME_SPLIT = "\\.";
     public static final String DATE_TIME_ZERO = "+00:00";
-    public static final String DATE_TIME_ZERO_SLASH = "+00:00/";
     public static final String PERIOD = "period";
     public static final String DATASOURCE = "dataSource";
     public static final String ORIGIN = "origin";
-
+    public static final String TYPE = "type";
+    public static final String TIMEZONE = "timeZone";
+    public static final String UTC = "UTC";
 }

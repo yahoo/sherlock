@@ -33,7 +33,7 @@ public class QueryTest {
 
         try {
             //null arguments
-            query = new Query(null, 1234, Granularity.HOUR);
+            query = new Query(null, 213, 1234, Granularity.HOUR, 1);
             Assert.assertNull(query.getQueryJsonObject());
             Assert.assertNull(query.getGroupByDimensions());
             Assert.assertEquals(0, query.getMetricNames().size());
@@ -46,7 +46,7 @@ public class QueryTest {
             Gson gson = new Gson();
             String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_2.json")));
             JsonObject queryJsonObject = gson.fromJson(queryString, JsonObject.class);
-            query = new Query(queryJsonObject, 1234, Granularity.HOUR);
+            query = new Query(queryJsonObject, 123, 1234, Granularity.HOUR, 1);
             LinkedHashSet<String> dimExpected = new LinkedHashSet<String>() {
                 {
                     add("dim1");

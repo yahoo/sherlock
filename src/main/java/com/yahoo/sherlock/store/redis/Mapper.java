@@ -300,20 +300,21 @@ public abstract class Mapper<T> {
      * @param field  field whose value to wrap
      * @param strVal the string value of the field
      * @param <T>    the value type
+     * @param def    default value
      * @return a container for the value
      */
     @SuppressWarnings("unchecked")
-    public static <T> Box<T> wrapType(Field field, String strVal) {
+    public static <T> Box<T> wrapType(Field field, String strVal, Object def) {
         Attribute.Type type = resolveType(field);
         switch (type) {
             case INTEGER:
-                return (Box<T>) new IntBox(NumberUtils.parseInt(strVal));
+                return (Box<T>) new IntBox(NumberUtils.parseInt(strVal, (Integer) def));
             case LONG:
-                return (Box<T>) new LongBox(NumberUtils.parseLong(strVal));
+                return (Box<T>) new LongBox(NumberUtils.parseLong(strVal, (Long) def));
             case DOUBLE:
-                return (Box<T>) new DoubleBox(NumberUtils.parseDouble(strVal));
+                return (Box<T>) new DoubleBox(NumberUtils.parseDouble(strVal, (Double) def));
             default:
-                return (Box<T>) new StringBox(strVal);
+                return (Box<T>) new StringBox(strVal == null ? (String) def : strVal);
         }
     }
 

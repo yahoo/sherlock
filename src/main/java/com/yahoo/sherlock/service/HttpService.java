@@ -56,12 +56,12 @@ public class HttpService {
     }
 
     /**
-     * Get a new {@code HttpClient} with a 10-second timeout.
+     * Get a new {@code HttpClient} with a 20-second timeout.
      *
      * @return HttpClient
      */
     protected HttpClient newHttpClient() {
-        return newHttpClient(10000, 3);
+        return newHttpClient(20000, 3);
     }
 
     /**

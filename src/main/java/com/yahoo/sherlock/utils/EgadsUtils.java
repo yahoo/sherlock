@@ -28,6 +28,7 @@ public class EgadsUtils {
      */
     private static final String AGGR = "_aggr_";
 
+
     /**
      * Fill in the missing data in a time series.
      *
@@ -79,8 +80,27 @@ public class EgadsUtils {
 
         // Handle aggregation.
         if (aggr > 1) {
-            output.data = output.aggregate(aggr);
-            output.meta.name += AGGR + aggr;
+            output.data = sumAggregator(output, aggr);
+        }
+        return output;
+    }
+
+    /**
+     * Sum aggregator for datapoints.
+     * @param timeSeries input timeseries
+     * @param frequency aggregation frequency
+     * @return aggregated timeseries
+     */
+    public static TimeSeries.DataSequence sumAggregator(TimeSeries timeSeries, int frequency) {
+        TimeSeries.DataSequence output = new TimeSeries.DataSequence();
+
+        for (int i = 0; i < timeSeries.data.size(); i += frequency) {
+            Float aggr = 0.0F;
+            Long time = (timeSeries.data.get(i)).time;
+            for (int j = i; j < Math.min(timeSeries.data.size(), i + frequency); ++j) {
+                aggr = aggr + (timeSeries.data.get(j)).value;
+            }
+            output.add(new TimeSeries.Entry(time, aggr));
         }
         return output;
     }
@@ -101,9 +121,9 @@ public class EgadsUtils {
         }
         int fillMissing;
         if (!NumberUtils.isNonNegativeInt(p.getProperty("FILL_MISSING"))) {
-            fillMissing = 1;
-        } else {
             fillMissing = 0;
+        } else {
+            fillMissing = 1;
         }
         return fillMissingData(timeseries, aggr, fillMissing);
     }

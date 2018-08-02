@@ -27,14 +27,14 @@ public class DruidQueryServiceTest {
     @Test
     public void testBuildWithValidQuery() throws Exception {
         String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_1.json")));
-        Assert.assertEquals(druidQueryService.build(queryString, Granularity.DAY, null).getMetricNames(), Collections.singletonList("m1"));
+        Assert.assertEquals(druidQueryService.build(queryString, Granularity.DAY, null, null, null).getMetricNames(), Collections.singletonList("m1"));
     }
 
     @Test
     public void testBuildWithInvalidDruidQuery() throws IOException {
         String badQueryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_invalid_query_1.json")));
         try {
-            druidQueryService.build(badQueryString, Granularity.DAY, null);
+            druidQueryService.build(badQueryString, Granularity.DAY, null, null, null);
             Assert.fail();
         } catch (Exception e) {
             Assert.assertEquals(e.getMessage(), "Druid query is missing parameters");
@@ -44,13 +44,13 @@ public class DruidQueryServiceTest {
     @Test(expectedExceptions = SherlockException.class)
     public void testBuildWithInvalidQueryJson() throws Throwable {
         String badQueryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_invalid_query_4.json")));
-        druidQueryService.build(badQueryString, Granularity.DAY, null);
+        druidQueryService.build(badQueryString, Granularity.DAY, null, null, null);
     }
 
     @Test
     public void testBuildWithInvalidQuerySyntax() throws Throwable {
         try {
-            druidQueryService.build("{}{}{}{{{}}}{}}", Granularity.DAY, null);
+            druidQueryService.build("{}{}{}{{{}}}{}}", Granularity.DAY, null, null, null);
             Assert.fail();
         } catch (Exception e) {
             Assert.assertEquals(e.getMessage(), "Invalid query syntax! Check JSON brackets");

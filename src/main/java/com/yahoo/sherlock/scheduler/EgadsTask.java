@@ -8,9 +8,11 @@ package com.yahoo.sherlock.scheduler;
 
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
+import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.service.DetectorService;
+
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -81,18 +83,19 @@ public class EgadsTask implements Runnable {
      */
     @Override
     public void run() {
-        List<Anomaly> anomalies = new ArrayList<>();
+        List<Anomaly> anomalies;
         List<AnomalyReport> reports = new ArrayList<>();
         try {
             proxyJob.setEffectiveQueryTime(effectiveQueryEndTime);
             executionService.getAnomalyReportAccessor().deleteAnomalyReportsForJobAtTime(proxyJob.getJobId().toString(), proxyJob.getReportNominalTime().toString(), proxyJob.getFrequency());
-            anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), null, proxyJob.getReportNominalTime(), proxyJob.getFrequency());
+            Granularity granularity = Granularity.getValue(proxyJob.getGranularity());
+            anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), null, proxyJob.getReportNominalTime(), proxyJob.getFrequency(), granularity, proxyJob.getGranularityRange());
             reports = executionService.getReports(anomalies, proxyJob);
         } catch (Exception e) {
             log.info("Error in egads job!", e);
         }
         if (reports.isEmpty()) {
-            reports.add(executionService.getSingletonReport(proxyJob, anomalies.size() > 0 ? anomalies.get(0) : null));
+            reports.add(executionService.getSingletonReport(proxyJob));
         }
         this.reports = reports;
     }

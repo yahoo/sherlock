@@ -13,8 +13,8 @@
                         <fieldset>
 
                             <div class="form-group">
-                                <label class="control-label" for="job">Job Metadata</label>
-                                <select id="job" class="form-control"
+                                <label class="control-label" for="job">Jobs list</label><br/>
+                                <select id="job" class="form-control" multiple="multiple"
                                         th:field="*{job}" th:required="true">
                                     <option th:each="job : ${jobs}"
                                             th:value="${job.getJobId()}"
@@ -54,6 +54,12 @@
 <script>
 /*<![CDATA[*/
     $(document).ready(function () {
+        $('#job').multiselect({
+            maxHeight: 200,
+            nonSelectedText: 'Select jobs for backfill',
+            includeSelectAllOption: true,
+            enableFiltering: true
+        });
         $("#queryForm").submit(function (e) {
             const submitButton = $('#submitInsta');
             // Disable submit button
@@ -70,14 +76,14 @@
                     return;
                 }
             }
-            if (selectedDate >= new Date().getTime()) {
+            if (selectedStartDate >= new Date().getTime()) {
                 showErrorMessage("Start time cannot be in future!")
                 return;
             }
             var data = {};
             data.fillStartTime = startTime;
             data.fillEndTime = endTime;
-            data.jobId = $('#job').val();
+            data.jobId = $('#job').val().join();
             $.ajax({
                 type: 'POST',
                 url: '/Debug/BackfillReports',
