@@ -6,7 +6,7 @@
     <packaging>jar</packaging>
     <name>sherlock</name>
     <description>Anomaly detection tool for timeseries data in Druid</description>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.4-mmx-SNAPSHOT</version>
 
     <licenses>
         <license>
@@ -38,38 +38,6 @@
         <system>Github</system>
         <url>https://github.com/yahoo/sherlock/issues</url>
     </issueManagement>
-
-    <ciManagement>
-        <system>Travis</system>
-        <url>https://travis-ci.org/yahoo/sherlock</url>
-    </ciManagement>
-
-    <distributionManagement>
-        <repository>
-            <id>bintray-yahoo-sherlock</id>
-            <name>yahoo-sherlock</name>
-            <url>https://api.bintray.com/maven/yahoo/maven/sherlock;publish=1</url>
-        </repository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>bintray-yahoo-maven</id>
-            <name>bintray</name>
-            <url>http://yahoo.bintray.com/maven</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>bintray-yahoo-maven</id>
-            <name>bintray-plugins</name>
-            <url>http://yahoo.bintray.com/maven</url>
-        </pluginRepository>
-    </pluginRepositories>
 
     <dependencies>
         <dependency>
@@ -273,4 +241,13 @@
 
         </plugins>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>central-local</id>
+            <name>Central Local</name>
+            <url>https://metamx.jfrog.io/metamx/libs-releases-local</url>
+        </repository>
+    </distributionManagement>
+
 </project>
