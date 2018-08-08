@@ -181,7 +181,7 @@
                         </manifest>
                     </archive>
                     <appendAssemblyId>false</appendAssemblyId>
-                    <finalName>${project.artifactId}</finalName>
+                    <finalName>${project.artifactId}-${project.version}-selfcontained</finalName>
                 </configuration>
                 <executions>
                     <execution>
