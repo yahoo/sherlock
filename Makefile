@@ -15,5 +15,5 @@ code-coverage:
 clean:
 	mvn clean
 
-publish:
+release:
 	mvn clean install release:clean release:prepare release:perform
