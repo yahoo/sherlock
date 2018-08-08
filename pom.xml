@@ -28,15 +28,15 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git@github.com:yahoo/sherlock.git</connection>
-        <developerConnection>scm:git:git@github.com:yahoo/sherlock.git</developerConnection>
-        <url>https://github.com/yahoo/sherlock</url>
+        <connection>scm:git:git@github.com:metamx/sherlock.git</connection>
+        <developerConnection>scm:git:git@github.com:metamx/sherlock.git</developerConnection>
+        <url>https://github.com/metamx/sherlock</url>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>Github</system>
-        <url>https://github.com/yahoo/sherlock/issues</url>
+        <url>https://github.com/metamx/sherlock/issues</url>
     </issueManagement>
 
     <dependencies>
