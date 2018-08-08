@@ -18,7 +18,7 @@ echo "Creating $TAR"
 shopt -s nullglob
 
 mkdir -p $DIST/lib
-cp -u target/$NAME-$VERSION.jar $DIST/lib/
+cp -u target/$NAME-$VERSION-selfcontained.jar $DIST/lib/
 
 shopt -u nullglob
 
