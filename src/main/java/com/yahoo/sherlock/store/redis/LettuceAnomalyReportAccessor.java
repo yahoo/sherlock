@@ -330,8 +330,10 @@ public class LettuceAnomalyReportAccessor
         List<ScoredValue<byte[]>> startVals,
         List<ScoredValue<byte[]>> endVals
     ) {
-        byte[][] startBytes = new byte[startVals.size()][];
-        byte[][] endBytes = new byte[startVals.size()][];
+        final Integer maxScore =
+            startVals.stream().map(s -> (int) s.score).max(Integer::compare).map(m -> m + 1).orElse(0);
+        byte[][] startBytes = new byte[maxScore][];
+        byte[][] endBytes = new byte[maxScore][];
         for (ScoredValue<byte[]> val : startVals) {
             startBytes[(int) val.score] = val.value;
         }
