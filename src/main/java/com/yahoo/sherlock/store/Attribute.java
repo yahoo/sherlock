@@ -20,7 +20,7 @@ public @interface Attribute {
      * Possible attribute types, identifying serialized object fields.
      */
     enum Type {
-        UNSPECIFIED, INTEGER, LONG, DOUBLE, STRING
+        UNSPECIFIED, INTEGER, LONG, DOUBLE, BOOLEAN, STRING
     }
 
     /**

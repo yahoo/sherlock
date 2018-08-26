@@ -196,6 +196,9 @@ public class DetectorService {
         // Configure the detection window for anomaly detection
         egads.configureDetectionWindow(endTimeMinutes, frequency, granularityRange);
         List<Anomaly> anomalies = new ArrayList<>(timeSeriesList.size());
+        if (timeSeriesList.isEmpty()) {
+            anomalies.add(getNoDataAnomaly(new TimeSeries()));
+        }
         for (TimeSeries timeSeries : timeSeriesList) {
             if (timeSeries.data.isEmpty() ||
                 timeSeries.data.get(timeSeries.data.size() - 1).time != endTimeMinutes * 60L) {
@@ -217,7 +220,7 @@ public class DetectorService {
         anomaly.metricMetaData.source = timeSeries.meta.source;
         anomaly.id = timeSeries.meta.id;
         anomaly.intervals = new Anomaly.IntervalSequence();
-        anomaly.modelName = egads.getP().getProperty(AD_MODEL);
+        anomaly.modelName = (egads.getP() != null) ? egads.getP().getProperty(AD_MODEL) : "";
         return anomaly;
     }
 

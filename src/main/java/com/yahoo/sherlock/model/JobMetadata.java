@@ -27,72 +27,7 @@ import java.io.Serializable;
  */
 @Slf4j
 @Data
-public class JobMetadata implements Serializable {
-
-    /**
-     * Build a job metadata object from a user query.
-     * Job last run time, next run time, and update time are
-     * set to empty, and the ID is set to null.
-     *
-     * @param userQuery user query object
-     * @param query     druid query object
-     * @return a job metadata
-     */
-    public static JobMetadata fromQuery(UserQuery userQuery, @Nullable Query query) {
-        return new JobMetadata(
-                null,
-                userQuery.getOwner(),
-                userQuery.getOwnerEmail(),
-                userQuery.getQuery(),
-                query == null ? null : query.getQueryJsonObject().toString(),
-                userQuery.getTestName(),
-                userQuery.getTestDescription(),
-                userQuery.getQueryUrl(),
-                JobStatus.CREATED.getValue(),
-                null,
-                null,
-                userQuery.getGranularity(),
-                userQuery.getTimeseriesRange(),
-                userQuery.getGranularityRange(),
-                userQuery.getFrequency(),
-                userQuery.getSigmaThreshold(),
-                userQuery.getClusterId(),
-                0,
-                userQuery.getTsModels(),
-                userQuery.getAdModels()
-        );
-    }
-
-    /**
-     * Method to copy the job content to new job instance.
-     *
-     * @param job job to be cloned
-     * @return new cloned job instance
-     */
-    public static JobMetadata copyJob(JobMetadata job) {
-        return new JobMetadata(
-                job.getJobId(),
-                job.getOwner(),
-                job.getOwnerEmail(),
-                job.getUserQuery(),
-                job.getQuery(),
-                job.getTestName(),
-                job.getTestDescription(),
-                job.getUrl(),
-                JobStatus.CREATED.getValue(),
-                null,
-                null,
-                job.getGranularity(),
-                job.getTimeseriesRange(),
-                job.getGranularityRange(),
-                job.getFrequency(),
-                job.getSigmaThreshold(),
-                job.getClusterId(),
-                job.getHoursOfLag(),
-                job.getTimeseriesModel(),
-                job.getAnomalyDetectionModel()
-        );
-    }
+public class JobMetadata implements Serializable, Cloneable {
 
     /**
      * Serialization id for uniformity across platform.
@@ -116,6 +51,12 @@ public class JobMetadata implements Serializable {
      */
     @Attribute
     private String ownerEmail;
+
+    /**
+     * Option to have email on no-data cases.
+     */
+    @Attribute
+    private Boolean emailOnNoData = false;
 
     /**
      * User query to be stored.
@@ -235,70 +176,86 @@ public class JobMetadata implements Serializable {
 
     /**
      * Data initializer constructor.
-     *
-     * @param jobId                 Unique job id
-     * @param owner                 Owner of the anomaly test
-     * @param ownerEmail            Email id of the owner
-     * @param userQuery             User query to be stored
-     * @param query                 Parsed user query to be stored
-     * @param testName              Test name entered by user
-     * @param testDescription       Description of the test
-     * @param url                   Superset url for the query
-     * @param jobStatus             Job status
-     * @param effectiveRunTime      Next run time of job
-     * @param effectiveQueryTime    Report Nominal time for job reports
-     * @param granularity           Granularity of data in the timeseries
-     * @param timeseriesRange       Range of the data to lookback
-     * @param granularityRange      Granularity range to aggregate on.
-     * @param frequency             Frequency of cron job
-     * @param sigmaThreshold        Threshold for standard deviation
-     * @param clusterId             associated Cluster ID
-     * @param hoursOfLag            job hours of lag from cluster
-     * @param timeseriesModel       timeseries model to use
-     * @param anomalyDetectionModel anomaly detection model to use
+     * @param jobMetadata JobMetadata object
      */
-    public JobMetadata(
-            @Nullable Integer jobId,
-            String owner,
-            String ownerEmail,
-            String userQuery,
-            String query,
-            String testName,
-            String testDescription,
-            String url,
-            String jobStatus,
-            @Nullable Integer effectiveRunTime,
-            @Nullable Integer effectiveQueryTime,
-            String granularity,
-            Integer timeseriesRange,
-            Integer granularityRange,
-            String frequency,
-            Double sigmaThreshold,
-            Integer clusterId,
-            Integer hoursOfLag,
-            String timeseriesModel,
-            String anomalyDetectionModel
-    ) {
-        this.jobId = jobId;
-        this.owner = owner;
-        this.ownerEmail = ownerEmail;
-        this.userQuery = userQuery;
-        this.query = query;
-        this.testName = testName;
-        this.testDescription = testDescription;
-        this.url = url;
-        this.jobStatus = jobStatus;
-        this.effectiveRunTime = effectiveRunTime;
-        this.effectiveQueryTime = effectiveQueryTime;
-        this.granularity = granularity;
-        this.timeseriesRange = timeseriesRange;
-        this.granularityRange = granularityRange;
-        this.frequency = frequency;
-        this.sigmaThreshold = sigmaThreshold;
-        this.clusterId = clusterId;
-        this.hoursOfLag = hoursOfLag;
-        this.timeseriesModel = timeseriesModel;
-        this.anomalyDetectionModel = anomalyDetectionModel;
+    public JobMetadata(JobMetadata jobMetadata) {
+        this.jobId = jobMetadata.getJobId();
+        this.owner = jobMetadata.getOwner();
+        this.ownerEmail = jobMetadata.getOwnerEmail();
+        this.emailOnNoData = jobMetadata.getEmailOnNoData();
+        this.userQuery = jobMetadata.getUserQuery();
+        this.query = jobMetadata.getQuery();
+        this.testName = jobMetadata.getTestName();
+        this.testDescription = jobMetadata.getTestDescription();
+        this.url = jobMetadata.getUrl();
+        this.jobStatus = jobMetadata.getJobStatus();
+        this.effectiveRunTime = jobMetadata.getEffectiveRunTime();
+        this.effectiveQueryTime = jobMetadata.getEffectiveQueryTime();
+        this.granularity = jobMetadata.getGranularity();
+        this.timeseriesRange = jobMetadata.getTimeseriesRange();
+        this.granularityRange = jobMetadata.getGranularityRange();
+        this.frequency = jobMetadata.getFrequency();
+        this.sigmaThreshold = jobMetadata.getSigmaThreshold();
+        this.clusterId = jobMetadata.getClusterId();
+        this.hoursOfLag = jobMetadata.getHoursOfLag();
+        this.timeseriesModel = jobMetadata.getTimeseriesModel();
+        this.anomalyDetectionModel = jobMetadata.getAnomalyDetectionModel();
+    }
+
+    /**
+     * Build a job metadata object from a user query.
+     * Job last run time, next run time, and update time are
+     * set to empty, and the ID is set to null.
+     *
+     * @param userQuery user query object
+     * @param query     druid query object
+     */
+    public JobMetadata(UserQuery userQuery, @Nullable Query query) {
+        setOwner(userQuery.getOwner());
+        setOwnerEmail(userQuery.getOwnerEmail());
+        setEmailOnNoData(userQuery.getEmailOnNoData());
+        setUserQuery(userQuery.getQuery());
+        setQuery(query == null ? null : query.getQueryJsonObject().toString());
+        setTestName(userQuery.getTestName());
+        setTestDescription(userQuery.getTestDescription());
+        setUrl(userQuery.getQueryUrl());
+        setJobStatus(JobStatus.CREATED.getValue());
+        setGranularity(userQuery.getGranularity());
+        setTimeseriesRange(userQuery.getTimeseriesRange());
+        setGranularityRange(userQuery.getGranularityRange());
+        setFrequency(userQuery.getFrequency());
+        setSigmaThreshold(userQuery.getSigmaThreshold());
+        setClusterId(userQuery.getClusterId());
+        setHoursOfLag(0);
+        setTimeseriesModel(userQuery.getTsModels());
+        setAnomalyDetectionModel(userQuery.getAdModels());
+    }
+
+    /**
+     * Method to clone the jobMetadata.
+     * @return JobMetadata object
+     * @throws CloneNotSupportedException cloning exception
+     */
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Method to copy the job content to new job instance.
+     *
+     * @param job job to be cloned
+     * @return new cloned job instance
+     */
+    public static JobMetadata copyJob(JobMetadata job) {
+        JobMetadata jobMetadata = new JobMetadata();
+        try {
+            jobMetadata = (JobMetadata) job.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        jobMetadata.setEffectiveRunTime(null);
+        jobMetadata.setEffectiveQueryTime(null);
+        return jobMetadata;
     }
 
     /**
@@ -321,6 +278,7 @@ public class JobMetadata implements Serializable {
         }
         setOwner(newJob.getOwner());
         setOwnerEmail(newJob.getOwnerEmail());
+        setEmailOnNoData(newJob.getEmailOnNoData());
         setUserQuery(newJob.getUserQuery());
         setTestName(newJob.getTestName());
         setTestDescription(newJob.getTestDescription());

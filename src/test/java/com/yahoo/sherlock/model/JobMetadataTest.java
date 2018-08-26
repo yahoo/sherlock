@@ -13,8 +13,34 @@ import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 
 public class JobMetadataTest {
+
+    public JobMetadata utilityMethod() {
+        JobMetadata jobMetadata = new JobMetadata();
+        jobMetadata.setJobId(1);
+        jobMetadata.setOwner("b");
+        jobMetadata.setOwnerEmail("c");
+        jobMetadata.setEmailOnNoData(false);
+        jobMetadata.setUserQuery("d");
+        jobMetadata.setQuery("e");
+        jobMetadata.setTestName("f");
+        jobMetadata.setTestDescription("g");
+        jobMetadata.setUrl("h");
+        jobMetadata.setJobStatus("i");
+        jobMetadata.setEffectiveRunTime(123);
+        jobMetadata.setEffectiveQueryTime(1234);
+        jobMetadata.setGranularity("m");
+        jobMetadata.setTimeseriesRange(4);
+        jobMetadata.setGranularityRange(1);
+        jobMetadata.setFrequency("n");
+        jobMetadata.setSigmaThreshold(3.0);
+        jobMetadata.setTimeseriesModel("ts");
+        jobMetadata.setAnomalyDetectionModel("ad");
+        jobMetadata.setClusterId(2);
+        return jobMetadata;
+    }
 
     @Test
     public void testEqualsAndHashCode() {
@@ -32,14 +58,12 @@ public class JobMetadataTest {
 
     @Test
     public void testParameterConstructor() {
-        JobMetadata m = new JobMetadata(
-                1, "b", "c", "d", "e", "f",
-                "g", "h", "i", 123, 1234,
-                "m", 4, 1, "n", 3.0, 2, 12, "ts", "ad");
+        JobMetadata m = new JobMetadata(utilityMethod());
         assertEquals(m.getJobId(), (Integer) 1);
         assertEquals(m.getClusterId(), (Integer) 2);
         assertEquals(m.getOwner(), "b");
         assertEquals(m.getOwnerEmail(), "c");
+        assertFalse(m.getEmailOnNoData());
         assertEquals(m.getUserQuery(), "d");
         assertEquals(m.getQuery(), "e");
         assertEquals(m.getTestName(), "f");
@@ -57,4 +81,60 @@ public class JobMetadataTest {
         assertEquals(m.getAnomalyDetectionModel(), "ad");
     }
 
+    @Test
+    public void testClone() {
+        JobMetadata m = new JobMetadata(utilityMethod());
+        JobMetadata mCloned = new JobMetadata();
+        try {
+            mCloned = (JobMetadata) m.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        assertEquals(mCloned.getJobId(), (Integer) 1);
+        assertEquals(mCloned.getClusterId(), (Integer) 2);
+        assertEquals(mCloned.getOwner(), "b");
+        assertEquals(mCloned.getOwnerEmail(), "c");
+        assertFalse(mCloned.getEmailOnNoData());
+        assertEquals(mCloned.getUserQuery(), "d");
+        assertEquals(mCloned.getQuery(), "e");
+        assertEquals(mCloned.getTestName(), "f");
+        assertEquals(mCloned.getTestDescription(), "g");
+        assertEquals(mCloned.getUrl(), "h");
+        assertEquals(mCloned.getJobStatus(), "i");
+        assertEquals(mCloned.getEffectiveRunTime(), (Integer) 123);
+        assertEquals(mCloned.getEffectiveQueryTime(), (Integer) 1234);
+        assertEquals(mCloned.getGranularity(), "m");
+        assertEquals(mCloned.getTimeseriesRange(), (Integer) 4);
+        assertEquals(mCloned.getGranularityRange(), (Integer) 1);
+        assertEquals(mCloned.getFrequency(), "n");
+        assertEquals(mCloned.getSigmaThreshold(), 3.0);
+        assertEquals(mCloned.getTimeseriesModel(), "ts");
+        assertEquals(mCloned.getAnomalyDetectionModel(), "ad");
+    }
+
+    @Test
+    public void testCopyJob() {
+        JobMetadata m = new JobMetadata(utilityMethod());
+        JobMetadata mCopy = JobMetadata.copyJob(m);
+        assertEquals(mCopy.getJobId(), (Integer) 1);
+        assertEquals(mCopy.getClusterId(), (Integer) 2);
+        assertEquals(mCopy.getOwner(), "b");
+        assertEquals(mCopy.getOwnerEmail(), "c");
+        assertFalse(mCopy.getEmailOnNoData());
+        assertEquals(mCopy.getUserQuery(), "d");
+        assertEquals(mCopy.getQuery(), "e");
+        assertEquals(mCopy.getTestName(), "f");
+        assertEquals(mCopy.getTestDescription(), "g");
+        assertEquals(mCopy.getUrl(), "h");
+        assertEquals(mCopy.getJobStatus(), "i");
+        assertNull(mCopy.getEffectiveRunTime());
+        assertNull(mCopy.getEffectiveQueryTime());
+        assertEquals(mCopy.getGranularity(), "m");
+        assertEquals(mCopy.getTimeseriesRange(), (Integer) 4);
+        assertEquals(mCopy.getGranularityRange(), (Integer) 1);
+        assertEquals(mCopy.getFrequency(), "n");
+        assertEquals(mCopy.getSigmaThreshold(), 3.0);
+        assertEquals(mCopy.getTimeseriesModel(), "ts");
+        assertEquals(mCopy.getAnomalyDetectionModel(), "ad");
+    }
 }
