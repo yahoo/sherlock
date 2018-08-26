@@ -110,6 +110,10 @@ public class JobExecutionService {
                     if (!emailService.sendEmail(CLISettings.FAILURE_EMAIL, CLISettings.FAILURE_EMAIL, reports)) {
                         log.error("Error while sending failure email!");
                     }
+                } else if (report.getStatus().equals(Constants.NODATA) && job.getEmailOnNoData()) {
+                    if (!emailService.sendEmail(job.getOwner(), job.getOwnerEmail(), reports)) {
+                        log.error("Error while sending Nodata email!");
+                    }
                 }
             } else {
                 if (CLISettings.ENABLE_EMAIL) {
@@ -399,6 +403,7 @@ public class JobExecutionService {
         report.setJobId(job.getJobId());
         report.setQueryURL(job.getUrl());
         report.setReportQueryEndTime(job.getReportNominalTime());
+        report.setTestName(job.getTestName());
         UUID uuid = UUID.randomUUID();
         report.setUniqueId(uuid.toString());
         if (JobStatus.ERROR.getValue().equals(job.getJobStatus())) {

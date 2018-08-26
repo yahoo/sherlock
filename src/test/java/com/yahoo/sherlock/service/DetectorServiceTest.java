@@ -190,7 +190,7 @@ public class DetectorServiceTest {
         when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
             .thenReturn(Collections.singletonList(new Anomaly()));
         when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(Granularity.class), anyInt())).thenCallRealMethod();
-        assertEquals(ds.runDetection(Collections.emptyList(), 0.0, null, 1234, null, null, 1).size(), 0);
+        assertEquals(ds.runDetection(Collections.emptyList(), 0.0, null, 1234, null, null, 1).size(), 1);
     }
 
     @Test

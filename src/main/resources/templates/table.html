@@ -8,13 +8,17 @@
     <table id="errorReportTable" class="table table-striped table-hover table-bordered" th:attr="style=${emailHtml != null ? 'border-collapse: collapse; width: 100%;' : ''}">
         <thead>
         <tr th:attr="style=${emailHtml != null ? 'background-color: white;' : ''}">
-            <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Report Endtime</th>
+            <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Anomaly Test Name</th>
+            <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Report Time(Latest missing datapoint)</th>
+            <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Report Status</th>
             <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Visualization Link</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="anomaly: ${Anomalies}" th:attr="style=${emailHtml != null ? 'background-color: #f9f9f9;' : ''}">
-            <td th:text="${anomaly.getFormattedReportGenerationTime()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Report Endtime</td>
+            <td th:text="${anomaly.getTestName()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Test Name</td>
+            <td th:text="${anomaly.getFormattedReportGenerationTime()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;color: rgba(240,0,0,0.8)' : ''}">Report Endtime</td>
+            <td th:text="${anomaly.getStatus()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;color: rgba(240,0,0,0.8)' : ''}">Report status</td>
             <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
                 <a th:if="${anomaly.getQueryURL() != null and not #strings.isEmpty(anomaly.getQueryURL())}"
                    target="_blank" class="btn custom-report-btn" th:href="@{${anomaly.getQueryURL()}}">

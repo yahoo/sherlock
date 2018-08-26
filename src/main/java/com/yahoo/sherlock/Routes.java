@@ -247,7 +247,7 @@ public class Routes {
                 intervalEndTime = granularity.getEndTimeForInterval(endTime);
             }
             Query query = serviceFactory.newDruidQueryServiceInstance().build(userQuery.getQuery(), granularity, granularityRange, intervalEndTime, userQuery.getTimeseriesRange());
-            JobMetadata job = JobMetadata.fromQuery(userQuery, query);
+            JobMetadata job = new JobMetadata(userQuery, query);
             job.setFrequency(granularity.toString());
             job.setEffectiveQueryTime(intervalEndTime);
             // set egads config
@@ -305,7 +305,7 @@ public class Routes {
             Query query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), userQuery.getGranularityRange(), null, userQuery.getTimeseriesRange());
             log.info("Query generation successful.");
             // Create and store job metadata
-            JobMetadata jobMetadata = JobMetadata.fromQuery(userQuery, query);
+            JobMetadata jobMetadata = new JobMetadata(userQuery, query);
             jobMetadata.setHoursOfLag(clusterAccessor.getDruidCluster(jobMetadata.getClusterId()).getHoursOfLag());
             jobAccessor.putJobMetadata(jobMetadata);
             response.status(200);
@@ -472,7 +472,7 @@ public class Routes {
                 DruidQueryService queryService = serviceFactory.newDruidQueryServiceInstance();
                 query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), userQuery.getGranularityRange(), null, userQuery.getTimeseriesRange());
             }
-            JobMetadata updatedJob = JobMetadata.fromQuery(userQuery, query);
+            JobMetadata updatedJob = new JobMetadata(userQuery, query);
             boolean isRerunRequired = (currentJob.userQueryChangeSchedule(userQuery) || query != null) && currentJob.isRunning();
             currentJob.update(updatedJob);
             // reschedule if needed and store in the database
@@ -569,6 +569,7 @@ public class Routes {
             jobMetadata = jobAccessor.getJobMetadata(request.params(Constants.ID));
             // copy the job metadata
             clonedJobMetadata = JobMetadata.copyJob(jobMetadata);
+            clonedJobMetadata.setJobStatus(JobStatus.CREATED.getValue());
             clonedJobMetadata.setTestName(clonedJobMetadata.getTestName() + Constants.CLONED);
             clonedJobMetadata.setJobId(null);
             String clonnedJobId = jobAccessor.putJobMetadata(clonedJobMetadata);
@@ -905,7 +906,7 @@ public class Routes {
                     .intervals(params.get("intervals"))
                     .build();
             UserQuery userQuery = UserQuery.fromQueryParams(request.queryMap());
-            JobMetadata job = JobMetadata.fromQuery(userQuery, query);
+            JobMetadata job = new JobMetadata(userQuery, query);
             JobExecutionService executionService = serviceFactory.newJobExecutionService();
             DruidCluster cluster = clusterAccessor.getDruidCluster(job.getClusterId());
             List<Anomaly> anomalies = executionService.executeJob(job, cluster, query);
@@ -1053,7 +1054,7 @@ public class Routes {
                     .filteringParam(params.get("filteringParam"))
                     .build();
             UserQuery userQuery = UserQuery.fromQueryParams(request.queryMap());
-            JobMetadata job = JobMetadata.fromQuery(userQuery, query);
+            JobMetadata job = new JobMetadata(userQuery, query);
             JobExecutionService executionService = serviceFactory.newJobExecutionService();
             DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
             List<EgadsResult> egadsResult = detectorService.detectWithResults(

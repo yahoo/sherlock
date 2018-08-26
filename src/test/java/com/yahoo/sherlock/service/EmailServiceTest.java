@@ -52,6 +52,8 @@ public class EmailServiceTest {
         Assert.assertTrue(emailService.sendEmail("owner", "owner@xyzmail.com", Collections.singletonList(anomalyReport)));
         anomalyReport.setStatus(Constants.ERROR);
         Assert.assertTrue(emailService.sendEmail("owner", "owner@xyzmail.com", Collections.singletonList(anomalyReport)));
+        anomalyReport.setStatus(Constants.NODATA);
+        Assert.assertTrue(emailService.sendEmail("owner", "owner@xyzmail.com", Collections.singletonList(anomalyReport)));
         anomalyReport.setStatus(Constants.WARNING);
         status = false;
         Assert.assertFalse(emailService.sendEmail("owner", "owner@xyzmail.com", Collections.singletonList(anomalyReport)));

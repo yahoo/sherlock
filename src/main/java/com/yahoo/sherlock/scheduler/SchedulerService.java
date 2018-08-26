@@ -221,13 +221,16 @@ public class SchedulerService {
         List<String> jobIds = new ArrayList<>(jobs.size());
         List<Pair<Integer, String>> jobsAndTimes = new ArrayList<>(jobs.size());
         for (JobMetadata job : jobs) {
-            jobIds.add(job.getJobId().toString());
-            Pair<Integer, Integer> nextTimes = jobScheduleTime(job);
-            Integer nextQueryTime = nextTimes.getLeft();
-            Integer nextRunTime = nextTimes.getRight();
-            job.setEffectiveQueryTime(nextQueryTime);
-            job.setEffectiveRunTime(nextRunTime);
-            jobsAndTimes.add(new ImmutablePair<>(nextRunTime, job.getJobId().toString()));
+            if (job.getJobStatus().equals(JobStatus.NODATA.getValue()) ||
+                job.getJobStatus().equals(JobStatus.RUNNING.getValue())) {
+                jobIds.add(job.getJobId().toString());
+                Pair<Integer, Integer> nextTimes = jobScheduleTime(job);
+                Integer nextQueryTime = nextTimes.getLeft();
+                Integer nextRunTime = nextTimes.getRight();
+                job.setEffectiveQueryTime(nextQueryTime);
+                job.setEffectiveRunTime(nextRunTime);
+                jobsAndTimes.add(new ImmutablePair<>(nextRunTime, job.getJobId().toString()));
+            }
         }
         try {
             jobScheduler.removeQueue(jobIds);

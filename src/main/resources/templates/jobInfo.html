@@ -63,7 +63,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="control-label" for="ownerEmail">Owner's Email:</label>
+                                <label class="control-label" for="ownerEmail">Owner's Email (for anomaly alerts):</label>
                                 <div>
                                     <input id="ownerEmail" name="ownerEmail" type="text" class="form-control input-md"
                                            size="25" th:value="${job.getOwnerEmail()}" th:required="true"/>
@@ -71,7 +71,18 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="control-label" for="queryText">Query:</label><br/>
+                                <label class="control-label" for="emailOnNoData">Get email if new datapoint is not available:</label>
+                                <div id="emailOnNoData">
+                                    <input type="radio" id="emailOnNoDataYes" name="emailOnNoData" value="true"/>
+                                    <label class="control-label" for="emailOnNoDataYes">YES</label>
+                                    <span>&nbsp;&nbsp;&nbsp;</span>
+                                    <input type="radio" id="emailOnNoDataNo" name="emailOnNoData" value="false"/>
+                                    <label class="control-label" for="emailOnNoDataNo">NO</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="queryText">Druid Query:</label><br/>
                                 <button id="removeGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
                                     <span class="glyphicon glyphicon-remove"></span> Remove
                                 </button>
@@ -376,6 +387,11 @@
                         return $("#popoverInfo").html();
                     }
             });
+            if ([[${job.getEmailOnNoData()}]] === true) {
+		        $('input[id=emailOnNoDataYes]', '#jobInfoForm').attr('checked', true);
+		    } else {
+		        $('input[id=emailOnNoDataNo]', '#jobInfoForm').attr('checked', true);
+		    }
         });
 
         if([[${deletedJobsView} != null]]) {
@@ -436,6 +452,10 @@
         });
 
         $('#adModels').change(function() {
+            updateMode();
+        });
+
+        $('input[type=radio][name=emailOnNoData]').change(function() {
             updateMode();
         });
 
@@ -516,6 +536,7 @@
                 data.testName = $('#testName').val();
                 data.owner = $('#ownerName').val();
                 data.ownerEmail = $('#ownerEmail').tokenfield('getTokensList', ',');
+                data.emailOnNoData = $('input[name=emailOnNoData]:checked', '#jobInfoForm').val();
                 data.testDescription = $('#testDescription').val();
                 data.granularity = $('#granularity').val();
                 data.timeseriesRange = $('#timeseriesRange').val();

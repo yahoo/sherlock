@@ -116,7 +116,7 @@ public class EmailService {
             params.put(DatabaseConstants.ANOMALIES, report);
             params.put(Constants.EMAIL_HTML, "true");
             ThymeleafTemplateEngine thymeleafTemplateEngine = new ThymeleafTemplateEngine();
-            if (!report.get(0).getStatus().equals(Constants.ERROR)) {
+            if (report.get(0).getStatus().equals(Constants.WARNING)) {
                 // render the email HTML
                 String messageHtml = thymeleafTemplateEngine.render(new ModelAndView(params, "table"));
                 log.info("Thymeleaf rendered sunccessfully.");
@@ -127,6 +127,7 @@ public class EmailService {
                 // send error mail if job failed with error
                 params.put(Constants.EMAIL_ERROR, "true");
                 params.put(Constants.JOB_ID, report.get(0).getJobId());
+                params.put(Constants.TITLE, report.get(0).getTestName());
                 String messageHtml = thymeleafTemplateEngine.render(new ModelAndView(params, "table"));
                 emailHandle.setSubject("Sherlock: Anomaly report ERROR");
                 emailHandle.setTextHTML(messageHtml);

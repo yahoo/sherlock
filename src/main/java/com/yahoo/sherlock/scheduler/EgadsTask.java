@@ -9,6 +9,7 @@ package com.yahoo.sherlock.scheduler;
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.service.DetectorService;
@@ -86,6 +87,7 @@ public class EgadsTask implements Runnable {
         List<Anomaly> anomalies;
         List<AnomalyReport> reports = new ArrayList<>();
         try {
+            proxyJob.setJobStatus(JobStatus.RUNNING.getValue());
             proxyJob.setEffectiveQueryTime(effectiveQueryEndTime);
             executionService.getAnomalyReportAccessor().deleteAnomalyReportsForJobAtTime(proxyJob.getJobId().toString(), proxyJob.getReportNominalTime().toString(), proxyJob.getFrequency());
             Granularity granularity = Granularity.getValue(proxyJob.getGranularity());

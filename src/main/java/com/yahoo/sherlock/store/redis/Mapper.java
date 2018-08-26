@@ -250,6 +250,18 @@ public abstract class Mapper<T> {
     }
 
     /**
+     * Container for a Boolean.
+     */
+    private static class BooleanBox extends Box<Boolean> {
+        /**
+         * @param aBoolean value to contain
+         */
+        private BooleanBox(Boolean aBoolean) {
+            super(aBoolean);
+        }
+    }
+
+    /**
      * Container for a String.
      */
     private static class StringBox extends Box<String> {
@@ -265,12 +277,14 @@ public abstract class Mapper<T> {
         Integer.class,
         Long.class,
         Double.class,
+        Boolean.class,
         String.class
     };
     private static Attribute.Type[] TYPES = {
         Attribute.Type.INTEGER,
         Attribute.Type.LONG,
         Attribute.Type.DOUBLE,
+        Attribute.Type.BOOLEAN,
         Attribute.Type.STRING
     };
 
@@ -313,6 +327,8 @@ public abstract class Mapper<T> {
                 return (Box<T>) new LongBox(NumberUtils.parseLong(strVal, (Long) def));
             case DOUBLE:
                 return (Box<T>) new DoubleBox(NumberUtils.parseDouble(strVal, (Double) def));
+            case BOOLEAN:
+                return (Box<T>) new BooleanBox(NumberUtils.parseBoolean(strVal, (Boolean) def));
             default:
                 return (Box<T>) new StringBox(strVal == null ? (String) def : strVal);
         }

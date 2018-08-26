@@ -240,4 +240,22 @@ public class NumberUtils {
         return parseDouble(str, null);
     }
 
+    /**
+     * Parse a boolean with a default value.
+     *
+     * @param str string to parse
+     * @param def default boolean value
+     * @return parsed boolean
+     */
+    public static Boolean parseBoolean(String str, Boolean def) {
+        if (str == null) {
+            return def;
+        }
+        Scanner scnr = new Scanner(str);
+        if (!scnr.hasNextBoolean()) {
+            return def;
+        }
+        return scnr.nextBoolean();
+    }
+
 }
