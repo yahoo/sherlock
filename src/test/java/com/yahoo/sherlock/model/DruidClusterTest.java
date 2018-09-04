@@ -140,7 +140,7 @@ public class DruidClusterTest {
         try {
             c.validate();
         } catch (SherlockException e) {
-            assertEquals(e.getMessage(), "Broker host should not contain any '/' or ':' characters");
+            assertEquals(e.getMessage(), "Broker host should not contain any '/' characters");
             return;
         }
         fail("Expected exception");

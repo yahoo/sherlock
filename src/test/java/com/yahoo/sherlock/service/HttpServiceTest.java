@@ -262,4 +262,24 @@ public class HttpServiceTest {
         fail();
     }
 
+    @Test
+    public void testQueryDruidStatusOkString() throws IOException, DruidException
+    {
+        mocks();
+        when(http.queryDruidClusterStatus(any(DruidCluster.class))).thenReturn(200);
+        when(http.queryDruidClusterStatusString(any(DruidCluster.class))).thenCallRealMethod();
+        String okResult = http.queryDruidClusterStatusString(null);
+        assertEquals(okResult, "OK");
+    }
+
+    @Test
+    public void testQueryDruidStatusErrorString() throws IOException, DruidException
+    {
+        mocks();
+        when(http.queryDruidClusterStatus(any(DruidCluster.class))).thenThrow(new RuntimeException());
+        when(http.queryDruidClusterStatusString(any(DruidCluster.class))).thenCallRealMethod();
+        String errorResult = http.queryDruidClusterStatusString(null);
+        assertEquals(errorResult, "ERROR");
+    }
+
 }

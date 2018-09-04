@@ -63,7 +63,7 @@ public class DetectorServiceTest {
         }
 
         @Override
-        protected HttpService newHttpServiceInstance() {
+        public HttpService newHttpServiceInstance() {
             return httpService;
         }
 

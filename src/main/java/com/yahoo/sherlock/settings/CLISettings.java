@@ -200,6 +200,12 @@ public class CLISettings {
     public static String EXTERNAL_FILE_PATH;
 
     /**
+     * Discovery url.
+     */
+    @Parameter(names = "--disco-url", description = "Discovery url")
+    public static String DISCO_URL;
+
+    /**
      * Parameters to ignore when printing fields.
      */
     private static String[] PRINT_IGNORED = {"log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED"};

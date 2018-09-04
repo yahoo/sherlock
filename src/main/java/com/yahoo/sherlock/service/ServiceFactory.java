@@ -57,7 +57,7 @@ public class ServiceFactory {
      * Method to get HttpService instance.
      * @return HttpService object
      */
-    protected HttpService newHttpServiceInstance() {
+    public HttpService newHttpServiceInstance() {
         return new HttpService();
     }
 
@@ -74,5 +74,12 @@ public class ServiceFactory {
      */
     public JobExecutionService newJobExecutionService() {
         return new JobExecutionService();
+    }
+
+    /**
+     * @return a discovery service instance
+     */
+    public DiscoService newDiscoService() {
+        return new DiscoService();
     }
 }
