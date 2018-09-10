@@ -251,7 +251,7 @@ public class CLISettings {
         InputStream is = new FileInputStream(CONFIG_FILE);
         props.load(is);
         for (Field configField : configFields) {
-            String configName = configField.getName();
+            String configName = configField.getAnnotation(Parameter.class).names()[0].replaceFirst("^--", "");
             Class<?> type = configField.getType();
             String configValue = props.getProperty(configName);
             if (configValue != null && configValue.length() > 0) {

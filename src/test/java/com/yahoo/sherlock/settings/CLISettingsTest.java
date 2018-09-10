@@ -85,7 +85,7 @@ public class CLISettingsTest {
 
         setField(configFile, null);
         setField(backend, "testDB");
-        makeConfigFile(new String[] {"VERSION"}, new String[] {"Redis"});
+        makeConfigFile(new String[] {"version"}, new String[] {"Redis"});
         CLISettings settings = new CLISettings();
         settings.loadFromConfig();
         Object backendVal = fieldVal(backend);
@@ -105,7 +105,7 @@ public class CLISettingsTest {
 
         setField(configFile, "TestConfigFile.ini");
         setField(backend, "testDB");
-        makeConfigFile(new String[] {"VERSION"}, new String[] {"Redis"});
+        makeConfigFile(new String[] {"version"}, new String[] {"Redis"});
         CLISettings settings = new CLISettings();
         settings.loadFromConfig();
         Object backendVal = fieldVal(backend);
@@ -129,7 +129,7 @@ public class CLISettingsTest {
         Object configFileOrg = fieldVal(configFile);
 
         setField(configFile, "TestConfigFile.ini");
-        makeConfigFile(new String[] {"PORT"}, new String[] {"Redis"});
+        makeConfigFile(new String[] {"port"}, new String[] {"Redis"});
         CLISettings settings = new CLISettings();
         try {
             settings.loadFromConfig();
