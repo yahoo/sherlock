@@ -6,7 +6,7 @@
     <packaging>jar</packaging>
     <name>sherlock</name>
     <description>Anomaly detection tool for timeseries data in Druid</description>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.8-mmx-SNAPSHOT</version>
 
     <licenses>
         <license>
@@ -28,48 +28,16 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git@github.com:yahoo/sherlock.git</connection>
-        <developerConnection>scm:git:git@github.com:yahoo/sherlock.git</developerConnection>
-        <url>https://github.com/yahoo/sherlock</url>
+        <connection>scm:git:git@github.com:metamx/sherlock.git</connection>
+        <developerConnection>scm:git:git@github.com:metamx/sherlock.git</developerConnection>
+        <url>https://github.com/metamx/sherlock</url>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>Github</system>
-        <url>https://github.com/yahoo/sherlock/issues</url>
+        <url>https://github.com/metamx/sherlock/issues</url>
     </issueManagement>
-
-    <ciManagement>
-        <system>Travis</system>
-        <url>https://travis-ci.org/yahoo/sherlock</url>
-    </ciManagement>
-
-    <distributionManagement>
-        <repository>
-            <id>bintray-yahoo-sherlock</id>
-            <name>yahoo-sherlock</name>
-            <url>https://api.bintray.com/maven/yahoo/maven/sherlock;publish=1</url>
-        </repository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>bintray-yahoo-maven</id>
-            <name>bintray</name>
-            <url>http://yahoo.bintray.com/maven</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>bintray-yahoo-maven</id>
-            <name>bintray-plugins</name>
-            <url>http://yahoo.bintray.com/maven</url>
-        </pluginRepository>
-    </pluginRepositories>
 
     <dependencies>
         <dependency>
@@ -128,7 +96,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.10</version>
+            <version>1.18.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -213,7 +181,7 @@
                         </manifest>
                     </archive>
                     <appendAssemblyId>false</appendAssemblyId>
-                    <finalName>${project.artifactId}</finalName>
+                    <finalName>${project.artifactId}-${project.version}-selfcontained</finalName>
                 </configuration>
                 <executions>
                     <execution>
@@ -273,4 +241,13 @@
 
         </plugins>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>central-local</id>
+            <name>Central Local</name>
+            <url>https://metamx.jfrog.io/metamx/libs-releases-local</url>
+        </repository>
+    </distributionManagement>
+
 </project>

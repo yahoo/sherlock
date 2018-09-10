@@ -7,12 +7,13 @@
 package com.yahoo.sherlock.model;
 
 import com.yahoo.sherlock.exception.SherlockException;
-import com.yahoo.sherlock.service.HttpService;
+import com.yahoo.sherlock.service.DiscoService;
+import com.yahoo.sherlock.service.ServiceFactory;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.Attribute;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.httpclient.HttpStatus;
 
 import java.io.Serializable;
 
@@ -60,6 +61,14 @@ public class DruidCluster implements Serializable {
     @Attribute
     private Integer hoursOfLag;
 
+    /** Druid cluster status holder. */
+    @EqualsAndHashCode.Exclude
+    private StatusHolder statusHolder = new StatusHolder(this);
+
+    /** Druid cluster url holder. */
+    @EqualsAndHashCode.Exclude
+    private UrlHolder urlHolder = new UrlHolder(this);
+
     /** Empty constructor. */
     public DruidCluster() {
     }
@@ -97,21 +106,7 @@ public class DruidCluster implements Serializable {
      * "ERROR" if not, or an error code otherwise
      */
     public String getStatus() {
-        String clusterStatus;
-        try {
-            int status = new HttpService().queryDruidClusterStatus(this);
-            switch (status) {
-                case HttpStatus.SC_OK:
-                    clusterStatus = "OK";
-                    break;
-                default:
-                    clusterStatus = String.valueOf(status);
-                    break;
-            }
-        } catch (Exception e) {
-            clusterStatus = "ERROR";
-        }
-        return clusterStatus;
+        return statusHolder.getStatus();
     }
 
     /**
@@ -131,8 +126,8 @@ public class DruidCluster implements Serializable {
             errorMsg = "Broker endpoint cannot be empty";
         } else if (brokerPort < 0) {
             errorMsg = "Broker port must be a non-negative number";
-        } else if (brokerHost.contains("/") || brokerHost.contains(":")) {
-            errorMsg = "Broker host should not contain any '/' or ':' characters";
+        } else if (brokerHost.contains("/")) {
+            errorMsg = "Broker host should not contain any '/' characters";
         } else {
             if (clusterDescription == null) {
                 clusterDescription = "";
@@ -172,6 +167,8 @@ public class DruidCluster implements Serializable {
         setBrokerEndpoint(newCluster.getBrokerEndpoint());
         setHoursOfLag(newCluster.getHoursOfLag());
         setProtocol(newCluster.getProtocol());
+        statusHolder = new StatusHolder(this);
+        urlHolder = new UrlHolder(this);
     }
 
     /**
@@ -179,7 +176,7 @@ public class DruidCluster implements Serializable {
      * @return base broker URL
      */
     public String getBaseUrl() {
-        return String.format("%s://%s:%s/", protocol, brokerHost, brokerPort);
+        return urlHolder.getUrl();
     }
 
     /**
@@ -188,6 +185,70 @@ public class DruidCluster implements Serializable {
      */
     public String getBrokerUrl() {
         return String.format("%s%s/", getBaseUrl(), brokerEndpoint);
+    }
+
+    /**
+     * Druid cluster status holder that checks status on demand but once in a period.
+     */
+    private static class StatusHolder {
+        private String status;
+        private long lastCheckTimestampMs = 0;
+        private final static int UPDATE_INTERVAL_SECONDS = 15;
+        private final DruidCluster cluster;
+
+        StatusHolder(DruidCluster cluster) {
+            this.cluster = cluster;
+        }
+
+        /** Checks status once in a period.
+         * @return string representation of status
+         */
+        public String getStatus() {
+            if (status == null || System.currentTimeMillis() > lastCheckTimestampMs + UPDATE_INTERVAL_SECONDS * 1000) {
+                status = new ServiceFactory().newHttpServiceInstance().queryDruidClusterStatusString(cluster);
+                lastCheckTimestampMs = System.currentTimeMillis();
+            }
+            return status;
+        }
+    }
+
+    /**
+     * Druid cluster url holder that discovers host and port if it's necessary but once in a period.
+     */
+    @Slf4j
+    private static class UrlHolder {
+        private String url;
+        private long lastUpdateTimestampMs = 0;
+        private final static int UPDATE_INTERVAL_SECONDS = 60;
+        private final DruidCluster cluster;
+
+        UrlHolder(DruidCluster cluster) {
+            this.cluster = cluster;
+        }
+
+        /** Discovers host and port once in a period.
+         * @return url
+         */
+        public String getUrl() {
+            if (url == null || System.currentTimeMillis() > lastUpdateTimestampMs + UPDATE_INTERVAL_SECONDS * 1000) {
+                String host = cluster.brokerHost;
+                Integer port = cluster.brokerPort;
+                if (cluster.brokerHost.contains(":")) {
+                    DiscoService disco = new ServiceFactory().newDiscoService();
+                    final DiscoService.Service service;
+                    try {
+                        service = disco.getService(cluster.brokerHost);
+                        host = service.getHost();
+                        port = service.getPort();
+                    } catch (SherlockException ignore) {
+                        log.warn("Using druid cluster host and port as they are");
+                    }
+                }
+                url = String.format("%s://%s:%s/", cluster.protocol, host, port);
+                lastUpdateTimestampMs = System.currentTimeMillis();
+            }
+            return url;
+        }
     }
 
 }

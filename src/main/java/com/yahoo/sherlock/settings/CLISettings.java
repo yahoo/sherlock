@@ -200,6 +200,12 @@ public class CLISettings {
     public static String EXTERNAL_FILE_PATH;
 
     /**
+     * Discovery url.
+     */
+    @Parameter(names = "--disco-url", description = "Discovery url")
+    public static String DISCO_URL;
+
+    /**
      * Parameters to ignore when printing fields.
      */
     private static String[] PRINT_IGNORED = {"log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED"};
@@ -245,7 +251,7 @@ public class CLISettings {
         InputStream is = new FileInputStream(CONFIG_FILE);
         props.load(is);
         for (Field configField : configFields) {
-            String configName = configField.getName();
+            String configName = configField.getAnnotation(Parameter.class).names()[0].replaceFirst("^--", "");
             Class<?> type = configField.getType();
             String configValue = props.getProperty(configName);
             if (configValue != null && configValue.length() > 0) {

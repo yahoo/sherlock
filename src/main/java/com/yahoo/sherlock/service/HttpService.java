@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.yahoo.sherlock.exception.DruidException;
+import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.settings.DruidConstants;
 
@@ -85,7 +86,6 @@ public class HttpService {
     }
 
     /**
-     * /**
      * Service method to call druid.
      *
      * @param cluster    the Druid cluster to issue the query
@@ -168,7 +168,7 @@ public class HttpService {
         log.info("Calling Druid broker for status.");
         String url = cluster.getBaseUrl() + DruidConstants.STATUS;
         HttpGet httpGet = newHttpGet(url);
-        HttpClient client = newHttpClient(300, 0);
+        HttpClient client = newHttpClient(3000, 0);
         try {
             HttpResponse response = client.execute(httpGet);
             return response.getStatusLine().getStatusCode();
@@ -178,4 +178,59 @@ public class HttpService {
             httpGet.releaseConnection();
         }
     }
+
+    /**
+     * Get a String that represents the status of a cluster.
+     * @return "OK" if the cluster can be contacted, "ERROR" if not, or an error code otherwise
+     */
+    public String queryDruidClusterStatusString(DruidCluster cluster) {
+        String clusterStatus;
+        try {
+            int status = queryDruidClusterStatus(cluster);
+            switch (status) {
+                case org.apache.commons.httpclient.HttpStatus.SC_OK:
+                    clusterStatus = "OK";
+                    break;
+                default:
+                    clusterStatus = String.valueOf(status);
+                    break;
+            }
+        } catch (Exception e) {
+            log.error("Error while retrieving druid cluster status", e);
+            clusterStatus = "ERROR";
+        }
+        return clusterStatus;
+    }
+
+    /**
+     * Get json from url.
+     * @param url an endpoint
+     * @return json object
+     * @throws SherlockException
+     */
+    public JsonObject getJson(String url) throws SherlockException {
+        HttpClient client = newHttpClient();
+        HttpGet httpGet = newHttpGet(url);
+        try {
+            // Execute query to Druid
+            HttpResponse response = client.execute(httpGet);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != HttpStatus.SC_OK) {
+                log.error("Get request to an endpoint {} failed: {}", url, response.getStatusLine());
+                throw new SherlockException(String.format("Get request to an endpoint %s failed: %d", url, statusCode));
+            }
+            // Read the response body.
+            InputStream inputStream = response.getEntity().getContent();
+            Gson gson = new Gson();
+            // get the response as json object
+            return gson.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+        } catch (Exception e) {
+            log.error("Error while sending get request", e);
+            throw new SherlockException(e.getMessage(), e);
+        } finally {
+            // Release the connection.
+            httpGet.releaseConnection();
+        }
+    }
+
 }
