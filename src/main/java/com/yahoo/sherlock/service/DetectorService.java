@@ -218,6 +218,7 @@ public class DetectorService {
         Anomaly anomaly = new Anomaly();
         anomaly.metricMetaData.name = JobStatus.NODATA.getValue();
         anomaly.metricMetaData.source = timeSeries.meta.source;
+        anomaly.metricMetaData.id = timeSeries.meta.id;
         anomaly.id = timeSeries.meta.id;
         anomaly.intervals = new Anomaly.IntervalSequence();
         anomaly.modelName = (egads.getP() != null) ? egads.getP().getProperty(AD_MODEL) : "";

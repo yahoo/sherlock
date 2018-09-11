@@ -11,6 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.yahoo.sherlock.exception.DruidException;
 import com.yahoo.sherlock.model.DruidCluster;
+import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.DruidConstants;
 
 import lombok.extern.slf4j.Slf4j;
@@ -56,12 +57,12 @@ public class HttpService {
     }
 
     /**
-     * Get a new {@code HttpClient} with a 20-second timeout.
+     * Get a new {@code HttpClient} with a {@link CLISettings#DRUID_QUERY_TIMEOUT} timeout.
      *
      * @return HttpClient
      */
     protected HttpClient newHttpClient() {
-        return newHttpClient(20000, 3);
+        return newHttpClient(CLISettings.DRUID_QUERY_TIMEOUT, 3);
     }
 
     /**
