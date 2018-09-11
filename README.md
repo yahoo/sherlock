@@ -196,6 +196,7 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 | --external-file-path      |    -                |  -          | [external-file-path](#external-file-path)           |
 | --debug-mode              |    -                | `false`     | [debug-mode](#debug-mode)                           |
 | --timeseries-completeness |    -                | `60`        | [timeseries-completeness](#timeseries-completeness) |
+| --druid-query-timeout     |    -                | `20000`     | [druid-query-timeout](#druid-query-timeout)         |
 
 #### help
 Prints commandline argument help message.
@@ -253,6 +254,8 @@ Specify the path to external files for Spark framework via this argument.
 Debug mode enables debug routes. Ex. '/DatabaseJson' (shows redis data as json dump). Look at `com.yahoo.sherlock.App` for more details. 
 #### timeseries-completeness
 This defines minimum fraction of datapoints needed in the timeseries to consider it as a valid timeseries o/w sherlock ignores such timeseries. (default value 60 i.e. 0.6 in fraction)
+#### druid-query-timeout
+Druid query timeout can be configured using this(in millis). (default value 20000)
 
 ## Committers
 
