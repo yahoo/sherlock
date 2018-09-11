@@ -370,11 +370,11 @@ public class JobExecutionService {
         if (anomalies.isEmpty()) {
             return Lists.newArrayList(0);
         }
-        boolean allReportWithNoData = true;
+        int  allReportWithNoData = 0;
         List<AnomalyReport> reports = new ArrayList<>(anomalies.size());
         for (Anomaly anomaly : anomalies) {
-            if (!anomaly.metricMetaData.name.equals(JobStatus.NODATA.getValue())) {
-                allReportWithNoData = false;
+            if (anomaly.metricMetaData.name.equals(JobStatus.NODATA.getValue())) {
+                allReportWithNoData++;
             }
             AnomalyReport report = AnomalyReport.createReport(anomaly, job);
             if (report.isHasAnomaly()) {
@@ -383,7 +383,7 @@ public class JobExecutionService {
         }
         // if no data was returned from druid datasource
         // set the job status to 'NODATA'
-        if (allReportWithNoData) {
+        if (allReportWithNoData == anomalies.size()) {
             job.setJobStatus(JobStatus.NODATA.getValue());
             return Lists.newArrayList(0);
         }

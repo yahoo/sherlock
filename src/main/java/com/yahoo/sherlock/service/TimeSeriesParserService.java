@@ -76,7 +76,7 @@ public class TimeSeriesParserService {
      * @return true if valid timeseries else false
      */
     public Predicate<TimeSeries> isValidTimeSeries(Query query) {
-        return timeSeries -> (timeSeries.startTime() == query.getStartTime()) && isCompleteEnough(timeSeries.size(), query);
+        return timeSeries -> (isCompleteEnough(timeSeries.size(), query));
     }
 
     /**
