@@ -200,10 +200,10 @@ public class CLISettings {
     public static String EXTERNAL_FILE_PATH;
 
     /**
-     * Timeout in milliseconds when querying druid.
+     * Timeout in milliseconds for http client.
      */
-    @Parameter(names = "--druid-query-timeout", description = "Timeout when querying Druid. (default 20000)")
-    public static int DRUID_QUERY_TIMEOUT = 20000;
+    @Parameter(names = "--http-client-timeout", description = "Timeout for http client. (default 20000)")
+    public static int HTTP_CLIENT_TIMEOUT = 20000;
 
     /**
      * Parameters to ignore when printing fields.

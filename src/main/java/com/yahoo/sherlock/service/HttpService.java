@@ -57,12 +57,12 @@ public class HttpService {
     }
 
     /**
-     * Get a new {@code HttpClient} with a {@link CLISettings#DRUID_QUERY_TIMEOUT} timeout.
+     * Get a new {@code HttpClient} with a {@link CLISettings#HTTP_CLIENT_TIMEOUT} timeout.
      *
      * @return HttpClient
      */
     protected HttpClient newHttpClient() {
-        return newHttpClient(CLISettings.DRUID_QUERY_TIMEOUT, 3);
+        return newHttpClient(CLISettings.HTTP_CLIENT_TIMEOUT, 3);
     }
 
     /**
