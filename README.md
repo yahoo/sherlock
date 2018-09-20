@@ -261,7 +261,7 @@ HttpClient timeout can be configured using this(in millis). (default value 20000
 
 Jigar Patel, [jigsdevbox@gmail.com](mailto:jigsdevbox@gmail.com)
 
-Jeff Niu, [jeffniu22@gmail.com](mailto:jeffniu22@gmail.com)
+Jeff Niu, [me@jeffniu.com](mailto:me@jeffniu.com)
 
 ## Contributors
 
