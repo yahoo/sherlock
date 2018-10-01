@@ -18,6 +18,7 @@ import java.io.IOException;
 import static spark.Spark.get;
 import static spark.Spark.port;
 import static spark.Spark.post;
+import static spark.Spark.redirect;
 import static spark.Spark.staticFiles;
 
 /**
@@ -112,7 +113,10 @@ class App {
         }
 
         // Home Page
-        get("/", Routes::viewHomePage, new ThymeleafTemplateEngine());
+        get("/sherlock", Routes::viewHomePage, new ThymeleafTemplateEngine());
+
+        // Default redirect
+        redirect.get("/", "/sherlock");
 
         // Route for New job submission form
         get("/New", Routes::viewNewAnomalyJobForm, new ThymeleafTemplateEngine());
