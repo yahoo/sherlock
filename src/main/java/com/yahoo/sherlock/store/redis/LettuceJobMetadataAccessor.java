@@ -6,6 +6,7 @@ import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.settings.DatabaseConstants;
+import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
@@ -35,6 +36,7 @@ public class LettuceJobMetadataAccessor
     private final String clusterIdName;
 
     private final DeletedJobMetadataAccessor deletedAccessor;
+    private final AnomalyReportAccessor anomalyReportAccessor;
 
     /**
      * @param params store parameters
@@ -45,6 +47,7 @@ public class LettuceJobMetadataAccessor
         this.jobStatusName = params.get(DatabaseConstants.INDEX_JOB_STATUS);
         this.clusterIdName = params.get(DatabaseConstants.INDEX_JOB_CLUSTER_ID);
         deletedAccessor = Store.getDeletedJobMetadataAccessor();
+        anomalyReportAccessor = Store.getAnomalyReportAccessor();
     }
 
     /**
@@ -81,6 +84,7 @@ public class LettuceJobMetadataAccessor
             RedisFuture<Long> delValue = cmd.del(key(jobId));
             cmd.flushCommands();
             await(delStatus, delCluster, delValue);
+            anomalyReportAccessor.deleteAnomalyReportsForJob(jobId);
             log.info("Successfully deleted job [{}]", jobId);
             return job;
         } catch (InterruptedException | ExecutionException e) {
@@ -125,6 +129,9 @@ public class LettuceJobMetadataAccessor
             }
             cmd.flushCommands();
             await(futureArr);
+            for (String jobId : jobIds) {
+                anomalyReportAccessor.deleteAnomalyReportsForJob(jobId);
+            }
             log.info("Successfully delete [{}] jobs", jobs.size());
             return jobs;
         } catch (InterruptedException | ExecutionException e) {
@@ -307,6 +314,6 @@ public class LettuceJobMetadataAccessor
     @Override
     public void deleteJobs(Set<String> jobIds) throws IOException {
         log.info("Performing bulk delete of [{}] jobs", jobIds);
-        performDeleteJob(jobIds);
+        deletedAccessor.putDeletedJobMetadata(performDeleteJob(jobIds));
     }
 }

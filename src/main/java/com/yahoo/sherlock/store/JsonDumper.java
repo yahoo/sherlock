@@ -9,7 +9,10 @@ package com.yahoo.sherlock.store;
 import com.google.gson.JsonObject;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import java.io.IOException;
+import java.util.List;
 
 /**
  * This class is responsible for grabbing the entire backend
@@ -28,6 +31,13 @@ public interface JsonDumper {
         DatabaseConstants.INDEX_JOB_STATUS,
         DatabaseConstants.INDEX_FREQUENCY
     };
+
+    /**
+     * Method to return pending jobs in the queue in redis.
+     * @return a JSON object
+     * @throws IOException if an error reading the backend occurs
+     */
+    List<ImmutablePair<String, String>> getQueuedJobs() throws IOException;
 
     /**
      * Returns the raw data of the backend as it is stored

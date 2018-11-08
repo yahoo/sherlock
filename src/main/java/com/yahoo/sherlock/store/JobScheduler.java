@@ -6,7 +6,6 @@
 package com.yahoo.sherlock.store;
 
 import com.yahoo.sherlock.model.JobMetadata;
-import com.yahoo.sherlock.exception.JobNotFoundException;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -57,18 +56,16 @@ public interface JobScheduler {
      *
      * @param jobId the job ID to remove
      * @throws IOException          if an error occurs while unscheduling the job
-     * @throws JobNotFoundException if the job was never scheduled
      */
-    void removeQueue(String jobId) throws IOException, JobNotFoundException;
+    void removeQueue(String jobId) throws IOException;
 
     /**
      * Wrapper method for integer job ID values.
      *
      * @param jobId job ID as an integer
      * @throws IOException          if an error occurs while unscheduling the job
-     * @throws JobNotFoundException if the job was never scheduled
      */
-    default void removeQueue(Integer jobId) throws IOException, JobNotFoundException {
+    default void removeQueue(Integer jobId) throws IOException {
         removeQueue(jobId.toString());
     }
 
@@ -130,7 +127,7 @@ public interface JobScheduler {
      * job from the pending queue.
      *
      * @param jobId the job id that has completed
-     * @throws IOException if an error removing from the queue occurs
+     * @throws IOException if an error occurs while removing from the queue
      */
     void removePending(String jobId) throws IOException;
 
@@ -143,4 +140,11 @@ public interface JobScheduler {
     default void removePending(Integer jobId) throws IOException {
         removePending(jobId.toString());
     }
+
+    /**
+     * Remove jobs from the pending queue.
+     * @param jobIds job ids to remove
+     * @throws IOException if an error occurs while removing from the queue
+     */
+    void removePending(Collection<String> jobIds) throws IOException;
 }

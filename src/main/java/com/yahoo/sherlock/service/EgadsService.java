@@ -15,15 +15,12 @@ import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.EgadsResult;
 import com.yahoo.sherlock.query.EgadsConfig;
-import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.utils.EgadsUtils;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -151,18 +148,7 @@ public class EgadsService {
      * default configuration upon run.
      */
     public void configureFromFile() {
-        try {
-            // use the egads config file if available
-            InputStream inputStream = new FileInputStream(CLISettings.EGADS_CONFIG_FILENAME);
-            Properties properties = new Properties();
-            properties.load(inputStream);
-            if (!properties.isEmpty()) {
-                p = properties;
-            }
-        } catch (Exception e) {
-            log.error("Error, could not load EGADS configuration from file!", e);
-            p = null;
-        }
+        p = EgadsConfig.fromFile();
     }
 
     /**
@@ -220,7 +206,7 @@ public class EgadsService {
      * @param timeseries input timeseries
      * @return ProcessableObject instance
      */
-    protected ProcessableObject getEgadsProcessableObject(TimeSeries timeseries) {
+    protected ProcessableObject getEgadsProcessableObject(TimeSeries timeseries) throws SherlockException {
         return ProcessableObjectFactory.create(EgadsUtils.fillMissingData(timeseries, p), p);
     }
 

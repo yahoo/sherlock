@@ -7,6 +7,7 @@
 package com.yahoo.sherlock.utils;
 
 import com.yahoo.egads.data.TimeSeries;
+import com.yahoo.sherlock.exception.SherlockException;
 
 import org.testng.annotations.Test;
 
@@ -18,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
 
 /**
  * Test class for missing data filling util in egads.
@@ -54,12 +54,11 @@ public class EgadsUtilsTest {
         );
     }
 
-    @Test
-    public void testFillMissingDataUnequalPeriodFrequency() {
+    @Test(expectedExceptions = SherlockException.class)
+    public void testFillMissingDataUnequalPeriodFrequency() throws SherlockException {
         TimeSeries ts = mock(TimeSeries.class);
-        when(ts.mostFrequentPeriod()).thenReturn(10L);
-        when(ts.minimumPeriod()).thenReturn(100L);
-        assertEquals(ts, EgadsUtils.fillMissingData(ts, 1, 1));
+        when(ts.mostFrequentPeriod()).thenReturn(0L);
+        EgadsUtils.fillMissingData(ts, 1, 1);
     }
 
 }

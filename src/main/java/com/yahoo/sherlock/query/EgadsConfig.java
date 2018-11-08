@@ -5,11 +5,14 @@
  */
 package com.yahoo.sherlock.query;
 
+import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.Utils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
@@ -784,7 +787,7 @@ public class EgadsConfig {
      * Whether egads should fill in missing values.
      * Set to 1 to enable.
      */
-    @EgadsParam(name = "FILL_MISSING", def = "0")
+    @EgadsParam(name = "FILL_MISSING", def = "1")
     private String fillMissing;
 
     /**
@@ -905,5 +908,25 @@ public class EgadsConfig {
             builder.setParam(key, properties.getProperty(key));
         }
         return config;
+    }
+
+    /**
+     * Method to read configs from file.
+     * @return configs properties object
+     */
+    public static Properties fromFile() {
+        Properties p = null;
+        try {
+            // use the egads config file if available
+            InputStream inputStream = new FileInputStream(CLISettings.EGADS_CONFIG_FILENAME);
+            Properties properties = new Properties();
+            properties.load(inputStream);
+            if (!properties.isEmpty()) {
+                p = properties;
+            }
+        } catch (Exception e) {
+            log.error("Error, could not load EGADS configuration from file!", e);
+        }
+        return p;
     }
 }

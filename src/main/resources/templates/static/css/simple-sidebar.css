@@ -63,7 +63,7 @@
 }
 
 .sidebar-nav li {
-    padding-top: 10px;
+    padding-top: 2px;
     text-indent: 0;
     text-align: center;
     line-height: 30px;
@@ -100,7 +100,7 @@
 
 .sidebar-nav > .sidebar-brand {
     padding-top: 20px;
-    padding-bottom: 20px;
+    padding-bottom: 15px;
     font-size: 18px;
     color: #fff;
 }

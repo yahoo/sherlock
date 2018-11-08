@@ -10,6 +10,8 @@ import com.yahoo.egads.control.DetectAnomalyProcessable;
 import com.yahoo.egads.control.ModelAdapter;
 import com.yahoo.egads.control.ProcessableObject;
 import com.yahoo.egads.data.TimeSeries;
+import com.yahoo.sherlock.exception.SherlockException;
+
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
@@ -37,15 +39,15 @@ public class EgadsUtils {
      * @param fillMissing whether the method should fill in missing data
      * @return processed time series
      */
-    public static TimeSeries fillMissingData(TimeSeries timeseries, int aggr, int fillMissing) {
+    public static TimeSeries fillMissingData(TimeSeries timeseries, int aggr, int fillMissing) throws SherlockException {
         TimeSeries output = new TimeSeries();
         Long interval = timeseries.mostFrequentPeriod();
         output.meta = timeseries.meta;
 
         // sanity check
-        if (interval != timeseries.minimumPeriod()) {
+        if (interval == 0L) {
             // throw exception
-            return timeseries;
+            throw new SherlockException("Most frequent periods(granularity):" + interval);
         }
         log.debug("starting filling...");
         if (fillMissing == 1) {
@@ -112,7 +114,7 @@ public class EgadsUtils {
      * @param p          properties of egads
      * @return complete timeseries
      */
-    public static TimeSeries fillMissingData(TimeSeries timeseries, Properties p) {
+    public static TimeSeries fillMissingData(TimeSeries timeseries, Properties p) throws SherlockException {
         int aggr;
         if (!NumberUtils.isNonNegativeInt(p.getProperty("AGGREGATION"))) {
             aggr = 1;
@@ -120,10 +122,10 @@ public class EgadsUtils {
             aggr = Integer.parseInt(p.getProperty("AGGREGATION"));
         }
         int fillMissing;
-        if (!NumberUtils.isNonNegativeInt(p.getProperty("FILL_MISSING"))) {
-            fillMissing = 0;
-        } else {
+        if (p.getProperty("FILL_MISSING").equals("1")) {
             fillMissing = 1;
+        } else {
+            fillMissing = 0;
         }
         return fillMissingData(timeseries, aggr, fillMissing);
     }

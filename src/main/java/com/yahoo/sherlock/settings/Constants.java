@@ -122,6 +122,11 @@ public final class Constants {
     public static final String ID = ":id";
 
     /**
+     * Constant for ':ids' in request.
+     */
+    public static final String IDS = ":ids";
+
+    /**
      * Constant for ':frequency' in request.
      */
     public static final String FREQUENCY_PARAM = ":frequency";
@@ -195,6 +200,11 @@ public final class Constants {
      * Delimiter constant for colon.
      */
     public static final String COLON_DELIMITER = ":";
+
+    /**
+     * Delimiter constant for semicolon.
+     */
+    public static final String SEMICOLON_DELIMITER = ";";
 
     /**
      * Delimiter constant for '@'.

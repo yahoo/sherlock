@@ -47,6 +47,9 @@ import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
 import com.yahoo.sherlock.utils.Utils;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import lombok.extern.slf4j.Slf4j;
 import spark.ModelAndView;
 import spark.Request;
@@ -59,9 +62,12 @@ import java.lang.reflect.Type;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Routes logic for web requests.
@@ -231,7 +237,7 @@ public class Routes {
         log.info("Getting user query from request.");
         Map<String, Object> params = new HashMap<>(defaultParams);
         Map<String, Object> tableParams = new HashMap<>(defaultParams);
-        params.put(Constants.TITLE, "Instant Anomaly Report");
+        params.put(Constants.TITLE, "Anomaly Report");
         try {
             Map<String, String> paramsMap = Utils.queryParamsToStringMap(request.queryMap());
             UserQuery userQuery = UserQuery.fromQueryParams(request.queryMap());
@@ -251,7 +257,8 @@ public class Routes {
             job.setFrequency(granularity.toString());
             job.setEffectiveQueryTime(intervalEndTime);
             // set egads config
-            EgadsConfig config = new EgadsConfig();
+            EgadsConfig config;
+            config = EgadsConfig.fromProperties(EgadsConfig.fromFile());
             config.setTsModel(userQuery.getTsModels());
             config.setAdModel(userQuery.getAdModels());
             // detect anomalies
@@ -264,8 +271,11 @@ public class Routes {
             );
             // results
             List<Anomaly> anomalies = new ArrayList<>();
+            List<ImmutablePair<Integer, String>> timeseriesNames = new ArrayList<>();
+            int i = 0;
             for (EgadsResult result : egadsResult) {
                 anomalies.addAll(result.getAnomalies());
+                timeseriesNames.add(new ImmutablePair<>(i++, result.getBaseName()));
             }
             List<AnomalyReport> reports = serviceFactory.newJobExecutionService().getReports(anomalies, job);
             tableParams.put(Constants.INSTANTVIEW, "true");
@@ -273,6 +283,7 @@ public class Routes {
             params.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
             Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
             params.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
+            params.put("timeseriesNames", timeseriesNames);
         } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
             log.error("Error while processing instant job!", e);
             params.put(Constants.ERROR, e.toString());
@@ -332,6 +343,27 @@ public class Routes {
             jobAccessor.deleteJobMetadata(jobId);
             return Constants.SUCCESS;
         } catch (IOException | JobNotFoundException | SchedulerException e) {
+            response.status(500);
+            log.error("Error in delete job metadata!", e);
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Method for deleting user selected anomaly jobs into database.
+     *
+     * @param request  Request for an anomaly report
+     * @param response Response
+     * @return Nothing on success (200 status), or error message (500 status)
+     */
+    public static String deleteSelectedJobs(Request request, Response response) {
+        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        log.info("Getting job list from database to delete the job [{}]", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
+        try {
+            schedulerService.stopJob(jobIds);
+            jobAccessor.deleteJobs(jobIds);
+            return Constants.SUCCESS;
+        } catch (IOException | SchedulerException e) {
             response.status(500);
             log.error("Error in delete job metadata!", e);
             return e.getMessage();
@@ -524,6 +556,44 @@ public class Routes {
     }
 
     /**
+     * Method for launching selected anomaly jobs.
+     *
+     * @param request  Request for launching selected jobs
+     * @param response Response
+     * @return Nothing on success (200 status), or error message (500 status)
+     * @throws IOException IO exception
+     */
+    public static String launchSelectedJobs(Request request, Response response) throws IOException {
+        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        log.info("Launching the jobs id:[{}] requested by user", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
+        JobMetadata jobMetadata;
+        for (String id : jobIds) {
+            try {
+                // get jobinfo from database
+                jobMetadata = jobAccessor.getJobMetadata(id);
+                if (jobMetadata.getJobStatus().equalsIgnoreCase(JobStatus.RUNNING.getValue()) ||
+                    jobMetadata.getJobStatus().equalsIgnoreCase(JobStatus.NODATA.getValue())) {
+                    continue;
+                }
+                DruidCluster cluster = clusterAccessor.getDruidCluster(jobMetadata.getClusterId());
+                jobMetadata.setHoursOfLag(cluster.getHoursOfLag());
+                log.info("Scheduling job.");
+                // schedule the job
+                schedulerService.scheduleJob(jobMetadata);
+                // change the job status as running
+                jobMetadata.setJobStatus(JobStatus.RUNNING.getValue());
+                jobAccessor.putJobMetadata(jobMetadata);
+            } catch (Exception e) {
+                log.error("Exception while launching the jobs {}!", id, e);
+                response.status(500);
+                return e.getMessage();
+            }
+        }
+        response.status(200);
+        return Constants.SUCCESS;
+    }
+
+    /**
      * Method for stopping anomaly job.
      *
      * @param request  Request for stopping a job
@@ -550,6 +620,37 @@ public class Routes {
             response.status(500);
             return e.getMessage();
         }
+    }
+
+    /**
+     * Method for stopping selected anomaly jobs.
+     *
+     * @param request  Request for stopping selected jobs
+     * @param response Response
+     * @return Nothing on success (200 status), or error message (500 status)
+     * @throws IOException IO exception
+     */
+    public static String stopSelectedJobs(Request request, Response response) throws IOException {
+        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        log.info("Stopping the jobs id:[{}] requested by user", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
+        JobMetadata jobMetadata;
+        for (String id : jobIds) {
+            try {
+                // get jobinfo from database
+                jobMetadata = jobAccessor.getJobMetadata(id);
+                // stop the job in the sheduler
+                schedulerService.stopJob(jobMetadata.getJobId());
+                // change the job status to stopped
+                jobMetadata.setJobStatus(JobStatus.STOPPED.getValue());
+                jobAccessor.putJobMetadata(jobMetadata);
+            } catch (Exception e) {
+                log.error("Exception while stopping the job {}!", id, e);
+                response.status(500);
+                return e.getMessage();
+            }
+        }
+        response.status(200);
+        return Constants.SUCCESS;
     }
 
     /**
@@ -871,6 +972,26 @@ public class Routes {
     }
 
     /**
+     * Method to view meta settings page.
+     *
+     * @param request  HTTP request
+     * @param response HTTP response
+     * @return object of ModelAndView
+     */
+    public static ModelAndView viewSettings(Request request, Response response) {
+        Map<String, Object> params = new HashMap<>(defaultParams);
+        params.put(Constants.TITLE, "Meta Manager");
+        try {
+            params.put("jobs", jobAccessor.getJobMetadataList());
+            params.put("queuedJobs", jsonDumper.getQueuedJobs());
+        } catch (Exception e) {
+            log.error("Fatal error while retrieving settings!", e);
+            params.put(Constants.ERROR, e.getMessage());
+        }
+        return new ModelAndView(params, "settings");
+    }
+
+    /**
      * Shows an advanced instant query view.
      *
      * @param request  HTTP request
@@ -979,6 +1100,29 @@ public class Routes {
             log.error("Error clearing job reports!", e);
             return e.getMessage();
         }
+    }
+
+    /**
+     * Endpoint used to clear all reports associated with given jobs.
+     *
+     * @param request  HTTP request
+     * @param response HTTP response
+     * @return 'success' or an error message is something goes wrong
+     */
+    public static String clearReportsOfSelectedJobs(Request request, Response response) {
+        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        log.info("Clearing reports of jobs id:[{}] requested by user", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
+        for (String id : jobIds) {
+            try {
+                reportAccessor.deleteAnomalyReportsForJob(id);
+            } catch (Exception e) {
+                log.error("Error clearing reports of the jobs {}!", id, e);
+                response.status(500);
+                return e.getMessage();
+            }
+        }
+        response.status(200);
+        return Constants.SUCCESS;
     }
 
     /**

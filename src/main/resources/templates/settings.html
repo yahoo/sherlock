@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 th:text="${title}" style="margin-bottom: 30px">Meta Manager:</h1>
+                    <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">
+                        Error message
+                    </div>
+                    <form id="settingsForm" method='post'>
+                        <fieldset>
+                            <div class="form-group">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title">Manager for Mutiple Jobs</h3>
+                                    </div>
+                                    <div class="panel-body">
+                                        <div class="form-group">
+                                            <label class="control-label" for="jobs">Jobs list:</label><br/>
+                                            <select id="jobs" class="form-control" multiple="multiple"
+                                                    th:field="*{job}" th:required="true">
+                                                <option th:each="job : ${jobs}"
+                                                        th:value="${job.getJobId()}"
+                                                        th:selected="false"
+                                                        th:text="${job.getJobId() + ' : ' + job.getTestName()}"></option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label" for="action-group">Actions:</label><br/>
+                                            <div class="btn-group" role="group" aria-label="" id="action-group">
+                                                <button type="button" class="btn btn-success" id="start" name="start" data-toggle="modal" data-target="#startConfirmModal">Start</button>
+                                                <button type="button" class="btn btn-warning" id="stop" name="stop" data-toggle="modal" data-target="#stopConfirmModal">Stop</button>
+                                                <button type="button" class="btn btn-danger" id="delete" name="delete" data-toggle="modal" data-target="#deleteConfirmModal">Delete</button>
+                                                <button type="button" class="btn btn-info" id="clear" name="clear" data-toggle="modal" data-target="#clearConfirmModal">Clear Reports</button>
+                                                <button type="button" class="loader" hidden="true" id="loader"></button>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title">Jobs waiting in queue</h3>
+                                    </div>
+                                    <div class="panel-body">
+                                        <table id="queueTable" class="table table-striped table-hover table-bordered">
+                                            <thead>
+                                            <tr>
+                                                <th>Job ID</th>
+                                                <th>Next Runtime</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr th:each="job: ${queuedJobs}" class='clickable-row' th:attr="data-href=${'/Jobs/' + job.getLeft()}">
+                                                <td th:text="${job.getLeft()}">id</td>
+                                                <td th:text="${job.getRight()}">time</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Delete confirmation -->
+    <div id="deleteConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="deleteConfirmModalCode">Do you really want to DELETE selected Jobs?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="deleteConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="deleteConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Stop confirmation -->
+    <div id="stopConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="stopConfirmModalCode">Do you really want to STOP selected Jobs?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="stopConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="stopConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Stop confirmation -->
+    <div id="startConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="startConfirmModalCode">Do you really want to START selected Jobs?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="startConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="startConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Clear report confirmation -->
+    <div id="clearConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="clearConfirmModalCode">Do you really want to CLEAR anomaly reports for selected Jobs?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="clearConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="clearConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #Wrapper -->
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
+    /*<![CDATA[*/
+
+        $('#jobs').multiselect({
+            maxHeight: 200,
+            nonSelectedText: 'Select jobs for backfill',
+            includeSelectAllOption: true,
+            enableFiltering: true
+        });
+
+        $(".clickable-row").click(function () {
+            window.document.location = $(this).data("href");
+        });
+
+        $('#queueTable').DataTable({
+            "pageLength": 100,
+            "order": [[ 0, "asc" ]]
+        });
+
+        function disableActions() {
+            $('#start').attr('disabled', true);
+            $('#stop').attr('disabled', true);
+            $('#delete').attr('disabled', true);
+            $('#clear').attr('disabled', true);
+            $('#loader').attr('hidden', false);
+        }
+
+        function enableActions() {
+            $('#start').attr('disabled', false);
+            $('#stop').attr('disabled', false);
+            $('#delete').attr('disabled', false);
+            $('#clear').attr('disabled', false);
+            $('#loader').attr('hidden', true);
+        }
+
+        function validate() {
+            return $('#jobs').val() === null;
+        }
+
+        $("#startConfirmModalYes").click(function() {
+            if(validate()) {
+                showErrorMessage("Please select a job from the list");
+                return;
+            }
+            disableActions();
+            $.ajax({
+                type: 'POST',
+                url: '/Meta-Manager/Launch/' + $('#jobs').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Jobs Launched successfully.");
+                        setTimeout(function() {
+                            enableActions();
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong while launching the jobs! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+
+        $("#stopConfirmModalYes").click(function() {
+            if(validate()) {
+                showErrorMessage("Please select a job from the list");
+                return;
+            }
+            disableActions();
+            $.ajax({
+                type: 'POST',
+                url: '/Meta-Manager/Stop/' + $('#jobs').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Jobs Stopped successfully.");
+                        setTimeout(function() {
+                            enableActions();
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong while stopping the jobs! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+
+        $("#deleteConfirmModalYes").click(function() {
+            if(validate()) {
+                showErrorMessage("Please select a job from the list");
+                return;
+            }
+            disableActions();
+            $.ajax({
+                type: 'POST',
+                url: '/Meta-Manager/Delete/' + $('#jobs').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Jobs Deleted successfully.");
+                        setTimeout(function() {
+                            enableActions();
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong while deleting the jobs! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+
+        $("#clearConfirmModalYes").click(function() {
+            if(validate()) {
+                showErrorMessage("Please select a job from the list");
+                return;
+            }
+            disableActions();
+            $.ajax({
+                type: 'POST',
+                url: '/Meta-Manager/ClearReports/' + $('#jobs').val(),
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Jobs Reports are cleared successfully.");
+                        setTimeout(function() {
+                            enableActions();
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong while clearing reports of jobs! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+    /*]]>*/
+</script>
+
+</body>
+
+</html>

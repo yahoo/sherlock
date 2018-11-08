@@ -144,7 +144,7 @@ public class Query {
         // check for multiple dimensions
         if (this.queryObj.has(QueryConstants.DIMENSIONS) && this.queryObj.get(QueryConstants.DIMENSIONS).isJsonArray()) {
             JsonArray dimensionsArray = this.queryObj.getAsJsonArray(QueryConstants.DIMENSIONS);              // get dimensions as an array
-            dimensionsArray.forEach(jsonElement -> dimensions.add(jsonElement.getAsString()));        // make a set of dimensions
+            dimensionsArray.forEach(jsonElement -> dimensions.add(jsonElement.getAsString()));                // make a set of dimensions
         } else if (this.queryObj.has(QueryConstants.DIMENSION)) {                                             // check for single dimension
             dimensions.add(this.queryObj.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString());
         }

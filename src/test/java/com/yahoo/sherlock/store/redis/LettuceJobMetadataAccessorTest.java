@@ -6,6 +6,7 @@ import com.lambdaworks.redis.RedisFuture;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.settings.DatabaseConstants;
+import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.store.StoreParams;
@@ -32,6 +33,7 @@ import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,12 +45,15 @@ public class LettuceJobMetadataAccessorTest {
 
     private LettuceJobMetadataAccessor jma;
     private DeletedJobMetadataAccessor djma;
+    private AnomalyReportAccessor ara;
     private AsyncCommands<String> async;
     private SyncCommands<String> sync;
 
     private void mocks() {
         jma = mock(LettuceJobMetadataAccessor.class);
         djma = mock(DeletedJobMetadataAccessor.class);
+        ara = mock(AnomalyReportAccessor.class);
+        inject(jma, LettuceJobMetadataAccessor.class, "anomalyReportAccessor", ara);
         inject(jma, LettuceJobMetadataAccessor.class, "deletedAccessor", djma);
         inject(jma, LettuceJobMetadataAccessor.class, "jobIdName", "id");
         inject(jma, LettuceJobMetadataAccessor.class, "jobStatusName", "status");
@@ -98,6 +103,7 @@ public class LettuceJobMetadataAccessorTest {
     public void testPerformDeleteJob() throws IOException, JobNotFoundException {
         mocks();
         when(jma.performDeleteJob(anyString())).thenCallRealMethod();
+        doNothing().when(ara).deleteAnomalyReportsForJob(anyString());
         when(async.hgetall(anyString())).thenReturn(fakeFuture(map(make(1, "RUNNING", 2))));
         JobMetadata job = jma.performDeleteJob("1");
         verify(async).del(anyVararg());
@@ -110,6 +116,7 @@ public class LettuceJobMetadataAccessorTest {
     public void testPerformDeleteJobs() throws IOException {
         mocks();
         when(jma.performDeleteJob(anySet())).thenCallRealMethod();
+        doNothing().when(ara).deleteAnomalyReportsForJob(anyString());
         Set<String> ids = Sets.newHashSet("1", "2", "3");
         for (int i = 1; i <= 3; i++) {
             RedisFuture<Map<String, String>> ftr = fakeFuture(map(make(i, "RUNNING", 10)));
@@ -274,5 +281,6 @@ public class LettuceJobMetadataAccessorTest {
         doCallRealMethod().when(jma).deleteJobs(anySet());
         jma.deleteJobs(Collections.emptySet());
         verify(jma).performDeleteJob(anySet());
+        verify(djma).putDeletedJobMetadata(anySet());
     }
 }

@@ -180,4 +180,14 @@ public class LettuceJobSchedulerTest {
         verify(sync).zrem("{queue}.pending", "1");
     }
 
+    @Test
+    public void testBulkRemovePending() throws IOException {
+        mocks();
+        doCallRealMethod().when(sch).removePending(anyCollection());
+        sch.removePending(Lists.newArrayList("1", "2", "3"));
+        verify(sync).multi();
+        verify(sync).exec();
+        verify(sync, times(3)).zrem(anyString(), anyString());
+    }
+
 }
