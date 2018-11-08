@@ -24,10 +24,13 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -109,6 +112,31 @@ public class SchedulerServiceTest {
         Mockito.doThrow(ioex).when(js).removeQueue(anyInt());
         try {
             ss.stopJob(5);
+        } catch (SchedulerException e) {
+            Assert.assertEquals(e.getMessage(), "error");
+            Assert.assertEquals(e.getCause(), ioex);
+            return;
+        }
+        Assert.fail();
+    }
+
+    @Test
+    public void testBulkStopJob() throws SchedulerException, IOException, JobNotFoundException {
+        init();
+        doCallRealMethod().when(ss).stopJob(anySet());
+        Set<String> jobSet = new HashSet<String>() {
+            {
+                add("1");
+                add("2");
+                add("3");
+            }
+        };
+        ss.stopJob(jobSet);
+        Mockito.verify(js, Mockito.times(1)).removeQueue(jobSet);
+        IOException ioex = new IOException("error");
+        Mockito.doThrow(ioex).when(js).removeQueue(anySet());
+        try {
+            ss.stopJob(jobSet);
         } catch (SchedulerException e) {
             Assert.assertEquals(e.getMessage(), "error");
             Assert.assertEquals(e.getCause(), ioex);

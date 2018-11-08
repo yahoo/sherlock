@@ -11,6 +11,7 @@ import com.yahoo.sherlock.model.JobMetadata;
 import lombok.NonNull;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -64,6 +65,6 @@ public interface DeletedJobMetadataAccessor {
      * @param jobs a list of deleted jobs to insert
      * @throws IOException if an error occurs
      */
-    void putDeletedJobMetadata(List<JobMetadata> jobs) throws IOException;
+    void putDeletedJobMetadata(Collection<JobMetadata> jobs) throws IOException;
 
 }

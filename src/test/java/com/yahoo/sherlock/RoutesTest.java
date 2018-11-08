@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.exception.ClusterNotFoundException;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.exception.SchedulerException;
@@ -29,6 +30,7 @@ import com.yahoo.sherlock.settings.CLISettingsTest;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.QueryConstants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
+import com.yahoo.sherlock.store.DBTestHelper;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
@@ -50,8 +52,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
@@ -203,10 +207,10 @@ public class RoutesTest {
         Request req = mock(Request.class);
         Response res = mock(Response.class);
         when(req.body()).thenReturn(
-            "{" +
-            "\"clusterId\":\"1\"," +
-            "\"ownerEmail\":\"someone@something.com\"" +
-            "}"
+                "{" +
+                        "\"clusterId\":\"1\"," +
+                        "\"ownerEmail\":\"someone@something.com\"" +
+                        "}"
         );
         JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
         ServiceFactory sf = mock(ServiceFactory.class);
@@ -1056,6 +1060,93 @@ public class RoutesTest {
         verify(jes, times(1)).performBackfillJob(any(JobMetadata.class), any(ZonedDateTime.class), any(ZonedDateTime.class));
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("rerun error"));
         assertEquals(Routes.cloneJob(req, res), "rerun error");
+        verify(res, times(1)).status(500);
+    }
+
+    @Test
+    public void testClearReportsOfSelectedJobs() throws Exception {
+        mocks();
+        when(req.params(anyString())).thenReturn("1,2,3");
+        assertEquals(Routes.clearReportsOfSelectedJobs(req, res), "success");
+        verify(ara, times(3)).deleteAnomalyReportsForJob(anyString());
+        doThrow(new IOException("io error")).when(ara).deleteAnomalyReportsForJob("2");
+        assertEquals(Routes.clearReportsOfSelectedJobs(req, res), "io error");
+        verify(res, times(1)).status(500);
+    }
+
+    @Test
+    public void testLaunchSelectedJobs() throws Exception {
+        mocks();
+        SchedulerService ss = mock(SchedulerService.class);
+        inject("schedulerService", ss);
+        when(req.params(anyString())).thenReturn("1,2,3");
+        JobMetadata job1 = DBTestHelper.getNewJob(); job1.setJobId(1); job1.setJobStatus(JobStatus.RUNNING.getValue());
+        JobMetadata job2 = DBTestHelper.getNewJob(); job2.setJobId(2); job2.setJobStatus(JobStatus.NODATA.getValue());
+        JobMetadata job3 = DBTestHelper.getNewJob(); job3.setJobId(3); job3.setJobStatus(JobStatus.CREATED.getValue());
+        when(jma.getJobMetadata("1")).thenReturn(job1);
+        when(jma.getJobMetadata("2")).thenReturn(job2);
+        when(jma.getJobMetadata("3")).thenReturn(job3);
+        DruidCluster cluster = DBTestHelper.getNewDruidCluster();
+        when(dca.getDruidCluster(anyInt())).thenReturn(cluster);
+        doNothing().when(ss).scheduleJob(any(JobMetadata.class));
+        when(jma.putJobMetadata(any(JobMetadata.class))).thenReturn("");
+        assertEquals(Routes.launchSelectedJobs(req, res), Constants.SUCCESS);
+        verify(res, times(1)).status(200);
+        verify(jma, times(1)).putJobMetadata(any(JobMetadata.class));
+        verify(ss, times(1)).scheduleJob(any(JobMetadata.class));
+        assertEquals(job3.getJobStatus(), "RUNNING");
+        job3.setJobStatus("CREATED");
+        when(jma.putJobMetadata(any(JobMetadata.class))).thenThrow(new IOException("io error"));
+        assertEquals(Routes.launchSelectedJobs(req, res), "io error");
+        verify(res, times(1)).status(500);
+    }
+
+    @Test
+    public void testStopSelectedJobs() throws Exception {
+        mocks();
+        SchedulerService ss = mock(SchedulerService.class);
+        inject("schedulerService", ss);
+        when(req.params(anyString())).thenReturn("1,2,3");
+        JobMetadata job1 = DBTestHelper.getNewJob(); job1.setJobId(1); job1.setJobStatus(JobStatus.RUNNING.getValue());
+        JobMetadata job2 = DBTestHelper.getNewJob(); job2.setJobId(2); job2.setJobStatus(JobStatus.NODATA.getValue());
+        JobMetadata job3 = DBTestHelper.getNewJob(); job3.setJobId(3); job3.setJobStatus(JobStatus.STOPPED.getValue());
+        when(jma.getJobMetadata("1")).thenReturn(job1);
+        when(jma.getJobMetadata("2")).thenReturn(job2);
+        when(jma.getJobMetadata("3")).thenReturn(job3);
+        doNothing().when(ss).stopJob(anyInt());
+        when(jma.putJobMetadata(any(JobMetadata.class))).thenReturn("");
+        assertEquals(Routes.stopSelectedJobs(req, res), Constants.SUCCESS);
+        verify(res, times(1)).status(200);
+        verify(jma, times(3)).putJobMetadata(any(JobMetadata.class));
+        verify(ss, times(3)).stopJob(anyInt());
+        assertEquals(job3.getJobStatus(), "STOPPED");
+        assertEquals(job2.getJobStatus(), "STOPPED");
+        assertEquals(job1.getJobStatus(), "STOPPED");
+        when(jma.putJobMetadata(any(JobMetadata.class))).thenThrow(new IOException("io error"));
+        assertEquals(Routes.stopSelectedJobs(req, res), "io error");
+        verify(res, times(1)).status(500);
+    }
+
+    @Test
+    public void testdeleteSelectedJobs() throws Exception {
+        mocks();
+        SchedulerService ss = mock(SchedulerService.class);
+        inject("schedulerService", ss);
+        when(req.params(anyString())).thenReturn("1,2,3");
+        Set<String> jobSet = new HashSet<String>() {
+            {
+                add("1");
+                add("2");
+                add("3");
+            }
+        };
+        doNothing().when(jma).deleteJobs(jobSet);
+        doNothing().when(ss).stopJob(jobSet);
+        assertEquals(Routes.deleteSelectedJobs(req, res), Constants.SUCCESS);
+        verify(jma, times(1)).deleteJobs(jobSet);
+        verify(ss, times(1)).stopJob(jobSet);
+        doThrow(new IOException("io error")).when(jma).deleteJobs(jobSet);
+        assertEquals(Routes.deleteSelectedJobs(req, res), "io error");
         verify(res, times(1)).status(500);
     }
 }

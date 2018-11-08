@@ -7,6 +7,8 @@ package com.yahoo.sherlock.model;
 
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
+import com.yahoo.sherlock.settings.Constants;
+
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -145,11 +147,10 @@ public class EgadsResult {
     /**
      * Get the name of a time series.
      *
-     * @param timeseries time series
      * @return the name of the time series
      */
-    public static String getBaseName(TimeSeries timeseries) {
-        return timeseries.meta.source.replace('\n', ',');
+    public String getBaseName() {
+        return timeseries.meta.name + Constants.SEMICOLON_DELIMITER + " " + timeseries.meta.source.replace(Constants.NEWLINE_DELIMITER, Constants.COMMA_DELIMITER);
     }
 
     /**
@@ -165,7 +166,7 @@ public class EgadsResult {
      * @return an array of Series
      */
     public Series[] getData() {
-        String baseName = getBaseName(timeseries);
+        String baseName = this.getBaseName();
         Series[] seriesArray = new Series[3];
         Anomaly.IntervalSequence anomalySeq =
                 anomalies.isEmpty()

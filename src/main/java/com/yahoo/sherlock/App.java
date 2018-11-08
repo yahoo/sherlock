@@ -11,6 +11,7 @@ import com.beust.jcommander.ParameterException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.settings.CLISettings;
 import lombok.extern.slf4j.Slf4j;
+
 import spark.template.thymeleaf.ThymeleafTemplateEngine;
 
 import java.io.IOException;
@@ -145,7 +146,7 @@ class App {
         // Route for viewing deleted job
         get("/DeletedJobs/:id", Routes::viewDeletedJobInfo, new ThymeleafTemplateEngine());
 
-        // Route for cloning selected job
+        // Route for cloning job
         post("/CloneJob/:id", Routes::cloneJob);
 
         // Route for updating selected job detail
@@ -183,6 +184,21 @@ class App {
 
         // Routes to Rerun the job for given timestamp in minutes
         post("/Rerun/:id/:timestamp", Routes::rerunJob);
+
+        // Routes to meta manager
+        get("/Meta-Manager", Routes::viewSettings, new ThymeleafTemplateEngine());
+
+        // Routes to delete selected jobs
+        post("/Meta-Manager/Delete/:ids", Routes::deleteSelectedJobs);
+
+        // Routes to start selected jobs
+        post("/Meta-Manager/Launch/:ids", Routes::launchSelectedJobs);
+
+        // Routes to stop selected jobs
+        post("/Meta-Manager/Stop/:ids", Routes::stopSelectedJobs);
+
+        // Routes to Clear all reports of selected jobs
+        post("/Meta-Manager/ClearReports/:ids", Routes::clearReportsOfSelectedJobs);
 
         // Enable debug routes only in debug mode
         if (CLISettings.DEBUG_MODE) {

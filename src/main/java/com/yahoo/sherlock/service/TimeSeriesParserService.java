@@ -7,6 +7,7 @@
 package com.yahoo.sherlock.service;
 
 import com.google.gson.JsonArray;
+import com.yahoo.sherlock.exception.LambdaException;
 import com.yahoo.sherlock.query.JsonTimeSeries;
 import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.utils.EgadsUtils;
@@ -76,7 +77,30 @@ public class TimeSeriesParserService {
      * @return true if valid timeseries else false
      */
     public Predicate<TimeSeries> isValidTimeSeries(Query query) {
-        return timeSeries -> (isCompleteEnough(timeSeries.size(), query));
+        return timeSeries -> (logIgnoredTimeseries(timeSeries, isCompleteEnough(timeSeries.size(), query) && isValidPeriods(timeSeries)));
+    }
+
+    /**
+     * Method to validate periods(datapoints granularity) in timeseries.
+     * @param timeSeries input time-series
+     * @return true if valid else false
+     */
+    private boolean isValidPeriods(TimeSeries timeSeries) {
+        long interval = timeSeries.mostFrequentPeriod();
+        return interval != 0L && interval == timeSeries.minimumPeriod();
+    }
+
+    /**
+     * Method to log ignored timeseries.
+     * @param timeSeries input timeseries
+     * @param acceptance true if accepted or else false
+     * @return
+     */
+    private boolean logIgnoredTimeseries(TimeSeries timeSeries, boolean acceptance) {
+        if (!acceptance) {
+            log.info("Ignored timeseries: " + timeSeries.meta.source);
+        }
+        return acceptance;
     }
 
     /**
@@ -107,7 +131,8 @@ public class TimeSeriesParserService {
      * @param intervals        intervals to lookback
      * @return an array of time series lists
      */
-    public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity, Integer granularityRange, int intervals) {
+    public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity, Integer granularityRange, int intervals)
+        throws SherlockException {
         long singleInterval = (long) (intervals - (intervals % granularityRange)) * granularity.getMinutes();
         int fillIntervals = (int) ((end - start) / granularity.getMinutes());
         @SuppressWarnings("unchecked") List<TimeSeries>[] result = (List<TimeSeries>[]) new List[fillIntervals];
@@ -141,7 +166,7 @@ public class TimeSeriesParserService {
                             });
                     return subTimeseries;
                 })
-                .map(timeSeries ->  EgadsUtils.fillMissingData(timeSeries, granularityRange, 1))
+                .map(LambdaException.functionalExceptionHandler(timeSeries -> EgadsUtils.fillMissingData(timeSeries, granularityRange, 1)))
                 .collect(Collectors.toList());
             result[intervalIndex] = subTimeseriesList;
             intervalIndex += 1;

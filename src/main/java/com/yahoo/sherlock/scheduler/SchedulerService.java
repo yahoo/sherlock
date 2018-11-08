@@ -9,7 +9,6 @@ package com.yahoo.sherlock.scheduler;
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.enums.Triggers;
-import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.settings.CLISettings;
@@ -27,6 +26,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 
 /**
@@ -117,8 +117,9 @@ public class SchedulerService {
                 jobScheduler,
                 Store.getJobMetadataAccessor()
         );
-        int delay = CLISettings.EXECUTION_DELAY * 1000;
-        timer.scheduleAtFixedRate(executionTask, 0, delay);
+        int period = CLISettings.EXECUTION_DELAY * 1000;
+        int delay = 0;
+        timer.scheduleAtFixedRate(executionTask, delay, period);
     }
 
     /**
@@ -203,8 +204,25 @@ public class SchedulerService {
         try {
             jobScheduler.removeQueue(jobId);
             jobScheduler.removePending(jobId);
-        } catch (IOException | JobNotFoundException e) {
+        } catch (IOException e) {
             log.error("Error while unscheduling job", e);
+            throw new SchedulerException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Stop all selected running job. This method will call the job scheduler
+     * to remove jobs from the task queue.
+     *
+     * @param jobIds IDs of jobs to stop
+     * @throws SchedulerException if an error occurs while unscheduling the job
+     */
+    public void stopJob(Set<String> jobIds) throws SchedulerException {
+        try {
+            jobScheduler.removeQueue(jobIds);
+            jobScheduler.removePending(jobIds);
+        } catch (IOException e) {
+            log.error("Error while unscheduling jobs", e);
             throw new SchedulerException(e.getMessage(), e);
         }
     }

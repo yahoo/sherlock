@@ -6,6 +6,7 @@ import com.yahoo.egads.data.TimeSeries;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -60,8 +61,10 @@ public class EgadsResultTest {
         TimeSeries ts = mock(TimeSeries.class);
         ts.meta = mock(MetricMeta.class);
         ts.meta.source = "abc\nggg";
-        String result = EgadsResult.getBaseName(ts);
-        assertEquals(result, "abc,ggg");
+        ts.meta.name = "M1";
+        EgadsResult egadsResult = new EgadsResult(Collections.emptyList(), ts, new TimeSeries.DataSequence());
+        String result = egadsResult.getBaseName();
+        assertEquals(result, "M1; abc,ggg");
     }
 
     private static EgadsResult getResult(float base) {
@@ -133,8 +136,8 @@ public class EgadsResultTest {
     public void testFuseResults() {
         List<EgadsResult> res = new ArrayList<EgadsResult>() {
             {
-                add(getResult(100));
                 add(getResult(120));
+                add(getResult(100));
                 add(getResult(10));
                 add(getResult(12));
             }

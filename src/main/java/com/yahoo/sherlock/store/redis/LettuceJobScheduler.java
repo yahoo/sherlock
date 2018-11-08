@@ -95,7 +95,7 @@ public class LettuceJobScheduler
     }
 
     @Override
-    public void removeQueue(String jobId) throws IOException, JobNotFoundException {
+    public void removeQueue(String jobId) throws IOException {
         log.info("Attempting to remove job [{}] from the queue", jobId);
         try (RedisConnection<String> conn = connect()) {
             conn.sync().zrem(queueName, jobId);
@@ -174,6 +174,19 @@ public class LettuceJobScheduler
         log.info("Removing job [{}] from the pending queue", jobId);
         try (RedisConnection<String> conn = connect()) {
             conn.sync().zrem(pendingQueueName, jobId);
+        }
+    }
+
+    @Override
+    public void removePending(Collection<String> jobIds) throws IOException {
+        log.info("Attempting to remove [{}] jobs from pending queue", jobIds.size());
+        try (RedisConnection<String> conn = connect()) {
+            SyncCommands<String> syncCmd = conn.sync();
+            syncCmd.multi();
+            for (String id : jobIds) {
+                syncCmd.zrem(pendingQueueName, id);
+            }
+            syncCmd.exec();
         }
     }
 }

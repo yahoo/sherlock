@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,7 +98,7 @@ public class LettuceDeletedJobMetadataAccessor
     }
 
     @Override
-    public void putDeletedJobMetadata(List<JobMetadata> jobs) throws IOException {
+    public void putDeletedJobMetadata(Collection<JobMetadata> jobs) throws IOException {
         log.info("Putting [{}] deleted jobs", jobs.size());
         try (RedisConnection<String> conn = connect()) {
             AsyncCommands<String> cmd = conn.async();
@@ -123,7 +124,7 @@ public class LettuceDeletedJobMetadataAccessor
             int i = 0;
             for (JobMetadata job : ready) {
                 futures[i++] = cmd.hmset(key(job.getJobId()), map(job));
-                futures[i++] = cmd.sadd(index(deletedName), job.getJobId().toString());
+                futures[i++] = cmd.sadd(index(deletedName, "all"), job.getJobId().toString());
             }
             cmd.flushCommands();
             await(futures);
