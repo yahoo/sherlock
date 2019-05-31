@@ -69,6 +69,33 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title">Email Manager</h3>
+                                    </div>
+                                    <div class="panel-body">
+                                        <table id="emailTable" class="table table-striped table-hover table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Email ID</th>
+                                                    <th>Send out Hour</th>
+                                                    <th>Send out Minute</th>
+                                                    <th>Interval</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="email: ${emails}" class='clickable-row' th:attr="data-href=${'/Emails/' + email.getEmailId()}">
+                                                    <td th:text="${email.getEmailId()}">email</td>
+                                                    <td th:text="${email.getSendOutHour()}">hour</td>
+                                                    <td th:text="${email.getSendOutMinute()}">minute</td>
+                                                    <td th:text="${email.getRepeatInterval()}">interval</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </fieldset>
                     </form>
                 </div>

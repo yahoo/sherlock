@@ -138,7 +138,7 @@ public class EgadsServiceTest {
         ProcessableObject po = mock(ProcessableObject.class);
         when(egads.getEgadsProcessableObject(any())).thenReturn(po);
         List<Anomaly> result = Lists.newArrayList(
-            new Anomaly(), new Anomaly(), new Anomaly()
+                new Anomaly(), new Anomaly(), new Anomaly()
         );
         when(po.result()).thenReturn(result);
         when(egads.detectAnomaliesResult(any())).thenCallRealMethod();

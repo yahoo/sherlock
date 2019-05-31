@@ -206,6 +206,18 @@ public class CLISettings {
     public static int HTTP_CLIENT_TIMEOUT = 20000;
 
     /**
+     * Backup redis DB local json dump file path.
+     */
+    @Parameter(names = "--backup-redis-db-path", description = "Backup redis DB local json dump file path. (default null i.e no backup)")
+    public static String BACKUP_REDIS_DB_PATH;
+
+    /**
+     * File path to specify the whitelisted druid broker hosts.
+     */
+    @Parameter(names = "--druid-brokers-list-file", description = "File to whitelist druid broker hosts. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)")
+    public static String DRUID_BROKERS_LIST_FILE;
+
+    /**
      * Parameters to ignore when printing fields.
      */
     private static String[] PRINT_IGNORED = {"log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED"};

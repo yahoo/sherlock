@@ -12,6 +12,7 @@ import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.redis.LettuceAnomalyReportAccessor;
 import com.yahoo.sherlock.store.redis.LettuceDeletedJobMetadataAccessor;
 import com.yahoo.sherlock.store.redis.LettuceDruidClusterAccessor;
+import com.yahoo.sherlock.store.redis.LettuceEmailMetadataAccessor;
 import com.yahoo.sherlock.store.redis.LettuceJobMetadataAccessor;
 import com.yahoo.sherlock.store.redis.LettuceJobScheduler;
 import com.yahoo.sherlock.store.redis.LettuceJsonDumper;
@@ -37,6 +38,7 @@ public class Store {
         DELETED_JOB_METADATA,
         DRUID_CLUSTER,
         JOB_METADATA,
+        EMAIL_METADATA,
         JSON_DUMPER,
         JOB_SCHEDULER
     }
@@ -57,6 +59,10 @@ public class Store {
      * Active job metadata accessor instance.
      */
     private static JobMetadataAccessor jobMetadataAccessor = null;
+    /**
+     * Active email metadata scheduler instance.
+     */
+    private static EmailMetadataAccessor emailMetadataAccessor = null;
     /**
      * Active json dumper instance.
      */
@@ -88,9 +94,13 @@ public class Store {
                 put(DatabaseConstants.INDEX_QUERY_ID, DatabaseConstants.INDEX_QUERY_ID);
                 put(DatabaseConstants.INDEX_JOB_ID, DatabaseConstants.INDEX_JOB_ID);
                 put(DatabaseConstants.INDEX_FREQUENCY, DatabaseConstants.INDEX_FREQUENCY);
+                put(DatabaseConstants.INDEX_EMAILID_REPORT, DatabaseConstants.INDEX_EMAILID_REPORT);
+                put(DatabaseConstants.INDEX_EMAILID_TRIGGER, DatabaseConstants.INDEX_EMAILID_TRIGGER);
+                put(DatabaseConstants.INDEX_EMAILID_JOBID, DatabaseConstants.INDEX_EMAILID_JOBID);
                 put(DatabaseConstants.INDEX_JOB_CLUSTER_ID, DatabaseConstants.INDEX_JOB_CLUSTER_ID);
                 put(DatabaseConstants.INDEX_JOB_STATUS, DatabaseConstants.INDEX_JOB_STATUS);
                 put(DatabaseConstants.QUEUE_JOB_SCHEDULE, DatabaseConstants.QUEUE_JOB_SCHEDULE);
+                put(DatabaseConstants.INDEX_EMAIL_ID, DatabaseConstants.INDEX_EMAIL_ID);
             }
         };
         String dbName;
@@ -107,6 +117,10 @@ public class Store {
             case DRUID_CLUSTER:
                 dbName = DatabaseConstants.DRUID_CLUSTERS;
                 idName = DatabaseConstants.CLUSTER_ID;
+                break;
+            case EMAIL_METADATA:
+                dbName = DatabaseConstants.EMAILS;
+                idName = DatabaseConstants.EMAIL_ID;
                 break;
             case JOB_METADATA:
             default:
@@ -142,6 +156,8 @@ public class Store {
                 return new LettuceJobScheduler(params);
             case JSON_DUMPER:
                 return new LettuceJsonDumper(params);
+            case EMAIL_METADATA:
+                return new LettuceEmailMetadataAccessor(params);
             default:
                 return null;
         }
@@ -219,4 +235,14 @@ public class Store {
         return jobScheduler;
     }
 
+    /**
+     * @return the email metadata accessor instance
+     */
+    public static EmailMetadataAccessor getEmailMetadataAccessor() {
+        if (emailMetadataAccessor == null) {
+            emailMetadataAccessor =
+                    (EmailMetadataAccessor) initializeAccessor(AccessorType.EMAIL_METADATA);
+        }
+        return emailMetadataAccessor;
+    }
 }

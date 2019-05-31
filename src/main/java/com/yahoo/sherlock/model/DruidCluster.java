@@ -133,6 +133,8 @@ public class DruidCluster implements Serializable {
             errorMsg = "Broker port must be a non-negative number";
         } else if (brokerHost.contains("/") || brokerHost.contains(":")) {
             errorMsg = "Broker host should not contain any '/' or ':' characters";
+        } else if (!isAllowedHost(brokerHost, brokerPort)) {
+            errorMsg = "Broker host or port specified is not allowed!";
         } else {
             if (clusterDescription == null) {
                 clusterDescription = "";
@@ -172,6 +174,16 @@ public class DruidCluster implements Serializable {
         setBrokerEndpoint(newCluster.getBrokerEndpoint());
         setHoursOfLag(newCluster.getHoursOfLag());
         setProtocol(newCluster.getProtocol());
+    }
+
+    /**
+     * Methos to check druid broker uri in allowed brokers list.
+     * @param host broker host
+     * @param port broker port
+     * @return true if allowed to access else false
+     */
+    private boolean isAllowedHost(String host, Integer port) {
+        return Constants.VALID_DRUID_BROKERS == null || Constants.VALID_DRUID_BROKERS.contains(String.format("%s:%s", host, port));
     }
 
     /**

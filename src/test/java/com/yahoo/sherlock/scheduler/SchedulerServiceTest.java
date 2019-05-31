@@ -146,6 +146,24 @@ public class SchedulerServiceTest {
     }
 
     @Test
+    public void testRemoveAllFromQueue() throws SchedulerException, IOException {
+        init();
+        doCallRealMethod().when(ss).removeAllJobsFromQueue();
+        ss.removeAllJobsFromQueue();
+        Mockito.verify(js, Mockito.times(1)).removeAllQueue();
+        IOException ioex = new IOException("error");
+        Mockito.doThrow(ioex).when(js).removeAllQueue();
+        try {
+            ss.removeAllJobsFromQueue();
+        } catch (SchedulerException e) {
+            Assert.assertEquals(e.getMessage(), "error");
+            Assert.assertEquals(e.getCause(), ioex);
+            return;
+        }
+        Assert.fail();
+    }
+
+    @Test
     public void testJobScheduleTimeAndRescheduleTime() {
         init();
         int hoursOfLag = 36;

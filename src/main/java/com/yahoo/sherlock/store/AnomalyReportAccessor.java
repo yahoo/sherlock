@@ -28,9 +28,10 @@ public interface AnomalyReportAccessor {
      * report should be overridden. Usually, the ID should
      * have already been set based on the time series metric.
      * @param reports the anomaly report to insert
+     * @param emailIds list of EmailIDs to index the report ID in order to send it later to user
      * @throws IOException if an error occurs
      */
-    void putAnomalyReports(List<AnomalyReport> reports) throws IOException;
+    void putAnomalyReports(List<AnomalyReport> reports, List<String> emailIds) throws IOException;
 
     /**
      * Get a list of anomaly reports that have the specified job ID.
@@ -43,6 +44,17 @@ public interface AnomalyReportAccessor {
      */
     @NonNull
     List<AnomalyReport> getAnomalyReportsForJob(String jobId, String frequency) throws IOException;
+
+    /**
+     * Get a list of anomaly reports that are present in given emailId Index.
+     * This method should search the database for all anomaly reports
+     * present in the index of given emailId.
+     * @param emailId the emailId for which to find reports
+     * @return a list of associated reports, which may be empty
+     * @throws IOException if an error occurs
+     */
+    @NonNull
+    List<AnomalyReport> getAnomalyReportsForEmailId(String emailId) throws IOException;
 
     /**
      * Get a list of anomaly reports that have the specified job ID

@@ -6,9 +6,23 @@
 
 package com.yahoo.sherlock.settings;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Constants for the project.
  */
+@Slf4j
 public final class Constants {
 
     /**
@@ -197,6 +211,11 @@ public final class Constants {
     public static final String COMMA_DELIMITER = ",";
 
     /**
+     * Delimiter constant for pipe.
+     */
+    public static final String PIPE_DELIMITER = "|";
+
+    /**
      * Delimiter constant for colon.
      */
     public static final String COLON_DELIMITER = ":";
@@ -290,4 +309,35 @@ public final class Constants {
      * Constant for 'http'.
      */
     public static final String HTTP = "http";
+
+    /**
+     * Constant for 'path'.
+     */
+    public static final String PATH = "path";
+
+    /**
+     * Constant set of allowed druid brokers.
+     */
+    public static final Set<String> VALID_DRUID_BROKERS;
+
+    static {
+        List<String> list;
+        // read allowed druid brokers from the file
+        if (CLISettings.DRUID_BROKERS_LIST_FILE != null) {
+            try (Stream<String> stream = Files.lines(Paths.get(CLISettings.DRUID_BROKERS_LIST_FILE))) {
+                list = stream
+                    .map(l -> l.replaceAll(WHITESPACE_REGEX, ""))
+                    .map(s -> Arrays.asList(s.split(COMMA_DELIMITER)))
+                    .flatMap(List::stream)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+            } catch (IOException e) {
+                log.error("Exception while reading druid brokers list file {}", CLISettings.DRUID_BROKERS_LIST_FILE, e);
+                list = new ArrayList<>();
+            }
+            VALID_DRUID_BROKERS = new HashSet<>(list);
+        } else {
+            VALID_DRUID_BROKERS = null;
+        }
+    }
 }

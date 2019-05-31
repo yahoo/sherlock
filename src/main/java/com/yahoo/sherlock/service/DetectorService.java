@@ -19,6 +19,7 @@ import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
+import com.yahoo.sherlock.utils.TimeUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,8 +75,8 @@ public class DetectorService {
      * @throws DruidException    if an error querying druid occurs
      */
     public List<Anomaly> detect(
-        DruidCluster cluster,
-        JobMetadata jobMetadata
+            DruidCluster cluster,
+            JobMetadata jobMetadata
     ) throws SherlockException, DruidException {
         Granularity granularity = Granularity.getValue(jobMetadata.getGranularity());
         Query query = queryService.build(jobMetadata.getQuery(), granularity, jobMetadata.getGranularityRange(), jobMetadata.getEffectiveQueryTime(), jobMetadata.getTimeseriesRange());
@@ -130,10 +131,10 @@ public class DetectorService {
      * @throws SherlockException if an error occurs during analysis
      */
     public List<Anomaly> runDetection(
-        JsonArray druidResponse,
-        Query query,
-        Double sigmaThreshold,
-        Integer granularityRange
+            JsonArray druidResponse,
+            Query query,
+            Double sigmaThreshold,
+            Integer granularityRange
     ) throws SherlockException {
         return runDetection(druidResponse, query, sigmaThreshold, null, null, granularityRange);
     }
@@ -162,6 +163,7 @@ public class DetectorService {
         List<TimeSeries> timeSeriesList = parserService.parseTimeSeries(druidResponse, query);
         // The value of the last timestamp expected to be returned by Druid
         Integer expectedEnd = (query.getRunTime() / 60) - (query.getGranularity().getMinutes() * granularityRange);
+        log.info("Expected timestamp of last data point in timeseries: {}", TimeUtils.getFormattedTimeMinutes(expectedEnd));
         List<Anomaly> anomalies = runDetection(timeSeriesList, sigmaThreshold, config, expectedEnd, frequency, query.getGranularity(), granularityRange);
         log.info("Generated anomaly list with {} anomalies", anomalies.size());
         return anomalies;
@@ -201,7 +203,7 @@ public class DetectorService {
         }
         for (TimeSeries timeSeries : timeSeriesList) {
             if (timeSeries.data.isEmpty() ||
-                timeSeries.data.get(timeSeries.data.size() - 1).time != endTimeMinutes * 60L) {
+                    timeSeries.data.get(timeSeries.data.size() - 1).time != endTimeMinutes * 60L) {
                 anomalies.add(getNoDataAnomaly(timeSeries));
             } else {
                 anomalies.addAll(egads.runEGADS(timeSeries, sigmaThreshold));

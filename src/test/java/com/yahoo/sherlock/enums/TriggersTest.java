@@ -18,8 +18,8 @@ public class TriggersTest {
 
     @Test
     public void testTriggersToString() {
-        Triggers[] triggers = {Triggers.MINUTE, Triggers.DAY, Triggers.HOUR, Triggers.MONTH, Triggers.WEEK};
-        String[] expected = {"minute", "day", "hour", "month", "week"};
+        Triggers[] triggers = {Triggers.INSTANT, Triggers.MINUTE, Triggers.DAY, Triggers.HOUR, Triggers.MONTH, Triggers.WEEK};
+        String[] expected = {"instant", "minute", "day", "hour", "month", "week"};
         for (int i = 0; i < triggers.length; i++) {
             assertEquals(triggers[i].toString(), expected[i]);
         }
@@ -27,7 +27,7 @@ public class TriggersTest {
 
     @Test
     public void testGetAllValues() {
-        assertEquals(Triggers.getAllValues().size(), 5);
+        assertEquals(Triggers.getAllValues().size(), 6);
     }
 
     /**
@@ -41,6 +41,7 @@ public class TriggersTest {
 
     @Test
     public void testGetMinutes() {
+        assertEquals(Triggers.INSTANT.getMinutes(), 0);
         assertEquals(Triggers.MINUTE.getMinutes(), 1);
         assertEquals(Triggers.HOUR.getMinutes(), 60);
         assertEquals(Triggers.DAY.getMinutes(), 1440);
@@ -50,6 +51,7 @@ public class TriggersTest {
 
     @Test
     public void testGetValue() {
+        assertEquals(Triggers.getValue("instant"), Triggers.INSTANT);
         assertEquals(Triggers.getValue("minute"), Triggers.MINUTE);
         assertEquals(Triggers.getValue("hour"), Triggers.HOUR);
         assertEquals(Triggers.getValue("day"), Triggers.DAY);

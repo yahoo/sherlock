@@ -7,6 +7,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.lambdaworks.redis.RedisFuture;
 import com.lambdaworks.redis.ScoredValue;
+import com.yahoo.sherlock.enums.JobStatus;
+import com.yahoo.sherlock.model.AnomalyReport;
+import com.yahoo.sherlock.model.DruidCluster;
+import com.yahoo.sherlock.model.EmailMetaData;
+import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.settings.CLISettings;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.JsonDumper;
 import com.yahoo.sherlock.store.Store;
@@ -16,11 +23,12 @@ import com.yahoo.sherlock.store.core.RedisConnection;
 import com.yahoo.sherlock.utils.TimeUtils;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.NotImplementedException;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +46,18 @@ public class LettuceJsonDumper
         extends AbstractLettuceAccessor
     implements JsonDumper {
 
+    /* Gson object */
+    private static Gson gson;
+
+    /* expiry time for reports in redis */
+    private final long expirationTime = Constants.SECONDS_IN_DAY * 100;
+
     /**
      * @param params store params
      */
     public LettuceJsonDumper(StoreParams params) {
         super(params);
+        gson = new Gson();
     }
 
     @Override
@@ -183,6 +198,7 @@ public class LettuceJsonDumper
             }
             for (Map.Entry<String, RedisFuture<Set<String>>> index : indices.entrySet()) {
                 result.add(index.getKey(), gson.toJsonTree(index.getValue().get(), new TypeToken<Set<String>>() { }.getType()));
+
             }
             for (Map.Entry<String, RedisFuture<Map<String, String>>> hash : hashes.entrySet()) {
                 result.add(hash.getKey(), gson.toJsonTree(hash.getValue().get(), new TypeToken<Map<String, String>>() { }.getType()));
@@ -197,9 +213,160 @@ public class LettuceJsonDumper
         }
     }
 
+    /**
+     * Helper to instantiate jobs.
+     * @param job job json object
+     * @return instantiated JobMetadata object
+     */
+    private JobMetadata instantiateJobs(JsonObject job) {
+        job.addProperty("effectiveRunTime", (String) null);
+        job.addProperty("effectiveQueryTime", (String) null);
+        // for backward compatibility
+        if (!job.has("timeseriesRange") || ("").equals(job.getAsJsonPrimitive("timeseriesRange").getAsString())) {
+            switch (job.getAsJsonPrimitive("granularity").getAsString().toUpperCase()) {
+                case Constants.MINUTE : job.addProperty("timeseriesRange", CLISettings.INTERVAL_MINUTES);
+                case Constants.HOUR : job.addProperty("timeseriesRange", CLISettings.INTERVAL_MINUTES);
+                case Constants.DAY : job.addProperty("timeseriesRange", CLISettings.INTERVAL_MINUTES);
+                case Constants.WEEK : job.addProperty("timeseriesRange", CLISettings.INTERVAL_MINUTES);
+                case Constants.MONTH : job.addProperty("timeseriesRange", CLISettings.INTERVAL_MINUTES);
+            }
+        }
+        JobMetadata jobMetadata = gson.fromJson(job, JobMetadata.class);
+        jobMetadata.setJobStatus(JobStatus.CREATED.getValue());
+        return jobMetadata;
+    }
+
     @Override
     public void writeRawData(JsonObject json) throws IOException {
-        // TODO: left unimplemented since this isn't currently used anywhere
-        throw new NotImplementedException();
+        Set<String> jsonKeys = json.keySet();
+        Map<String, Map<String, String>> modelObjectKeys = new HashMap<>();
+        Map<String, String[]> indexKeys = new HashMap<>();
+        Map<String, List<ScoredValue<byte[]>>> anomalyTimestampKeys = new HashMap<>();
+        Map<String, String> idKeys = new HashMap<>();
+        Mapper<String> jobObjectMapper = new HashMapper();
+        Mapper<String> emailObjectMapper = new HashMapper();
+        Mapper<String> reportObjectMapper = new HashMapper();
+        Mapper<String> druidClusterObjectMapper = new HashMapper();
+
+        for (String key : jsonKeys) {
+            if (json.get(key).isJsonObject()) {
+                if (key.contains(DatabaseConstants.JOBS) && !key.contains(DatabaseConstants.DELETED_JOBS)) {
+                    modelObjectKeys.put(key, jobObjectMapper.map(instantiateJobs(json.getAsJsonObject(key))));
+                } else if (key.contains(DatabaseConstants.REPORTS)) {
+                    modelObjectKeys.put(key, reportObjectMapper.map(gson.fromJson(json.getAsJsonObject(key), AnomalyReport.class)));
+                } else if (key.contains(DatabaseConstants.EMAILS)) {
+                    modelObjectKeys.put(key, emailObjectMapper.map(gson.fromJson(json.getAsJsonObject(key), EmailMetaData.class)));
+                } else if (key.contains(DatabaseConstants.DRUID_CLUSTERS)) {
+                    modelObjectKeys.put(key, druidClusterObjectMapper.map(gson.fromJson(json.getAsJsonObject(key), DruidCluster.class)));
+                }
+            } else if (json.get(key).isJsonArray()) {
+                if (key.contains(DatabaseConstants.ANOMALY_TIMESTAMP)) {
+                    anomalyTimestampKeys.put(key, gson.fromJson(json.getAsJsonArray(key), new TypeToken<List<ScoredValue<byte[]>>>() { }.getType()));
+                } else if (key.contains(DatabaseConstants.INDEX) && !key.contains(DatabaseConstants.DELETED)) {
+                    indexKeys.put(key, gson.fromJson(json.getAsJsonArray(key), String[].class));
+                }
+            } else if (key.equals(DatabaseConstants.CLUSTER_ID) || key.equals(DatabaseConstants.JOB_ID)) {
+                idKeys.put(key, json.getAsJsonPrimitive(key).getAsString());
+            } else {
+                log.error("Key is not a Json object, Json array or Json primitive: key = {}", key);
+            }
+        }
+        if (modelObjectKeys.size() > 0) {
+            writeObjectsToRedis(modelObjectKeys);
+        } else {
+            log.info("Found zero objects in json dump!");
+        }
+        if (anomalyTimestampKeys.size() > 0) {
+            writeAnomalyTimestampsToRedis(anomalyTimestampKeys);
+        } else {
+            log.info("Found zero anomaly timestamps in json dump!");
+        }
+        if (indexKeys.size() > 0) {
+            writeIndexesToRedis(indexKeys);
+        } else {
+            log.info("Found zero index keys in json dump!");
+        }
+        if (idKeys.size() > 0) {
+            writeIdsToRedis(idKeys);
+        } else {
+            log.info("Found zero Ids in json dump!");
+        }
+        log.info("Json dump is populated into redis.");
+    }
+
+    /**
+     * Method to write objects ({@link com.yahoo.sherlock.model.JobMetadata}, {@link com.yahoo.sherlock.model.EmailMetaData etc.}) to redis.
+     * @param objects map : key - object key, value - object fields as a map of strings
+     */
+    public void writeObjectsToRedis(Map<String, Map<String, String>> objects) {
+        RedisConnection<String> conn = connect();
+        List<RedisFuture> futures = new LinkedList<>();
+        AsyncCommands<String> cmd = conn.async();
+        cmd.setAutoFlushCommands(false);
+        log.info("Adding {} objects to redis", objects.size());
+        for (Map.Entry<String, Map<String, String>> object : objects.entrySet()) {
+            futures.add(cmd.hmset(object.getKey(), object.getValue()));
+            if (object.getKey().contains(DatabaseConstants.REPORTS)) {
+                futures.add(cmd.expire(object.getKey(), expirationTime));
+            }
+        }
+        cmd.flushCommands();
+        awaitRaw(futures);
+        log.info("Added all objects to redis");
+    }
+
+    /**
+     * Method to write anomaly timestamps from ({@link com.yahoo.sherlock.model.AnomalyReport}) to redis.
+     * @param anomalyTimestamps map : key - redis key, value - list of timestamps as {@link com.lambdaworks.redis.ScoredValue}
+     */
+    public void writeAnomalyTimestampsToRedis(Map<String, List<ScoredValue<byte[]>>> anomalyTimestamps) {
+        RedisConnection<byte[]> conn = binary();
+        List<RedisFuture> futures = new LinkedList<>();
+        AsyncCommands<byte[]> cmd = conn.async();
+        cmd.setAutoFlushCommands(false);
+        log.info("Adding {} anomaly timestamps to redis", anomalyTimestamps.size());
+        for (Map.Entry<String, List<ScoredValue<byte[]>>> anomalyTimestamp : anomalyTimestamps.entrySet()) {
+            futures.add(cmd.zadd(encode(anomalyTimestamp.getKey()), anomalyTimestamp.getValue().toArray(new ScoredValue[anomalyTimestamp.getValue().size()])));
+            futures.add(cmd.expire(encode(anomalyTimestamp.getKey()), expirationTime));
+        }
+        cmd.flushCommands();
+        awaitRaw(futures);
+        log.info("Added all anomaly timestamps to redis");
+    }
+
+    /**
+     * Method to write inices to redis.
+     * @param indices map : key - index key, value - string array of index values
+     */
+    public void writeIndexesToRedis(Map<String, String[]> indices) {
+        RedisConnection<String> conn = connect();
+        List<RedisFuture<Long>> futures = new LinkedList<>();
+        AsyncCommands<String> cmd = conn.async();
+        cmd.setAutoFlushCommands(false);
+        log.info("Adding {} indices to redis", indices.size());
+        for (Map.Entry<String, String[]> index : indices.entrySet()) {
+            futures.add(cmd.sadd(index.getKey(), index.getValue()));
+        }
+        cmd.flushCommands();
+        await(futures);
+        log.info("Added all indices to redis");
+    }
+
+    /**
+     * Method to write ids (like jobId, clusterId) to redis.
+     * @param ids map : key - id name, value - id value
+     */
+    public void writeIdsToRedis(Map<String, String> ids) {
+        RedisConnection<String> conn = connect();
+        List<RedisFuture<String>> futures = new LinkedList<>();
+        AsyncCommands<String> cmd = conn.async();
+        cmd.setAutoFlushCommands(false);
+        log.info("Adding {} Ids to redis", ids.size());
+        for (Map.Entry<String, String> id : ids.entrySet()) {
+            futures.add(cmd.set(id.getKey(), id.getValue()));
+        }
+        cmd.flushCommands();
+        await(futures);
+        log.info("Added all Ids to redis");
     }
 }

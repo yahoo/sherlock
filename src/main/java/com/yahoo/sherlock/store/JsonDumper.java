@@ -29,7 +29,11 @@ public interface JsonDumper {
         DatabaseConstants.INDEX_JOB_CLUSTER_ID,
         DatabaseConstants.INDEX_JOB_ID,
         DatabaseConstants.INDEX_JOB_STATUS,
-        DatabaseConstants.INDEX_FREQUENCY
+        DatabaseConstants.INDEX_FREQUENCY,
+        DatabaseConstants.INDEX_EMAILID_REPORT,
+        DatabaseConstants.INDEX_EMAIL_ID,
+        DatabaseConstants.INDEX_EMAILID_TRIGGER,
+        DatabaseConstants.INDEX_EMAILID_JOBID
     };
 
     /**

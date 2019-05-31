@@ -12,12 +12,14 @@ import com.yahoo.egads.data.Anomaly;
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.exception.ClusterNotFoundException;
+import com.yahoo.sherlock.exception.EmailNotFoundException;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.EgadsResult;
+import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
@@ -33,6 +35,7 @@ import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DBTestHelper;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;
+import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.JsonDumper;
 import org.testng.Assert;
@@ -70,6 +73,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -116,6 +120,7 @@ public class RoutesTest {
         CLISettingsTest.setField(CLISettingsTest.getField("deletedJobAccessor", Routes.class), null);
         CLISettingsTest.setField(CLISettingsTest.getField("clusterAccessor", Routes.class), null);
         CLISettingsTest.setField(CLISettingsTest.getField("jobAccessor", Routes.class), null);
+        CLISettingsTest.setField(CLISettingsTest.getField("emailMetadataAccessor", Routes.class), null);
         CLISettingsTest.setField(CLISettingsTest.getField("jsonDumper", Routes.class), null);
         CLISettingsTest.setField(CLISettingsTest.getField("serviceFactory", Routes.class), null);
         CLISettingsTest.setField(CLISettingsTest.getField("schedulerService", Routes.class), null);
@@ -124,6 +129,7 @@ public class RoutesTest {
             assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("reportAccessor", Routes.class)));
             assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("deletedJobAccessor", Routes.class)));
             assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("clusterAccessor", Routes.class)));
+            assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("emailMetadataAccessor", Routes.class)));
             assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("jobAccessor", Routes.class)));
             assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("jsonDumper", Routes.class)));
             assertNotNull(CLISettingsTest.fieldVal(CLISettingsTest.getField("serviceFactory", Routes.class)));
@@ -133,6 +139,7 @@ public class RoutesTest {
             CLISettingsTest.setField(CLISettingsTest.getField("deletedJobAccessor", Routes.class), null);
             CLISettingsTest.setField(CLISettingsTest.getField("clusterAccessor", Routes.class), null);
             CLISettingsTest.setField(CLISettingsTest.getField("jobAccessor", Routes.class), null);
+            CLISettingsTest.setField(CLISettingsTest.getField("emailMetadataAccessor", Routes.class), null);
             CLISettingsTest.setField(CLISettingsTest.getField("jsonDumper", Routes.class), null);
             CLISettingsTest.setField(CLISettingsTest.getField("serviceFactory", Routes.class), null);
             CLISettingsTest.setField(CLISettingsTest.getField("schedulerService", Routes.class), null);
@@ -769,8 +776,10 @@ public class RoutesTest {
     private DruidClusterAccessor dca;
     private JobMetadataAccessor jma;
     private AnomalyReportAccessor ara;
+    private EmailMetadataAccessor ema;
     private JobExecutionService jes;
     private ThymeleafTemplateEngine tte;
+
 
     private void mocks() {
         req = mock(Request.class);
@@ -791,6 +800,8 @@ public class RoutesTest {
         inject("jobAccessor", jma);
         ara = mock(AnomalyReportAccessor.class);
         inject("reportAccessor", ara);
+        ema = mock(EmailMetadataAccessor.class);
+        inject("emailMetadataAccessor", ema);
         @SuppressWarnings("unchecked") Map<String, Object> dp = (Map<String, Object>) mock(Map.class);
         inject("defaultParams", dp);
     }
@@ -1148,5 +1159,78 @@ public class RoutesTest {
         doThrow(new IOException("io error")).when(jma).deleteJobs(jobSet);
         assertEquals(Routes.deleteSelectedJobs(req, res), "io error");
         verify(res, times(1)).status(500);
+    }
+
+    @Test
+    public void testUpdateEmail() throws IOException, EmailNotFoundException {
+        mocks();
+        Request req = mock(Request.class);
+        Response res = mock(Response.class);
+        when(req.params(Constants.ID)).thenReturn("my@email.com");
+        when(req.body()).thenReturn(
+            "{" +
+            "\"emailId\":\"my@email.com\"," +
+            "\"sendOutHour\":\"23\"," +
+            "\"sendOutMinute\":\"54\"," +
+            "\"repeatInterval\":\"day\"" +
+            "}"
+        );
+        when(ema.getEmailMetadata("my@email.com")).thenReturn(new EmailMetaData("my@email.com"));
+        doNothing().when(ema).removeFromTriggerIndex(anyString(), anyString());
+        doNothing().when(ema).putEmailMetadata(any(EmailMetaData.class));
+        assertEquals(Routes.updateEmails(req, res), "my@email.com");
+        verify(ema, times(1)).removeFromTriggerIndex(anyString(), anyString());
+    }
+
+    @Test
+    public void testViewEmail() throws IOException, EmailNotFoundException {
+        mocks();
+        Request req = mock(Request.class);
+        Response res = mock(Response.class);
+        when(req.params(Constants.ID)).thenReturn("my@email.com");
+        when(ema.getEmailMetadata(anyString())).thenReturn(new EmailMetaData("my@email.com"));
+        ModelAndView mav = Routes.viewEmails(req, res);
+        assertEquals(mav.getViewName(), "emailInfo");
+    }
+
+    @Test
+    public void testDeleteEmail() throws IOException, EmailNotFoundException {
+        mocks();
+        Request req = mock(Request.class);
+        Response res = mock(Response.class);
+        when(req.params(Constants.ID)).thenReturn("my@email.com");
+        when(ema.getEmailMetadata(anyString())).thenReturn(new EmailMetaData("my@email.com"));
+        doNothing().when(jma).deleteEmailFromJobs(any(EmailMetaData.class));
+        String result = Routes.deleteEmail(req, res);
+        assertEquals(result, Constants.SUCCESS);
+        // test exception
+        doThrow(new IOException("error")).when(jma).deleteEmailFromJobs(any(EmailMetaData.class));
+        result = Routes.deleteEmail(req, res);
+        assertEquals(result, Constants.ERROR);
+    }
+
+    @Test
+    public void testRestoreRedisDBForm() throws IOException, EmailNotFoundException {
+        mocks();
+        Request req = mock(Request.class);
+        Response res = mock(Response.class);
+        ModelAndView mav = Routes.restoreRedisDBForm(req, res);
+        assertEquals(mav.getViewName(), "redisRestoreForm");
+    }
+
+    @Test
+    public void testRestoreRedisDB() throws IOException, EmailNotFoundException, SchedulerException {
+        mocks();
+        Request req = mock(Request.class);
+        Response res = mock(Response.class);
+        when(req.body()).thenReturn("{\"path\":\"//path//test//file//dump.json\"}");
+        SchedulerService ss = mock(SchedulerService.class);
+        inject("schedulerService", ss);
+        JsonDumper jd = mock(JsonDumper.class);
+        inject("jsonDumper", jd);
+        doNothing().when(jd).writeRawData(any());
+        doNothing().when(ss).removeAllJobsFromQueue();
+        String response = Routes.restoreRedisDB(req, res);
+        assertNotEquals(response, Constants.SUCCESS);
     }
 }

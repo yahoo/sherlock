@@ -26,6 +26,16 @@ public class SyncCommandsClusterImpl<K> implements SyncCommands<K> {
     }
 
     @Override
+    public String set(K key, K value) {
+        return commands.set(key, value);
+    }
+
+    @Override
+    public K get(K key) {
+        return commands.get(key);
+    }
+
+    @Override
     public Long incr(K key) {
         return commands.incr(key);
     }
@@ -89,4 +99,10 @@ public class SyncCommandsClusterImpl<K> implements SyncCommands<K> {
     public void close() {
         commands.close();
     }
+
+    @Override
+    public String bgsave() {
+        return commands.bgsave();
+    }
+
 }

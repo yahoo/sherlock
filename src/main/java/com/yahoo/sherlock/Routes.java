@@ -22,6 +22,7 @@ import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.EgadsResult;
+import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.model.JobTimeline;
 import com.yahoo.sherlock.model.JsonTimeline;
@@ -41,9 +42,11 @@ import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;
+import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.JsonDumper;
 import com.yahoo.sherlock.store.Store;
+import com.yahoo.sherlock.utils.BackupUtils;
 import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
 import com.yahoo.sherlock.utils.Utils;
@@ -91,6 +94,7 @@ public class Routes {
     private static DruidClusterAccessor clusterAccessor;
     private static JobMetadataAccessor jobAccessor;
     private static DeletedJobMetadataAccessor deletedJobAccessor;
+    private static EmailMetadataAccessor emailMetadataAccessor;
     private static JsonDumper jsonDumper;
 
     /**
@@ -105,7 +109,9 @@ public class Routes {
         defaultParams.put(Constants.INSTANTVIEW, null);
         defaultParams.put(Constants.DELETEDJOBSVIEW, null);
         defaultParams.put(Constants.GRANULARITIES, Granularity.getAllValues());
-        defaultParams.put(Constants.FREQUENCIES, Triggers.getAllValues());
+        List<String> frequencies = Triggers.getAllValues();
+        frequencies.remove(Triggers.INSTANT.toString());
+        defaultParams.put(Constants.FREQUENCIES, frequencies);
         defaultParams.put(Constants.EMAIL_HTML, null);
         defaultParams.put(Constants.EMAIL_ERROR, null);
     }
@@ -123,6 +129,7 @@ public class Routes {
         clusterAccessor = Store.getDruidClusterAccessor();
         jobAccessor = Store.getJobMetadataAccessor();
         deletedJobAccessor = Store.getDeletedJobMetadataAccessor();
+        emailMetadataAccessor = Store.getEmailMetadataAccessor();
         jsonDumper = Store.getJsonDumper();
         schedulerService.instantiateMasterScheduler();
         schedulerService.startMasterScheduler();
@@ -308,7 +315,7 @@ public class Routes {
             UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
             // Validate user email
             EmailService emailService = serviceFactory.newEmailServiceInstance();
-            if (!emailService.validateEmail(userQuery.getOwnerEmail(), emailService.getValidDomainsFromSettings())) {
+            if (!validEmail(userQuery.getOwnerEmail(), emailService)) {
                 throw new SherlockException("Invalid owner email passed");
             }
             log.info("User request parsing successful.");
@@ -476,6 +483,14 @@ public class Routes {
     }
 
     /**
+     * Helper method to validate input email-ids from user.
+     * @return true if email input field is valid else false
+     */
+    private static boolean validEmail(String emails, EmailService emailService) {
+        return emails == null || emails.isEmpty() || emailService.validateEmail(emails, emailService.getValidDomainsFromSettings());
+    }
+
+    /**
      * Method for updating anomaly job info into database.
      *
      * @param request  Request for updating a job
@@ -491,7 +506,7 @@ public class Routes {
             UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
             // Validate user email
             EmailService emailService = serviceFactory.newEmailServiceInstance();
-            if (!emailService.validateEmail(userQuery.getOwnerEmail(), emailService.getValidDomainsFromSettings())) {
+            if (!validEmail(userQuery.getOwnerEmail(), emailService)) {
                 throw new SherlockException("Invalid owner email passed");
             }
             JobMetadata currentJob = jobAccessor.getJobMetadata(jobId);
@@ -984,11 +999,81 @@ public class Routes {
         try {
             params.put("jobs", jobAccessor.getJobMetadataList());
             params.put("queuedJobs", jsonDumper.getQueuedJobs());
+            params.put("emails", emailMetadataAccessor.getAllEmailMetadata());
         } catch (Exception e) {
             log.error("Fatal error while retrieving settings!", e);
             params.put(Constants.ERROR, e.getMessage());
         }
         return new ModelAndView(params, "settings");
+    }
+
+    /**
+     * Method to view metadata about selected email.
+     *
+     * @param request  HTTP request
+     * @param response HTTP response
+     * @return object of ModelAndView
+     */
+    public static ModelAndView viewEmails(Request request, Response response) {
+        Map<String, Object> params = new HashMap<>(defaultParams);
+        params.put(Constants.TITLE, "Email Settings");
+        try {
+            List<String> triggers = Triggers.getAllValues();
+            triggers.remove(Triggers.MINUTE.toString());
+            params.put("emailTriggers", triggers);
+            params.put("email", emailMetadataAccessor.getEmailMetadata(request.params(Constants.ID)));
+        } catch (Exception e) {
+            log.error("Fatal error while retrieving email settings!", e);
+            params.put(Constants.ERROR, e.getMessage());
+        }
+        return new ModelAndView(params, "emailInfo");
+    }
+
+    /**
+     * Method to update email metadata as requested.
+     *
+     * @param request  HTTP request
+     * @param response HTTP response
+     * @return emailid as string
+     */
+    public static String updateEmails(Request request, Response response) {
+        String emailId = request.params(Constants.ID);
+        log.info("Updating email metadata for [{}]", emailId);
+        try {
+            EmailMetaData newEmailMetaData = new Gson().fromJson(request.body(), EmailMetaData.class);
+            EmailMetaData oldEmailMetadata = emailMetadataAccessor.getEmailMetadata(newEmailMetaData.getEmailId());
+            if (!newEmailMetaData.getRepeatInterval().equalsIgnoreCase(oldEmailMetadata.getRepeatInterval())) {
+                emailMetadataAccessor.removeFromTriggerIndex(newEmailMetaData.getEmailId(), oldEmailMetadata.getRepeatInterval());
+            }
+            emailMetadataAccessor.putEmailMetadata(newEmailMetaData);
+            response.status(200);
+            return emailId;
+        } catch (Exception e) {
+            log.error("Exception while stopping the job!", e);
+            response.status(500);
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Method to delete email metadata as requested.
+     * @param request  HTTP request
+     * @param response HTTP response
+     * @return status string
+     */
+    public static String deleteEmail(Request request, Response response) {
+        String emailId = request.params(Constants.ID);
+        log.info("Deleting email metadata for [{}]", emailId);
+        try {
+            EmailMetaData emailMetadata = emailMetadataAccessor.getEmailMetadata(emailId);
+            jobAccessor.deleteEmailFromJobs(emailMetadata);
+            response.status(200);
+            return Constants.SUCCESS;
+        } catch (Exception e) {
+            log.error("Exception while stopping the job!", e);
+            response.status(500);
+            return e.getMessage();
+        }
     }
 
     /**
@@ -1228,4 +1313,42 @@ public class Routes {
         return new ModelAndView(modelParams, "reportInstant");
     }
 
+    /**
+     * Method to view redis restore form.
+     * @param request HTTP request
+     * @param response HTTP response
+     * @return redisRestoreForm html
+     * @throws IOException exception
+     */
+    public static ModelAndView restoreRedisDBForm(Request request, Response response) throws IOException {
+        Map<String, Object> params = new HashMap<>(defaultParams);
+        return new ModelAndView(params, "redisRestoreForm");
+    }
+
+    /**
+     * Method to process the restore of redis DB from given json file.
+     * @param request HTTP request
+     * @param response HTTP response
+     * @return request status 'success' or error
+     */
+    public static String restoreRedisDB(Request request, Response response) {
+        Map<String, String> params = new Gson().fromJson(request.body(), new TypeToken<Map<String, String>>() { }.getType());
+        String filePath = params.get(Constants.PATH);
+        try {
+            schedulerService.removeAllJobsFromQueue();
+        } catch (SchedulerException e) {
+            log.error("Error while unscheduling current jobs!", e);
+            response.status(500);
+            return e.getMessage();
+        }
+        try {
+            jsonDumper.writeRawData(BackupUtils.getDataFromJsonFile(filePath));
+        } catch (IOException e) {
+            log.error("Unable to load data from the file at {} ", filePath, e);
+            response.status(500);
+            return e.getMessage();
+        }
+        response.status(200);
+        return Constants.SUCCESS;
+    }
 }

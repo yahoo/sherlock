@@ -16,6 +16,21 @@ import java.util.Set;
 public interface SyncCommands<K> extends AutoCloseable {
 
     /**
+     * @param key key to get
+     * @param value value of the key
+     * @return Ok if set the key
+     * @see com.lambdaworks.redis.api.sync.RedisCommands#set(Object, Object)
+     */
+    String set(K key, K value);
+
+    /**
+     * @param key key to get
+     * @return value of the key
+     * @see com.lambdaworks.redis.api.sync.RedisCommands#get(Object)
+     */
+    K get(K key);
+
+    /**
      * @param key long key to increment
      * @return value before increment
      * @see com.lambdaworks.redis.api.sync.RedisCommands#incr(Object)
@@ -107,6 +122,12 @@ public interface SyncCommands<K> extends AutoCloseable {
      * @return true if expiration is set else false
      */
     Boolean expire(K key, long seconds);
+
+    /**
+     * Command to dump snapshot of redis data.
+     * @return OK string
+     */
+    String bgsave();
 
     @Override
     void close();

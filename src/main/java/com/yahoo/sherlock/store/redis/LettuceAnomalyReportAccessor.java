@@ -27,12 +27,13 @@ import static com.yahoo.sherlock.store.redis.Mapper.encode;
  */
 @Slf4j
 public class LettuceAnomalyReportAccessor
-    extends AbstractLettuceAccessor
-    implements AnomalyReportAccessor {
+        extends AbstractLettuceAccessor
+        implements AnomalyReportAccessor {
 
     private final String jobIdName;
     private final String timeName;
     private final String frequencyName;
+    private final String emailIdReportName;
 
     /**
      * @param params store params
@@ -42,6 +43,7 @@ public class LettuceAnomalyReportAccessor
         this.jobIdName = params.get(DatabaseConstants.INDEX_REPORT_JOB_ID);
         this.timeName = params.get(DatabaseConstants.INDEX_TIMESTAMP);
         this.frequencyName = params.get(DatabaseConstants.INDEX_FREQUENCY);
+        this.emailIdReportName = params.get(DatabaseConstants.INDEX_EMAILID_REPORT);
     }
 
     /**
@@ -53,11 +55,11 @@ public class LettuceAnomalyReportAccessor
     }
 
     @Override
-    public void putAnomalyReports(List<AnomalyReport> reports) throws IOException {
+    public void putAnomalyReports(List<AnomalyReport> reports, List<String> emailIds) throws IOException {
         log.info("Putting [{}] anomaly reports", reports.size());
         try (
-            RedisConnection<String> conn = connect();
-            RedisConnection<byte[]> binary = binary()
+                RedisConnection<String> conn = connect();
+                RedisConnection<byte[]> binary = binary()
         ) {
             List<AnomalyReport> requireId = new ArrayList<>(reports.size());
             List<AnomalyReport> ready = new ArrayList<>(reports.size());
@@ -82,11 +84,11 @@ public class LettuceAnomalyReportAccessor
                 requireId.clear();
             }
             List<RedisFuture> arrFutures = new ArrayList<>(ready.size() + 1);
-            RedisFuture[] saddFutures = new RedisFuture[ready.size() * 6];
+            RedisFuture[] saddFutures = new RedisFuture[ready.size() * (6 + 2 * emailIds.size())];
             int i = 0;
             long expirationTime = Constants.SECONDS_IN_DAY * (ready.get(0).getJobFrequency().equalsIgnoreCase(Constants.HOUR) ?
                                                               Constants.REDIS_RETENTION_WEEKS_IN_DAYS : (ready.get(0).getJobFrequency().equalsIgnoreCase(Constants.MINUTE) ?
-                                                                                                         Constants.REDIS_RETENTION_ONE_DAY : Constants.REDIS_RETENTION_YEARS_IN_DAYS));
+                                                                                                        Constants.REDIS_RETENTION_ONE_DAY : Constants.REDIS_RETENTION_YEARS_IN_DAYS));
             for (AnomalyReport report : ready) {
                 arrFutures.addAll(writeReport(bin, cmd, report, expirationTime, this));
                 saddFutures[i++] = cmd.sadd(index(jobIdName, report.getJobId()), report.getUniqueId());
@@ -95,6 +97,10 @@ public class LettuceAnomalyReportAccessor
                 saddFutures[i++] = cmd.expire(index(frequencyName, report.getJobFrequency()), expirationTime);
                 saddFutures[i++] = cmd.sadd(index(timeName, report.getReportQueryEndTime()), report.getUniqueId());
                 saddFutures[i++] = cmd.expire(index(timeName, report.getReportQueryEndTime()), expirationTime);
+                for (String emailId : emailIds) {
+                    saddFutures[i++] = cmd.sadd(index(emailIdReportName, emailId), report.getUniqueId());
+                    saddFutures[i++] = cmd.expire(index(emailIdReportName, emailId), expirationTime);
+                }
             }
             arrFutures.addAll(Lists.newArrayList(saddFutures));
             cmd.flushCommands();
@@ -118,6 +124,34 @@ public class LettuceAnomalyReportAccessor
             reportIds.retainAll(freqReportIds.get());
             return getAnomalyReports(reportIds, this);
         } catch (InterruptedException | ExecutionException e) {
+            log.error("Error occurred while getting anomaly reports!", e);
+            throw new IOException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<AnomalyReport> getAnomalyReportsForEmailId(String emailId) throws IOException {
+        log.info("Getting anomaly reports for Email ID [{}]", emailId);
+        try (RedisConnection<String> conn = connect()) {
+            AsyncCommands<String> cmd = conn.async();
+            cmd.setAutoFlushCommands(false);
+            RedisFuture<Set<String>> emailReportIds = cmd.smembers(index(emailIdReportName, emailId));
+            cmd.flushCommands();
+            await(emailReportIds);
+            Set<String> reportIds = emailReportIds.get();
+            String[] rarr = new String[reportIds.size()];
+            int i = 0;
+            for (String s : reportIds) {
+                rarr[i] = s; i++;
+            }
+            if (i > 0) {
+                RedisFuture<Long> removedReports = cmd.srem(index(emailIdReportName, emailId), rarr);
+                cmd.flushCommands();
+                await(removedReports);
+            }
+            log.info("Removed {} anomaly reports to send it to {}", rarr.length, emailId);
+            return getAnomalyReports(reportIds, this);
+        } catch (Exception e) {
             log.error("Error occurred while getting anomaly reports!", e);
             throw new IOException(e.getMessage(), e);
         }
@@ -148,8 +182,8 @@ public class LettuceAnomalyReportAccessor
     public void deleteAnomalyReportsForJob(String jobId) throws IOException {
         log.info("Deleting all anomaly reports for job [{}]", jobId);
         try (
-            RedisConnection<String> conn = connect();
-            RedisConnection<byte[]> binary = binary()
+                RedisConnection<String> conn = connect();
+                RedisConnection<byte[]> binary = binary()
         ) {
             AsyncCommands<String> cmd = conn.async();
             AsyncCommands<byte[]> bin = binary.async();
@@ -231,11 +265,11 @@ public class LettuceAnomalyReportAccessor
      */
     @SuppressWarnings("unchecked")
     protected static List<RedisFuture> writeReport(
-        AsyncCommands<byte[]> bin,
-        AsyncCommands<String> cmd,
-        AnomalyReport report,
-        long expirationTime,
-        AbstractLettuceAccessor acc
+            AsyncCommands<byte[]> bin,
+            AsyncCommands<String> cmd,
+            AnomalyReport report,
+            long expirationTime,
+            AbstractLettuceAccessor acc
     ) {
         List<int[]> timestamps = report.getAnomalyTimestampsHours();
         Map<String, String> reportMap = acc.map(report);
@@ -276,12 +310,12 @@ public class LettuceAnomalyReportAccessor
      * @throws IOException if an error occurs
      */
     protected static List<AnomalyReport> getAnomalyReports(
-        Set<String> reportIds,
-        AbstractLettuceAccessor acc
+            Set<String> reportIds,
+            AbstractLettuceAccessor acc
     ) throws IOException {
         try (
-            RedisConnection<String> conn = acc.connect();
-            RedisConnection<byte[]> binary = acc.binary()
+                RedisConnection<String> conn = acc.connect();
+                RedisConnection<byte[]> binary = acc.binary()
         ) {
             List<RedisFuture<Map<String, String>>> values = new ArrayList<>(reportIds.size());
             List<RedisFuture<List<ScoredValue<byte[]>>>> timeStart = new ArrayList<>(reportIds.size());
@@ -300,9 +334,9 @@ public class LettuceAnomalyReportAccessor
             cmd.flushCommands();
             bin.flushCommands();
             List<RedisFuture[]> combine = Lists.newArrayList(
-                values.toArray(new RedisFuture[values.size()]),
-                timeStart.toArray(new RedisFuture[timeStart.size()]),
-                timeEnd.toArray(new RedisFuture[timeEnd.size()])
+                    values.toArray(new RedisFuture[values.size()]),
+                    timeStart.toArray(new RedisFuture[timeStart.size()]),
+                    timeEnd.toArray(new RedisFuture[timeEnd.size()])
             );
             acc.awaitCollection(combine);
             List<AnomalyReport> reports = new ArrayList<>(values.size());
@@ -326,9 +360,9 @@ public class LettuceAnomalyReportAccessor
      * @param endVals   ending scored values
      */
     protected static void decodeAndSetTimestamp(
-        AnomalyReport report,
-        List<ScoredValue<byte[]>> startVals,
-        List<ScoredValue<byte[]>> endVals
+            AnomalyReport report,
+            List<ScoredValue<byte[]>> startVals,
+            List<ScoredValue<byte[]>> endVals
     ) {
         byte[][] startBytes = new byte[startVals.size()][];
         byte[][] endBytes = new byte[startVals.size()][];
