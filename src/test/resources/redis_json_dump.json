@@ -1,0 +1,391 @@
+{
+  "ClusterId": "2",
+  "JobId": "5",
+  "clusterIdIndex:all": [
+    "2",
+    "1"
+  ],
+  "deletedIdIndex:all": [
+    "3"
+  ],
+  "emailIdIndex:Emails": [
+    "xyz@abc.com",
+    "pqr@opq.com"
+  ],
+  "emailIdReportsIndex:xyz@abc.com": [
+    "9319e9e6-126e-4048-961f-397a0cc0d85e",
+    "7384d6d9-fe90-4ff1-a1e4-7c0c27689bc6",
+    "faf54eff-ad8a-4163-b408-5c440c96e7dd",
+    "bb64871e-21d5-4b08-b31e-fa9c19752042",
+    "0e47f8ad-e20e-483f-bc23-86b433ce92ab",
+    "b11f48f9-fe33-4ff3-a2b3-1f8f1555c77b",
+    "046f434b-ba8d-4cb7-b37d-3d1770387a45",
+    "6816742e-f0b0-4a6a-9829-7ac6d10cb0db",
+    "05a9b847-3e25-4296-81bb-263c05866a17",
+    "7749b219-f429-46e4-9997-c25cbadb7066",
+    "d960d267-8d8d-4538-949a-bd3398c6d377"
+  ],
+  "emailJobIndex:xyz@abc.com": [
+    "2",
+    "1"
+  ],
+  "emailJobIndex:pqr@opq.com": [
+    "2",
+    "1"
+  ],
+  "emailTriggerIndex:hour": [
+    "pqr@opq.com"
+  ],
+  "emailTriggerIndex:instant": [
+    "xyz@abc.com"
+  ],
+  "frequencyIndex:day": [
+    "faf54eff-ad8a-4163-b408-5c440c96e7dd",
+    "b11f48f9-fe33-4ff3-a2b3-1f8f1555c77b",
+    "041e6386-4cf6-489b-9344-2e46f0731957",
+    "5c7ad379-6029-42ad-83ec-ddf4c1bfd9be",
+    "1412a421-fc57-4ba2-9e4b-7548fb9e231c",
+    "44d09ee2-76dc-424b-829f-111d4f337be7"
+  ],
+  "jobClusterIdIndex:1": [
+    "4",
+    "1",
+    "5",
+    "2"
+  ],
+  "jobIdIndex:all": [
+    "4",
+    "1",
+    "5",
+    "2"
+  ],
+  "jobStatusIndex:CREATED": [
+    "4",
+    "1",
+    "5",
+    "2"
+  ],
+  "jobStatusIndex:NODATA": [
+    "2",
+    "1"
+  ],
+  "jobStatusIndex:RUNNING": [
+    "4",
+    "1",
+    "2"
+  ],
+  "jobStatusIndex:STOPPED": [
+    "4",
+    "1",
+    "2"
+  ],
+  "reportJobIdIndex:1": [
+    "a3038074-ef80-4293-928f-72740dbd0855",
+    "307aeb3b-0564-45c1-b08d-80a3cde941a8",
+    "01f45ab9-1551-4bc0-9f7c-5458fda6ef02"
+  ],
+  "reportJobIdIndex:2": [
+    "0bf223be-7560-4f2c-b462-1d4973d46249",
+    "faf54eff-ad8a-4163-b408-5c440c96e7dd",
+    "92f6c62b-8d12-42ab-b37e-654d5d27d861",
+    "bb64871e-21d5-4b08-b31e-fa9c19752042"
+  ],
+  "reportJobIdIndex:4": [
+    "af41a438-0f9d-4649-9290-00fa37fe3df5",
+    "6ecc0f8d-1f4c-4094-b608-c39b8a4bc03a",
+    "4c5039ab-1d0e-4948-ade0-e7b077d75c7d",
+    "b70d3d78-1b6a-4101-9a9e-76f17c5a5e9d"
+  ],
+  "timestampIndex:25843680": [
+    "04ed98cd-b05a-4a8b-bc61-fcbcf563b6d8",
+    "5c7ad379-6029-42ad-83ec-ddf4c1bfd9be",
+    "31cdfed7-0e71-47cd-93b3-cf6903424abe",
+    "fc31ece0-98ac-40a6-83b9-c868e59664d9"
+  ],
+  "timestampIndex:25845120": [
+    "276a5e11-28c5-484d-85c6-7070bb719f9b"
+  ],
+  "timestampIndex:25860960": [
+    "ec18dcc2-ab90-4ea4-ba4c-541424a37758",
+    "6ecc0f8d-1f4c-4094-b608-c39b8a4bc03a",
+    "b70d3d78-1b6a-4101-9a9e-76f17c5a5e9d",
+    "af41a438-0f9d-4649-9290-00fa37fe3df5",
+    "b9953bc5-3a59-47d5-abee-d247a28752ab",
+    "4c5039ab-1d0e-4948-ade0-e7b077d75c7d",
+    "e03116cb-3361-4f0d-a49e-69d363202b3f"
+  ],
+  "timestampIndex:25873920": [
+    "bb64871e-21d5-4b08-b31e-fa9c19752042",
+    "d1ba4ba6-c4fb-48cd-bb66-b8b893985807",
+    "39586545-9f85-4a5d-8d04-60ebb6f36043",
+    "b11f48f9-fe33-4ff3-a2b3-1f8f1555c77b",
+    "6816742e-f0b0-4a6a-9829-7ac6d10cb0db",
+    "1f4ca93e-b9d9-495a-a79b-2fa4b192afb7",
+    "1a5a4787-8694-4af8-84da-dfabee002000",
+    "1a630044-78ac-4dc5-90b6-dfcd11ca83e5",
+    "7438be86-f393-474d-ad0a-48e8e750497e",
+    "b9499f92-42dd-48b5-bcc7-ab77176bcf59"
+  ],
+  "timestampIndex:25875360": [
+    "568cf002-11c9-48b6-8d6e-19bfc69f11ef",
+    "0bf223be-7560-4f2c-b462-1d4973d46249",
+    "023c8d4e-8712-4d08-9291-45e073fe67ab",
+    "f69d4757-17ea-4fc9-887d-e08226fbb80a",
+    "0c4fd71d-9ca5-466f-97b6-43415cc7216e",
+    "571f9cfa-21b3-4f78-af90-6533fc4ce6ae",
+    "f389c42d-ffa6-4e3f-b23a-ef55c5d90407",
+    "e900b7a8-8ac4-4bab-827b-3730b11026d0",
+    "ded49d5f-f18f-4552-add9-7c79fed1a754",
+    "39d0e4c9-bb31-471a-9043-bfb7df12e320",
+    "590a81f8-ac8f-4cda-bdd0-0fb5c800e7cd",
+    "58991d87-9460-4cf8-96c4-136bd1385f34",
+    "b472376f-1219-4d27-86fc-fd4fa4907518",
+    "5c595219-4e63-48b3-82c9-e588957ad260",
+    "a411b780-4567-47b3-a90d-bf731e947162",
+    "240de70c-984d-4fea-b527-eb399307e7c5",
+    "6c9ceecc-1ff3-46e9-9986-faec4ebfa67a",
+    "99399b83-0bad-492a-838a-35cd71c63e0d"
+  ],
+  "timestampIndex:25876800": [
+    "7749b219-f429-46e4-9997-c25cbadb7066",
+    "041e6386-4cf6-489b-9344-2e46f0731957",
+    "8b05d2b1-142f-4b68-a616-78368f94f5ee"
+  ],
+  "timestampIndex:25878240": [
+    "b8def1f0-a11b-4b55-b705-f18827461570",
+    "faf54eff-ad8a-4163-b408-5c440c96e7dd"
+  ],
+  "timestampIndex:25879680": [
+    "0e47f8ad-e20e-483f-bc23-86b433ce92ab",
+    "3dd6f127-120f-45d2-83c8-228c8cd243b9",
+    "046f434b-ba8d-4cb7-b37d-3d1770387a45"
+  ],
+  "timestampIndex:25881120": [
+    "d2dc6b43-07a9-4f8e-9931-56b5db0f0f28",
+    "c3e297e4-fcbd-4caf-a1c7-1debcf92ea75"
+  ],
+  "timestampIndex:25882560": [
+    "3d3d02e3-2038-431b-bf77-146016e83fec",
+    "a3038074-ef80-4293-928f-72740dbd0855"
+  ],
+  "timestampIndex:25884000": [
+    "a3cf8e4e-5bcc-42a7-8072-7eb0815af3c2",
+    "cae0c94d-2126-4f8b-95e4-7cbed1d1c842"
+  ],
+  "timestampIndex:25885440": [
+    "29501b34-ea07-43a4-8f7d-f3d423c36c5a",
+    "afeb7332-44f7-4832-881d-e14f253af734",
+    "8137c1db-9912-4ab9-9b47-172dca8bc70c",
+    "31c42d3e-0505-4175-b32b-93750671ae80",
+    "ad44e06c-bddc-453b-80c4-0c2791410cec"
+  ],
+  "timestampIndex:25886880": [
+    "44dbae75-e5f8-481f-ad05-26f1c073edb3",
+    "66e4e36a-53f7-4d80-9e29-b79786851270"
+  ],
+  "timestampIndex:25888320": [
+    "dc5d9f01-c390-4f57-a833-9037053188a9",
+    "0ea04a40-4af3-4054-8044-cb2cfb8a04b7"
+  ],
+  "timestampIndex:25889760": [
+    "0c1d3c88-5db7-4ecc-b93a-ac38e424e0fe",
+    "97809a6e-899a-4eeb-ab98-5f035aa475cd"
+  ],
+  "timestampIndex:25891200": [
+    "31609cab-8334-49ee-aca4-6cd482b4d628",
+    "69371f3e-1292-4a11-94bd-83272787dcde"
+  ],
+  "timestampIndex:25892640": [
+    "cada8af8-02a0-4c31-83f0-0f1f3568b4a0",
+    "1412a421-fc57-4ba2-9e4b-7548fb9e231c",
+    "307aeb3b-0564-45c1-b08d-80a3cde941a8"
+  ],
+  "timestampIndex:25894080": [
+    "fa7a8610-a409-4e34-8a1d-7322e332d0d9",
+    "d10e0b3f-9875-4d52-9944-e34b09264af5",
+    "8af62e22-f3fc-409d-bdd7-384686de1621"
+  ],
+  "DeletedJobs:3": {
+    "hoursOfLag": "12",
+    "frequency": "day",
+    "testName": "test1",
+    "granularityRange": "1",
+    "jobId": "3",
+    "url": "",
+    "granularity": "day",
+    "effectiveQueryTime": "",
+    "owner": "owner1",
+    "testDescription": "",
+    "anomalyDetectionModel": "KSigmaModel",
+    "emailOnNoData": "false",
+    "userQuery": "{}",
+    "jobStatus": "CREATED",
+    "timeseriesRange": "28",
+    "timeseriesModel": "OlympicModel",
+    "query": "{}",
+    "sigmaThreshold": "3.0",
+    "effectiveRunTime": "",
+    "clusterId": "1",
+    "ownerEmail": ""
+  },
+  "DruidClusters:1": {
+    "protocol": "http",
+    "brokerPort": "4080",
+    "hoursOfLag": "0",
+    "clusterName": "cluster1",
+    "brokerHost": "bkr.abc.com",
+    "clusterDescription": "",
+    "clusterId": "1",
+    "brokerEndpoint": "druid/v2"
+  },
+  "DruidClusters:2": {
+    "protocol": "http",
+    "brokerPort": "4080",
+    "hoursOfLag": "5",
+    "clusterName": "cl3",
+    "brokerHost": "brk.opq.com",
+    "clusterDescription": "blah",
+    "clusterId": "2",
+    "brokerEndpoint": "druid/v2"
+  },
+  "Emails:xyz@abc.com": {
+    "sendOutHour": "12",
+    "sendOutMinute": "00",
+    "repeatInterval": "instant",
+    "emailId": "xyz@abc.com"
+  },
+  "Emails:pqr@opq.com": {
+    "sendOutHour": "12",
+    "sendOutMinute": "7",
+    "repeatInterval": "hour",
+    "emailId": "pqr@opq.com"
+  },
+  "Jobs:1": {
+    "testName": "test",
+    "hoursOfLag": "0",
+    "ownerEmail": "xyz@abc.com",
+    "granularityRange": "1",
+    "jobId": "1",
+    "url": "",
+    "granularity": "day",
+    "owner": "owner",
+    "testDescription": "",
+    "anomalyDetectionModel": "KSigmaModel",
+    "emailOnNoData": "true",
+    "userQuery": "{}",
+    "jobStatus": "STOPPED",
+    "timeseriesRange": "28",
+    "timeseriesModel": "OlympicModel",
+    "sigmaThreshold": "3.0",
+    "query": "{}",
+    "effectiveRunTime": "25909921",
+    "frequency": "day",
+    "clusterId": "1",
+    "effectiveQueryTime": "25909920"
+  },
+  "Jobs:2": {
+    "testName": "tess",
+    "hoursOfLag": "0",
+    "ownerEmail": "pqr@opq.com,xyz@abc.com",
+    "granularityRange": "1",
+    "jobId": "2",
+    "url": "",
+    "granularity": "day",
+    "owner": "jigar",
+    "testDescription": "",
+    "anomalyDetectionModel": "KSigmaModel",
+    "emailOnNoData": "true",
+    "userQuery": "{}",
+    "jobStatus": "STOPPED",
+    "timeseriesRange": "28",
+    "timeseriesModel": "OlympicModel",
+    "sigmaThreshold": "3.0",
+    "query": "{}",
+    "effectiveRunTime": "25909922",
+    "frequency": "day",
+    "clusterId": "1",
+    "effectiveQueryTime": "25909920"
+  },
+  "Reports:01f45ab9-1551-4bc0-9f7c-5458fda6ef02": {
+    "deviationString": "-41",
+    "queryURL": "",
+    "jobId": "1",
+    "modelName": "KSigmaModel",
+    "metricName": "m1",
+    "jobFrequency": "day",
+    "modelParam": "3.0",
+    "groupByFilters": "filter1, filter2",
+    "uniqueId": "01f45ab9-1551-4bc0-9f7c-5458fda6ef02",
+    "reportQueryEndTime": "25896960",
+    "status": "warning",
+    "testName": "test"
+  },
+  "Reports:023c8d4e-8712-4d08-9291-45e073fe67ab": {
+    "deviationString": "",
+    "queryURL": "",
+    "jobId": "2",
+    "modelName": "",
+    "metricName": "",
+    "jobFrequency": "day",
+    "modelParam": "",
+    "groupByFilters": "",
+    "uniqueId": "023c8d4e-8712-4d08-9291-45e073fe67ab",
+    "reportQueryEndTime": "25875360",
+    "status": "nodata",
+    "testName": "tess"
+  },
+  "Reports:0c1d3c88-5db7-4ecc-b93a-ac38e424e0fe": {
+    "deviationString": "",
+    "queryURL": "",
+    "jobId": "2",
+    "modelName": "",
+    "metricName": "",
+    "jobFrequency": "day",
+    "modelParam": "",
+    "groupByFilters": "",
+    "uniqueId": "0c1d3c88-5db7-4ecc-b93a-ac38e424e0fe",
+    "reportQueryEndTime": "25889760",
+    "status": "success",
+    "testName": "tess"
+  },
+  "Reports:01f45ab9-1551-4bc0-9f7c-5458fda6ef02:anomalyTimestamps:start": [
+    {
+      "score": 0.0,
+      "value": [
+        6,
+        -106,
+        0
+      ]
+    }
+  ],
+  "Reports:041e6386-4cf6-489b-9344-2e46f0731957:anomalyTimestamps:start": [
+    {
+      "score": 0.0,
+      "value": [
+        6,
+        -108,
+        -80
+      ]
+    }
+  ],
+  "Reports:046f434b-ba8d-4cb7-b37d-3d1770387a45:anomalyTimestamps:start": [
+    {
+      "score": 0.0,
+      "value": [
+        6,
+        -108,
+        -32
+      ]
+    }
+  ],
+  "Reports:4d0356ef-351c-4597-b801-e948bd234e60:anomalyTimestamps:start": [
+    {
+      "score": 0.0,
+      "value": [
+        6,
+        -106,
+        120
+      ]
+    }
+  ]
+}

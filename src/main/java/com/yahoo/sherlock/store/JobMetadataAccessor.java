@@ -6,6 +6,7 @@
 
 package com.yahoo.sherlock.store;
 
+import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 
@@ -160,4 +161,16 @@ public interface JobMetadataAccessor {
      */
     void deleteJobs(Set<String> jobIds) throws IOException;
 
+    /**
+     * Method to delete given email from all related jobs.
+     * @param emailMetaData email metadata of emailId that is to be deleted
+     * @throws IOException if an error occurs
+     */
+    void deleteEmailFromJobs(EmailMetaData emailMetaData) throws IOException;
+
+    /**
+     * Method to save redis snapshot.
+     * @return OK
+     */
+    String saveRedisJobsMetadata() throws IOException;
 }

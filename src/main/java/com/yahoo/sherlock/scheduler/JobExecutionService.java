@@ -26,10 +26,10 @@ import com.yahoo.sherlock.service.DetectorService;
 import com.yahoo.sherlock.service.EmailService;
 import com.yahoo.sherlock.service.ServiceFactory;
 import com.yahoo.sherlock.service.TimeSeriesParserService;
-import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;
+import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.utils.TimeUtils;
@@ -42,8 +42,10 @@ import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service class for job execution.
@@ -73,6 +75,11 @@ public class JobExecutionService {
     private AnomalyReportAccessor anomalyReportAccessor;
 
     /**
+     * Class email metadata accessor instance.
+     */
+    private EmailMetadataAccessor emailMetadataAccessor;
+
+    /**
      * Create the service and grab references to the necessary
      * accessors and services.
      */
@@ -81,6 +88,7 @@ public class JobExecutionService {
         druidClusterAccessor = Store.getDruidClusterAccessor();
         jobMetadataAccessor = Store.getJobMetadataAccessor();
         anomalyReportAccessor = Store.getAnomalyReportAccessor();
+        emailMetadataAccessor = Store.getEmailMetadataAccessor();
     }
 
     /**
@@ -106,24 +114,20 @@ public class JobExecutionService {
             if (reports.isEmpty()) {
                 AnomalyReport report = getSingletonReport(job);
                 reports.add(report);
-                if (report.getStatus().equals(Constants.ERROR) && CLISettings.ENABLE_EMAIL) {
-                    if (!emailService.sendEmail(CLISettings.FAILURE_EMAIL, CLISettings.FAILURE_EMAIL, reports)) {
-                        log.error("Error while sending failure email!");
-                    }
-                } else if (report.getStatus().equals(Constants.NODATA) && job.getEmailOnNoData()) {
-                    if (!emailService.sendEmail(job.getOwner(), job.getOwnerEmail(), reports)) {
-                        log.error("Error while sending Nodata email!");
-                    }
-                }
-            } else {
-                if (CLISettings.ENABLE_EMAIL) {
-                    log.info("Emailing anomaly report.");
-                    if (!emailService.sendEmail(job.getOwner(), job.getOwnerEmail(), reports)) {
-                        log.error("Error while sending anomaly report email!");
-                    }
-                }
             }
-            anomalyReportAccessor.putAnomalyReports(reports);
+            List<String> originalEmailList = job.getOwnerEmail() == null || job.getOwnerEmail().isEmpty() ? new ArrayList<>() :
+                                             Arrays.stream(job.getOwnerEmail().split(Constants.COMMA_DELIMITER)).collect(Collectors.toList());
+            List<String> finalEmailList = new ArrayList<>();
+            if (reports.get(0).getStatus().equalsIgnoreCase(Constants.ERROR)) {
+                emailService.processEmailReports(job, originalEmailList, reports);
+                anomalyReportAccessor.putAnomalyReports(reports, finalEmailList);
+            } else if (!((finalEmailList = emailMetadataAccessor.checkEmailsInInstantIndex(originalEmailList)).isEmpty())) {
+                emailService.processEmailReports(job, finalEmailList, reports);
+                originalEmailList.removeAll(finalEmailList);
+                anomalyReportAccessor.putAnomalyReports(reports, originalEmailList);
+            } else {
+                anomalyReportAccessor.putAnomalyReports(reports, originalEmailList);
+            }
         } catch (IOException e) {
             log.error("Error while putting anomaly reports to database!", e);
         }
@@ -156,9 +160,9 @@ public class JobExecutionService {
      * @throws SherlockException if an error occurs during job execution
      */
     public void performBackfillJob(
-        JobMetadata job,
-        ZonedDateTime startTime,
-        @Nullable ZonedDateTime endTime
+            JobMetadata job,
+            ZonedDateTime startTime,
+            @Nullable ZonedDateTime endTime
     ) throws SherlockException {
         Granularity granularity = Granularity.getValue(job.getGranularity());
         if (endTime == null) {
@@ -173,21 +177,21 @@ public class JobExecutionService {
         ZonedDateTime intervalStartTime = granularity.subtractIntervals(TimeUtils.zonedDateTimeFromMinutes(jobWindowStart), intervals, job.getGranularityRange());
         log.info("Querying druid starting from {}", intervalStartTime.toString());
         Query query = QueryBuilder.start()
-            .startAt(intervalStartTime)
-            .endAt(intervalEndTime)
-            .queryString(job.getUserQuery())
-            .granularity(granularity)
-            .granularityRange(job.getGranularityRange())
-            .setIsBackFillQuery(true)
-            .build();
+                .startAt(intervalStartTime)
+                .endAt(intervalEndTime)
+                .queryString(job.getUserQuery())
+                .granularity(granularity)
+                .granularityRange(job.getGranularityRange())
+                .setIsBackFillQuery(true)
+                .build();
         try {
             DruidCluster cluster = druidClusterAccessor.getDruidCluster(job.getClusterId());
             performBackfillJob(
-                job, cluster, query,
-                jobWindowStart,
-                intervalEndTime,
-                granularity,
-                intervals
+                    job, cluster, query,
+                    jobWindowStart,
+                    intervalEndTime,
+                    granularity,
+                    intervals
             );
         } catch (IOException | InterruptedException | ClusterNotFoundException | DruidException e) {
             log.info("Error occurred during backfill execution!", e);
@@ -213,13 +217,13 @@ public class JobExecutionService {
      * @throws IOException          if an error occurs while accessing the backend
      */
     public void performBackfillJob(
-        JobMetadata job,
-        DruidCluster cluster,
-        Query query,
-        Integer start,
-        Integer end,
-        Granularity granularity,
-        int intervals
+            JobMetadata job,
+            DruidCluster cluster,
+            Query query,
+            Integer start,
+            Integer end,
+            Granularity granularity,
+            int intervals
     ) throws SherlockException, DruidException, InterruptedException, IOException {
         log.info("Performing backfill for job [{}] for time range ({}, {})", job.getJobId(),
                  TimeUtils.getTimeFromSeconds(start * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS),
@@ -236,10 +240,10 @@ public class JobExecutionService {
         Integer subEnd = start + singleInterval;
         for (List<TimeSeries> fillSeries : fillSeriesList) {
             EgadsTask task = createTask(
-                job,
-                subEnd,
-                fillSeries,
-                detectorService
+                    job,
+                    subEnd,
+                    fillSeries,
+                    detectorService
             );
             tasks.add(task);
             Thread thread = new Thread(task);
@@ -252,7 +256,7 @@ public class JobExecutionService {
             threads.get(i).join();
             reports.addAll(tasks.get(i).getReports());
         }
-        anomalyReportAccessor.putAnomalyReports(reports);
+        anomalyReportAccessor.putAnomalyReports(reports, new ArrayList<>());
         log.info("Backfill is complete");
     }
 
@@ -266,10 +270,10 @@ public class JobExecutionService {
      * @return an egads task
      */
     protected EgadsTask createTask(
-        JobMetadata job,
-        Integer effectiveQueryEndTime,
-        List<TimeSeries> series,
-        DetectorService detectorService
+            JobMetadata job,
+            Integer effectiveQueryEndTime,
+            List<TimeSeries> series,
+            DetectorService detectorService
     ) {
         return new EgadsTask(job, effectiveQueryEndTime, series, detectorService, this);
     }
@@ -322,21 +326,21 @@ public class JobExecutionService {
      * @throws SherlockException if an error occurs during execution
      */
     public List<Anomaly> executeJob(
-        JobMetadata job,
-        DruidCluster cluster,
-        Query query,
-        EgadsConfig config
+            JobMetadata job,
+            DruidCluster cluster,
+            Query query,
+            EgadsConfig config
     ) throws SherlockException {
         log.info("Executing job with Query [{}]", job.getJobId());
         try {
             DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
             return detectorService.detect(
-                query,
-                job.getSigmaThreshold(),
-                cluster,
-                config,
-                job.getFrequency(),
-                job.getGranularityRange()
+                    query,
+                    job.getSigmaThreshold(),
+                    cluster,
+                    config,
+                    job.getFrequency(),
+                    job.getGranularityRange()
             );
         } catch (Exception e) {
             log.error("Error during job execution [{}]", job.getJobId(), e);
@@ -373,10 +377,11 @@ public class JobExecutionService {
         int  allReportWithNoData = 0;
         List<AnomalyReport> reports = new ArrayList<>(anomalies.size());
         for (Anomaly anomaly : anomalies) {
+            AnomalyReport report = AnomalyReport.createReport(anomaly, job);
             if (anomaly.metricMetaData.name.equals(JobStatus.NODATA.getValue())) {
                 allReportWithNoData++;
+                report.setStatus(Constants.NODATA);
             }
-            AnomalyReport report = AnomalyReport.createReport(anomaly, job);
             if (report.isHasAnomaly()) {
                 reports.add(report);
             }

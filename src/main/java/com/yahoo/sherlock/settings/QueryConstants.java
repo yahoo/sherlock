@@ -30,4 +30,6 @@ public class QueryConstants {
     public static final String TYPE = "type";
     public static final String TIMEZONE = "timeZone";
     public static final String UTC = "UTC";
+    public static final String OUTPUT_NAME = "outputName";
+    public static final String UNKNOWN = "unknown";
 }

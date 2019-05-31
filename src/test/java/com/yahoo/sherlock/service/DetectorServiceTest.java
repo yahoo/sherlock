@@ -174,9 +174,9 @@ public class DetectorServiceTest {
     public void testRunDetection() throws SherlockException {
         initMocks();
         when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
-            .thenReturn(Collections.singletonList(new Anomaly()));
+                .thenReturn(Collections.singletonList(new Anomaly()));
         when(ds.runDetection(any(JsonArray.class), any(), anyDouble(), any(EgadsConfig.class), anyString(), anyInt()))
-            .thenCallRealMethod();
+                .thenCallRealMethod();
         Query query = mock(Query.class);
         when(query.getRunTime()).thenReturn(100000);
         when(query.getGranularity()).thenReturn(Granularity.HOUR);
@@ -188,7 +188,7 @@ public class DetectorServiceTest {
     public void testRunDetectionNoConfig() throws Exception {
         initMocks();
         when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
-            .thenReturn(Collections.singletonList(new Anomaly()));
+                .thenReturn(Collections.singletonList(new Anomaly()));
         when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(Granularity.class), anyInt())).thenCallRealMethod();
         assertEquals(ds.runDetection(Collections.emptyList(), 0.0, null, 1234, null, null, 1).size(), 1);
     }
@@ -206,7 +206,7 @@ public class DetectorServiceTest {
         when(egads.getP()).thenReturn(p);
         when(egads.runEGADS(any(), anyDouble())).thenReturn(anomalies);
         when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
-            .thenCallRealMethod();
+                .thenCallRealMethod();
         List<Anomaly> result = ds.runDetection(tslist, 3.0, null, 123, "day", Granularity.DAY, 1);
         assertEquals(result.size(), 3);
         result = ds.runDetection(tslist, 3.0, mock(EgadsConfig.class), 123, "day", Granularity.DAY, 1);
@@ -222,7 +222,7 @@ public class DetectorServiceTest {
         initMocks();
         when(egads.detectAnomaliesResult(any())).thenReturn(res);
         List<TimeSeries> tslist = Lists.newArrayList(
-            new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
+                new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
         );
         when(ps.parseTimeSeries(any(), any())).thenReturn(tslist);
         when(ds.detectWithResults(any(), any(), any(), any(), any())).thenCallRealMethod();

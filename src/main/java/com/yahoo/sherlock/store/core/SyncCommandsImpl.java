@@ -26,6 +26,16 @@ public class SyncCommandsImpl<K> implements SyncCommands<K> {
     }
 
     @Override
+    public String set(K key, K value) {
+        return commands.set(key, value);
+    }
+
+    @Override
+    public K get(K key) {
+        return commands.get(key);
+    }
+
+    @Override
     public Long incr(K key) {
         return commands.incr(key);
     }
@@ -82,11 +92,16 @@ public class SyncCommandsImpl<K> implements SyncCommands<K> {
 
     @Override
     public Boolean expire(K key, long seconds) {
-        return commands.expire(key, seconds);
+        return expire(key, seconds);
     }
 
     @Override
     public void close() {
         commands.close();
+    }
+
+    @Override
+    public String bgsave() {
+        return commands.bgsave();
     }
 }

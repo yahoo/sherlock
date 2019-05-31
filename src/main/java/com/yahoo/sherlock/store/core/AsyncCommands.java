@@ -35,6 +35,14 @@ public interface AsyncCommands<K> extends AutoCloseable {
 
     /**
      * @param key key to get
+     * @param value value of the key
+     * @return Ok if set the key
+     * @see com.lambdaworks.redis.api.async.RedisAsyncCommands#set(Object, Object)
+     */
+    RedisFuture<String> set(K key, K value);
+
+    /**
+     * @param key key to get
      * @return value of the key
      * @see com.lambdaworks.redis.api.async.RedisAsyncCommands#get(Object)
      */
@@ -115,6 +123,12 @@ public interface AsyncCommands<K> extends AutoCloseable {
      * @return true if expiration is set else false
      */
     RedisFuture<Boolean> expire(K key, long seconds);
+
+    /**
+     * Command to dump snapshot of redis data.
+     * @return OK string
+     */
+    RedisFuture<String> bgsave();
 
     @Override
     void close();

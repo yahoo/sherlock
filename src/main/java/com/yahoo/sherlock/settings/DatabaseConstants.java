@@ -72,6 +72,22 @@ public class DatabaseConstants {
      */
     public static final String INDEX_JOB_STATUS = "jobStatusIndex";
     /**
+     * The name and value of the email ID index parameter.
+     */
+    public static final String INDEX_EMAIL_ID = "emailIdIndex";
+    /**
+     * The name and value of the emailId-reports index parameter.
+     */
+    public static final String INDEX_EMAILID_REPORT = "emailIdReportsIndex";
+    /**
+     * The name and value of the email trigger index parameter.
+     */
+    public static final String INDEX_EMAILID_TRIGGER = "emailTriggerIndex";
+    /**
+     * The name and value of the email job index parameter.
+     */
+    public static final String INDEX_EMAILID_JOBID = "emailJobIndex";
+    /**
      * The name of the anomaly report field of anomaly timestamps.
      */
     public static final String ANOMALY_TIMESTAMP = "anomalyTimestamps";
@@ -110,6 +126,10 @@ public class DatabaseConstants {
      */
     public static final String REPORTS = "Reports";
     /**
+     * Database name for storing email ids.
+     */
+    public static final String EMAILS = "Emails";
+    /**
      * Database name for storing Headers(schema) for Serializers.
      */
     public static final String HEADERS = "Headers";
@@ -133,5 +153,16 @@ public class DatabaseConstants {
      * Atomic deletedJobId generator name.
      */
     public static final String DELETED_JOB_ID = "DeletedJobId";
-
+    /**
+     * Atomic emailId generator name.
+     */
+    public static final String EMAIL_ID = "emailId";
+    /**
+     * Constant for index.
+     */
+    public static final String INDEX = "Index";
+    /**
+     * Constant for deleted.
+     */
+    public static final String DELETED = "deleted";
 }

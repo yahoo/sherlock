@@ -28,8 +28,8 @@ function calendarHeatmap() {
     var SQUARE_LENGTH = 16;
     var SQUARE_PADDING = 3;
     var legendSpacing = 7;
-    var MONTH_LABEL_PADDING = 6;
-    var DAY_LABEL_PADDING = 6;
+    var MONTH_LABEL_PADDING = 19;
+    var DAY_LABEL_PADDING = 19;
     var HEATMAP_PADDING = 45
     var data = [];
     var max = null;
@@ -185,16 +185,18 @@ function calendarHeatmap() {
         // Draw the minute chart
         function drawMinuteChart() {
 
-            height = 7 * (SQUARE_LENGTH + SQUARE_PADDING) + 3;
+            v_legendSpacing = 82;
+            height = 10 * (SQUARE_LENGTH + SQUARE_PADDING);
+            width = v_legendSpacing + width;
 
             var svg = d3.select(chart.selector())
                 .style('position', 'relative')
                 .append('svg')
-                .attr('transform', 'translate(0,0)')
+                .attr('transform', 'translate(-60,0)')
                 .attr('width', width)
                 .attr('class', 'calendar-heatmap')
                 .attr('height', height)
-                .style('padding', '71px');
+                .style('padding', '20px');
 
             minuteRects = svg.selectAll('.cell')
                 .data(sixHoursRange);
@@ -207,7 +209,7 @@ function calendarHeatmap() {
                 .attr('x', function (d, i) {
                     var cellDate = moment.utc(d);
                     var result = (cellDate.minute() % 60) * (SQUARE_LENGTH + SQUARE_PADDING);
-                    return result + 10;
+                    return result + v_legendSpacing;
                 })
                 .attr('y', function (d, i) {
                     var cellDate = moment.utc(d);
@@ -236,7 +238,7 @@ function calendarHeatmap() {
                         .attr('class', 'cell-tooltip')
                         .html(tooltipHTMLForDate(d))
                         .style('left', function () {
-                            return (cellDate.minute() % 60) * (SQUARE_LENGTH) + 'px';
+                            return (cellDate.minute() % 60) * (SQUARE_LENGTH) + v_legendSpacing + 'px';
                         })
                         .style('top', function () {
                             var cellDate = moment.utc(d);
@@ -268,15 +270,15 @@ function calendarHeatmap() {
                     .attr('class', 'calendar-heatmap-legend')
                     .attr('width', SQUARE_LENGTH)
                     .attr('height', SQUARE_LENGTH)
-                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + 10; })
-                    .attr('y', height + SQUARE_PADDING + SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - (SQUARE_PADDING + SQUARE_LENGTH))
                     .attr('fill', function (d) { return d.value; });
 
                 legendGroup.append('text')
                     .attr('class', 'calendar-heatmap-legend-text calendar-heatmap-legend-text-less')
                     .text(function(d) { return (d.key === 'warning' ? locale.Anomaly : (d.key === 'success' ? locale.NoAnomaly : (d.key === 'error' ? locale.Error : (d.key === 'nodata' ? locale.NoData : locale.defaultMsg)))); })
-                    .attr('x', function (d, i) { return ((SQUARE_LENGTH + SQUARE_PADDING) * (1 + i * legendSpacing)) + 10; })
-                    .attr('y', height + 2 * SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return ((SQUARE_LENGTH + SQUARE_PADDING) * (1 + i * legendSpacing)) + v_legendSpacing; })
+                    .attr('y', height - 2 * SQUARE_PADDING)
             }
 
             var minuteRange = Array.apply(null, {length: 60}).map(Number.call, Number);
@@ -290,16 +292,16 @@ function calendarHeatmap() {
                     return d;
                 })
                 .attr('x', function (d, i) {
-                    return (d % 60) * (SQUARE_LENGTH + SQUARE_PADDING) + 10;
+                    return (d % 60) * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing;
                 })
-                .attr('y', 0)
+                .attr('y', SQUARE_LENGTH - SQUARE_PADDING)
                 .style('fill', function (d) { return d % 2 === 0 ? '#ff0000' : 'white';});
 
             hourRange.forEach(function (date, index) {
                 var dateformat = 'MMM DD, HH a';
                 svg.append('text')
                     .attr('class', 'day-initial')
-                    .attr('transform', 'translate(-71,' + (((SQUARE_LENGTH + SQUARE_PADDING) * (index + 1)) - SQUARE_PADDING) + ')')
+                    .attr('transform', 'translate(0,' + (((SQUARE_LENGTH + SQUARE_PADDING) * (index + 1)) + (SQUARE_LENGTH - SQUARE_PADDING)) + ')')
                     .style('text-anchor', 'left')
                     .attr('dy', '2')
                     .text(moment.utc(date).format(dateformat));
@@ -314,9 +316,9 @@ function calendarHeatmap() {
 
             function minutePath(d) {
                 var size = SQUARE_LENGTH + SQUARE_PADDING;
-                var x = (15 * size) * d + 8;
+                var x = (15 * size) * d + v_legendSpacing - 2;
                 var y = (MONTH_LABEL_PADDING - 2);
-                var xLen = (15 * size) * (d + 1) + 9;
+                var xLen = (15 * size) * (d + 1) + v_legendSpacing - 1;
                 var yLen = (MONTH_LABEL_PADDING - 2) + (size * 7) + 1;
                 return "M" + x + "," + y + "H" + xLen + "V" + yLen + "H" + x + "Z";
             }
@@ -325,7 +327,8 @@ function calendarHeatmap() {
         // Draw the hourly chart
         function drawHourlyChart() {
 
-            height = 6 * (SQUARE_LENGTH + SQUARE_PADDING) + 10;
+            v_legendSpacing = 45;
+            height = 10 * (SQUARE_LENGTH + SQUARE_PADDING);
 
             var svg = d3.select(chart.selector())
                 .style('position', 'relative')
@@ -347,7 +350,7 @@ function calendarHeatmap() {
                 .attr('x', function (d, i) {
                     var cellDate = moment.utc(d);
                     var result = (cellDate.diff(firstDateForHour, 'day') * 4 + (cellDate.hour() % 4)) * (SQUARE_LENGTH + SQUARE_PADDING);
-                    return result;
+                    return result + v_legendSpacing;
                 })
                 .attr('y', function (d, i) {
                     var cellDate = moment.utc(d);
@@ -371,7 +374,7 @@ function calendarHeatmap() {
                         .append('div')
                         .attr('class', 'cell-tooltip')
                         .html(tooltipHTMLForDate(d))
-                        .style('left', function () { return Math.floor(i / 6) * SQUARE_LENGTH + 'px'; })
+                        .style('left', function () { return Math.floor(i / 6) * SQUARE_LENGTH + v_legendSpacing + 'px'; })
                         .style('top', function () {
 	                        const height = d3.select('.cell-tooltip').node().getBoundingClientRect().height;
                             return Math.floor(cellDate.hour() / 4) * (SQUARE_LENGTH + SQUARE_PADDING) + DAY_LABEL_PADDING + HEATMAP_PADDING - height + 'px';
@@ -398,15 +401,15 @@ function calendarHeatmap() {
                     .attr('class', 'calendar-heatmap-legend')
                     .attr('width', SQUARE_LENGTH)
                     .attr('height', SQUARE_LENGTH)
-                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + SQUARE_PADDING + SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - (SQUARE_PADDING + SQUARE_LENGTH))
                     .attr('fill', function (d) { return d.value; });
 
                 legendGroup.append('text')
                     .attr('class', 'calendar-heatmap-legend-text calendar-heatmap-legend-text-less')
                     .text(function(d) { return (d.key === 'warning' ? locale.Anomaly : (d.key === 'success' ? locale.NoAnomaly : (d.key === 'error' ? locale.Error : (d.key === 'nodata' ? locale.NoData : locale.defaultMsg)))); })
-                    .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + 2 * SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - 2 * SQUARE_PADDING)
             }
 
             hourRects.exit().remove();
@@ -425,9 +428,9 @@ function calendarHeatmap() {
                         matchIndex = index;
                         return cellDate.isSame(element, 'day');
                     });
-                    return Math.floor(matchIndex / 6) * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return Math.floor(matchIndex / 6) * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing;
                 })
-                .attr('y', 0);
+                .attr('y', SQUARE_LENGTH - SQUARE_PADDING);
 
             var bars = svg.selectAll(".bars")
                 .data(twoWeeksRange)
@@ -438,7 +441,7 @@ function calendarHeatmap() {
             locale_hour.hours.forEach(function (hour, index) {
                 svg.append('text')
                     .attr('class', 'day-initial')
-                    .attr('transform', 'translate(-46,' + (SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + ')')
+                    .attr('transform', 'translate(0,' + ((SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + (SQUARE_LENGTH - SQUARE_PADDING)) + ')')
                     .style('text-anchor', 'left')
                     .attr('dy', '2')
                     .text(hour);
@@ -447,14 +450,19 @@ function calendarHeatmap() {
             function dayPath(d) {
                 var index = moment.utc(d).diff(firstDateForHour, 'day'),
                     size = SQUARE_LENGTH + SQUARE_PADDING;
-                return "M" + (index * 4 * size - 2) + "," + (MONTH_LABEL_PADDING - 2) + "H" + ((index + 1) * 4 * size - 1) + "V" + (MONTH_LABEL_PADDING - 1 + (6 * size)) + "H" + (index * 4 * size - 2) + "Z";
+                    x = (index * 4 * size + v_legendSpacing - 2);
+                    y = (DAY_LABEL_PADDING - 2);
+                    xLen = ((index + 1) * 4 * size + v_legendSpacing - 1);
+                    yLen = (DAY_LABEL_PADDING - 1 + (6 * size));
+                return "M" + x + "," + y + "H" + xLen + "V" + yLen + "H" + x + "Z";
             }
         }
 
         // Draw the daily chart
         function drawDailyChart() {
 
-            height = 7 * (SQUARE_LENGTH + SQUARE_PADDING) + 10;
+            v_legendSpacing = 30;
+            height = 10 * (SQUARE_LENGTH + SQUARE_PADDING);
 
             var svg = d3.select(chart.selector())
                 .style('position', 'relative')
@@ -476,7 +484,7 @@ function calendarHeatmap() {
                 .attr('x', function (d, i) {
                     var cellDate = moment.utc(d);
                     var result = cellDate.week() - firstDate.week() + (firstDate.weeksInYear() * (cellDate.weekYear() - firstDate.weekYear()));
-                    return result * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return result * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing;
                 })
                 .attr('y', function (d, i) {
                     return MONTH_LABEL_PADDING + formatWeekday(d) * (SQUARE_LENGTH + SQUARE_PADDING);
@@ -498,7 +506,7 @@ function calendarHeatmap() {
                     .append('div')
                     .attr('class', 'cell-tooltip')
                     .html(tooltipHTMLForDate(d))
-                    .style('left', function () { return Math.floor(i / 7) * SQUARE_LENGTH + 'px'; })
+                    .style('left', function () { return Math.floor(i / 7) * SQUARE_LENGTH + v_legendSpacing + 'px'; })
                     .style('top', function () {
 	                    const height = d3.select('.cell-tooltip').node().getBoundingClientRect().height;
                         return formatWeekday(d) * (SQUARE_LENGTH + SQUARE_PADDING) + MONTH_LABEL_PADDING + HEATMAP_PADDING - height + 'px';
@@ -525,18 +533,18 @@ function calendarHeatmap() {
                     .attr('class', 'calendar-heatmap-legend')
                     .attr('width', SQUARE_LENGTH)
                     .attr('height', SQUARE_LENGTH)
-                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + SQUARE_PADDING + SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - (SQUARE_PADDING + SQUARE_LENGTH))
                     .attr('fill', function (d) { return d.value; });
 
                 legendGroup.append('text')
                     .attr('class', 'calendar-heatmap-legend-text calendar-heatmap-legend-text-less')
                     .text(function(d) { return (d.key === 'warning' ? locale.Anomaly : (d.key === 'success' ? locale.NoAnomaly : (d.key === 'error' ? locale.Error : (d.key === 'nodata' ? locale.NoData : locale.defaultMsg)))); })
-                    .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + 2 * SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - 2 * SQUARE_PADDING)
             }
 
-            dayRects.exit().remove();
+            //dayRects.exit().remove();
             var monthLabels = svg.selectAll('.month')
                 .data(monthRange)
                 .enter().append('text')
@@ -556,9 +564,9 @@ function calendarHeatmap() {
                             scale += 2;
                         }
                     }
-                    return scale * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return scale * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing;
                 })
-                .attr('y', 0);
+                .attr('y', SQUARE_LENGTH - SQUARE_PADDING);
 
             var bars = svg.selectAll(".bars")
                   .data(monthRange)
@@ -569,7 +577,7 @@ function calendarHeatmap() {
             locale.days.forEach(function (day, index) {
                 svg.append('text')
                     .attr('class', 'day-initial')
-                    .attr('transform', 'translate(-30,' + (SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + ')')
+                    .attr('transform', 'translate(0,' + ((SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + (SQUARE_LENGTH - SQUARE_PADDING)) + ')')
                     .style('text-anchor', 'left')
                     .attr('dy', '2')
                     .text(day);
@@ -581,9 +589,9 @@ function calendarHeatmap() {
                     end = moment.utc(d).endOf('month'),
                     startOffsetX = start.week() - firstDate.week() + (firstDate.weeksInYear() * (start.weekYear() - firstDate.weekYear())),
                     endOffsetX = end.week() - firstDate.week() + (firstDate.weeksInYear() * (end.weekYear() - firstDate.weekYear())),
-                    startX = startOffsetX * (SQUARE_LENGTH + SQUARE_PADDING) - 2,
+                    startX = startOffsetX * (SQUARE_LENGTH + SQUARE_PADDING) - 2 + v_legendSpacing,
                     startY = MONTH_LABEL_PADDING + (start.isoWeekday() % 7) * (SQUARE_LENGTH + SQUARE_PADDING) - 2,
-                    endX = (endOffsetX + 1) * (SQUARE_LENGTH + SQUARE_PADDING) - 1,
+                    endX = (endOffsetX + 1) * (SQUARE_LENGTH + SQUARE_PADDING) - 1 + v_legendSpacing,
                     endY = MONTH_LABEL_PADDING + ((end.isoWeekday() % 7) + 1) * (SQUARE_LENGTH + SQUARE_PADDING) - 1;
                     size = SQUARE_LENGTH + SQUARE_PADDING;
                 return "M" + startX + "," + startY + "H" + (startX + size) + "V" + (MONTH_LABEL_PADDING - 2) + "H" + endX + "V" + endY + "H" + (endX - size)
@@ -595,7 +603,8 @@ function calendarHeatmap() {
         function drawWeeklyChart() {
 
             SQUARE_PADDING = 4;
-            height = 7 * (SQUARE_LENGTH + SQUARE_PADDING) + 10;
+            v_legendSpacing = 30;
+            height = 10 * (SQUARE_LENGTH + SQUARE_PADDING);
 
             var svg = d3.select(chart.selector())
                 .style('position', 'relative')
@@ -617,7 +626,7 @@ function calendarHeatmap() {
                 .attr('x', function (d, i) {
                     var cellDate = moment.utc(d);
                     var result = cellDate.diff(firstDateForWeek , 'week');
-                    return result * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return result * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing;
                 })
                 .attr('y', function (d, i) {
                     return MONTH_LABEL_PADDING;
@@ -639,7 +648,7 @@ function calendarHeatmap() {
                         .append('div')
                         .attr('class', 'cell-tooltip')
                         .html(tooltipHTMLForDate(d))
-                        .style('left', function () { return i * (SQUARE_LENGTH + SQUARE_PADDING) + 'px'; })
+                        .style('left', function () { return i * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing + 'px'; })
                         .style('top', function () {
 	                        const height = d3.select('.cell-tooltip').node().getBoundingClientRect().height;
 	                        return MONTH_LABEL_PADDING + HEATMAP_PADDING - height + 'px';
@@ -666,15 +675,15 @@ function calendarHeatmap() {
                     .attr('class', 'calendar-heatmap-legend')
                     .attr('width', SQUARE_LENGTH)
                     .attr('height', SQUARE_LENGTH)
-                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + SQUARE_PADDING + SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - (SQUARE_PADDING + SQUARE_LENGTH))
                     .attr('fill', function (d) { return d.value; });
 
                 legendGroup.append('text')
                     .attr('class', 'calendar-heatmap-legend-text calendar-heatmap-legend-text-less')
                     .text(function(d) { return (d.key === 'warning' ? locale.Anomaly : (d.key === 'success' ? locale.NoAnomaly : (d.key === 'error' ? locale.Error : (d.key === 'nodata' ? locale.NoData : locale.defaultMsg)))); })
-                    .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + 2 * SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - 2 * SQUARE_PADDING)
             }
 
             weekRects.exit().remove();
@@ -692,9 +701,9 @@ function calendarHeatmap() {
                     if (diff > 0) {
                         scale = Math.floor(diff / 7);
                     }
-                    return scale * (SQUARE_LENGTH + SQUARE_PADDING);
+                    return scale * (SQUARE_LENGTH + SQUARE_PADDING) + v_legendSpacing;
                 })
-                .attr('y', 0);
+                .attr('y', SQUARE_LENGTH - SQUARE_PADDING);
 
             var bars = svg.selectAll(".bars")
                 .data(monthRange)
@@ -706,7 +715,7 @@ function calendarHeatmap() {
                 if (weekStart === 1) { index = (index === 0) ? 6 : index - 1;}
                 svg.append('text')
                     .attr('class', 'day-initial')
-                    .attr('transform', 'translate(-30,' + (SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + ')')
+                    .attr('transform', 'translate(0,' + ((SQUARE_LENGTH + SQUARE_PADDING) * (index + 1) + (SQUARE_LENGTH - SQUARE_PADDING)) + ')')
                     .style('text-anchor', 'left')
                     .attr('dy', '2')
                     .text(day);
@@ -720,7 +729,11 @@ function calendarHeatmap() {
                 if (diff > 0) {
                     scale = Math.floor(diff / 7);
                 }
-                return "M" + (scale * size - 2) + "," + (MONTH_LABEL_PADDING - 2) + "H" + ((lastIndex + 1) * size - 2) + "V" + (MONTH_LABEL_PADDING + 2 + (7 * size)) + "H" + (scale * size - 2) + "Z";
+                x = (scale * size + v_legendSpacing - 2);
+                y = (MONTH_LABEL_PADDING - 2);
+                xLen = ((lastIndex + 1) * size + v_legendSpacing - 2);
+                yLen = (MONTH_LABEL_PADDING + 2 + (7 * size));
+                return "M" + x + "," + y + "H" + xLen + "V" + yLen + "H" + x + "Z";
             }
         }
 
@@ -728,7 +741,8 @@ function calendarHeatmap() {
         function drawMonthyChart() {
 
             monthRange = d3.utcMonths(moment.utc(yearAgo).subtract(1, 'month') , moment.utc(now).subtract(1, 'month'));
-            height = 4 * (SQUARE_LENGTH + SQUARE_PADDING) + 10;
+            height = 10 * (SQUARE_LENGTH + SQUARE_PADDING);
+            v_legendSpacing = 30;
 
             var svg = d3.select(chart.selector())
                 .style('position', 'relative')
@@ -748,7 +762,7 @@ function calendarHeatmap() {
                 .attr('height', 4 * (SQUARE_LENGTH + SQUARE_PADDING))
                 .attr('fill', function(d) { return colorMap.get(typeForDate(d)); })
                 .attr('x', function (d, i) {
-                    return i * 4 * (SQUARE_LENGTH + SQUARE_PADDING) + i * 3;
+                    return i * 4 * (SQUARE_LENGTH + SQUARE_PADDING) + i * 3 + v_legendSpacing;
                 })
                 .attr('y', function (d, i) {
                     return MONTH_LABEL_PADDING;
@@ -770,7 +784,7 @@ function calendarHeatmap() {
                     .append('div')
                     .attr('class', 'cell-tooltip')
                     .html(tooltipHTMLForDate(d))
-                    .style('left', function () { return (i * 4 * (SQUARE_LENGTH + SQUARE_PADDING) + i * 3) + 'px'; })
+                    .style('left', function () { return (i * 4 * (SQUARE_LENGTH + SQUARE_PADDING) + (i * 3) + v_legendSpacing) + 'px'; })
                     .style('top', function () {
 	                    const height = d3.select('.cell-tooltip').node().getBoundingClientRect().height;
                         return MONTH_LABEL_PADDING + HEATMAP_PADDING - height + 'px';
@@ -797,15 +811,15 @@ function calendarHeatmap() {
                     .attr('class', 'calendar-heatmap-legend')
                     .attr('width', SQUARE_LENGTH)
                     .attr('height', SQUARE_LENGTH)
-                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                    .attr('y', height + SQUARE_PADDING + SQUARE_LENGTH)
+                    .attr('x', function (d, i) { return i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                    .attr('y', height - (SQUARE_PADDING + SQUARE_LENGTH))
                     .attr('fill', function (d) { return d.value; });
 
                 legendGroup.append('text')
                   .attr('class', 'calendar-heatmap-legend-text calendar-heatmap-legend-text-less')
                   .text(function(d) { return (d.key === 'warning' ? locale.Anomaly : (d.key === 'success' ? locale.NoAnomaly : (d.key === 'error' ? locale.Error : (d.key === 'nodata' ? locale.NoData : locale.defaultMsg)))); })
-                  .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing); })
-                  .attr('y', height + 2 * SQUARE_LENGTH)
+                  .attr('x', function (d, i) { return (SQUARE_LENGTH + SQUARE_PADDING) + i * ((SQUARE_LENGTH + SQUARE_PADDING) * legendSpacing) + v_legendSpacing; })
+                  .attr('y', height - 2 * SQUARE_PADDING)
             }
 
             var bars = svg.selectAll(".bars")
@@ -825,14 +839,18 @@ function calendarHeatmap() {
                     return locale.months[utcDate.month()] + "'" + String(utcDate.format('YYYY')).substring(2,4);
                 })
                 .attr('x', function (d, i) {
-                    return i * 4 * (SQUARE_LENGTH + SQUARE_PADDING) + i * 3;
+                    return i * 4 * (SQUARE_LENGTH + SQUARE_PADDING) + i * 3 + v_legendSpacing;
                 })
-                .attr('y', 0);
+                .attr('y', SQUARE_LENGTH - SQUARE_PADDING);
 
             function monthPath(d) {
                 var index = moment.utc(d).diff(monthRange[0], 'month'),
                     size = 4 * (SQUARE_LENGTH + SQUARE_PADDING);
-                return "M" + (index * (size + 3) - 3) + "," + (MONTH_LABEL_PADDING - 2) + "H" + ((index + 1) * (size + 3) - 3) + "V" + (MONTH_LABEL_PADDING + 2 + size) + "H" + (index * (size + 3) - 3) + "Z";
+                    x = (index * (size + 3) +v_legendSpacing - 3);
+                    y = (MONTH_LABEL_PADDING - 2);
+                    xLen = ((index + 1) * (size + 3) + v_legendSpacing - 3);
+                    yLen = (MONTH_LABEL_PADDING + 2 + size);
+                return "M" + x + "," + y + "H" + xLen + "V" + yLen + "H" + x + "Z";
             }
         }
     }

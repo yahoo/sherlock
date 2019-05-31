@@ -200,6 +200,15 @@ class App {
         // Routes to Clear all reports of selected jobs
         post("/Meta-Manager/ClearReports/:ids", Routes::clearReportsOfSelectedJobs);
 
+        // Routes to view Emails
+        get("/Emails/:id", Routes::viewEmails, new ThymeleafTemplateEngine());
+
+        // Routes to update Emails
+        post("/Emails/:id", Routes::updateEmails);
+
+        // Routes to delete Email
+        post("/DeleteEmail/:id", Routes::deleteEmail);
+
         // Enable debug routes only in debug mode
         if (CLISettings.DEBUG_MODE) {
             // Routes to get the database as a JSON dump
@@ -220,6 +229,10 @@ class App {
             get("/Debug/EgadsQuery", Routes::debugShowEgadsConfigurableQuery, new ThymeleafTemplateEngine());
             // Submit egads query
             post("/Debug/EgadsQuery", Routes::debugPerformEgadsQuery);
+            // Restore redis db form
+            get("/Debug/Restore", Routes::restoreRedisDBForm, new ThymeleafTemplateEngine());
+            // Restore redis db
+            post("/Debug/Restore", Routes::restoreRedisDB);
         }
 
         initRoutes();

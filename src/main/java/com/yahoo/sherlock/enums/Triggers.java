@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Triggers for every minute, hourly, daily, weekly and monthly cron jobs.
+ * Triggers for instant and every minute, hourly, daily, weekly and monthly cron jobs.
  */
 public enum Triggers {
-    MINUTE(1), HOUR(60), DAY(1440), WEEK(10080), MONTH(43800);
+    INSTANT(0), MINUTE(1), HOUR(60), DAY(1440), WEEK(10080), MONTH(43800);
 
     /**
      * Trigger value in minutes for job scheduling.

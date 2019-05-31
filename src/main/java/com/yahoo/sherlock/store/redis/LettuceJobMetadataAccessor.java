@@ -4,10 +4,13 @@ import com.google.common.collect.Lists;
 import com.lambdaworks.redis.RedisFuture;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.exception.JobNotFoundException;
+import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
+import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.store.StoreParams;
@@ -17,11 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /**
  * Job metadata accessor implemented for clusters with lettuce.
@@ -37,6 +42,7 @@ public class LettuceJobMetadataAccessor
 
     private final DeletedJobMetadataAccessor deletedAccessor;
     private final AnomalyReportAccessor anomalyReportAccessor;
+    private final EmailMetadataAccessor emailMetadataAccessor;
 
     /**
      * @param params store parameters
@@ -48,6 +54,7 @@ public class LettuceJobMetadataAccessor
         this.clusterIdName = params.get(DatabaseConstants.INDEX_JOB_CLUSTER_ID);
         deletedAccessor = Store.getDeletedJobMetadataAccessor();
         anomalyReportAccessor = Store.getAnomalyReportAccessor();
+        emailMetadataAccessor = Store.getEmailMetadataAccessor();
     }
 
     /**
@@ -217,6 +224,12 @@ public class LettuceJobMetadataAccessor
             };
             cmd.flushCommands();
             await(futures);
+            String[] emails = job.getOwnerEmail() == null || job.getOwnerEmail().isEmpty() ? new String[0] : job.getOwnerEmail().split(Constants.COMMA_DELIMITER);
+            if (emails.length != 0) {
+                for (String email : emails) {
+                    emailMetadataAccessor.putEmailMetadataIfNotExist(email, jobId);
+                }
+            }
             log.info("Job metadata with ID [{}] is updated", job.getJobId());
             return String.valueOf(job.getJobId());
         }
@@ -316,4 +329,57 @@ public class LettuceJobMetadataAccessor
         log.info("Performing bulk delete of [{}] jobs", jobIds);
         deletedAccessor.putDeletedJobMetadata(performDeleteJob(jobIds));
     }
+
+    @Override
+    public void deleteEmailFromJobs(EmailMetaData emailMetaData)
+        throws IOException {
+        String emailId = emailMetaData.getEmailId();
+        log.info("Deleting [{}] from all related jobs", emailId);
+        try (RedisConnection<String> conn = connect()) {
+            AsyncCommands<String> cmd = conn.async();
+            cmd.setAutoFlushCommands(false);
+            RedisFuture<Set<String>> jobIds = cmd.smembers(index(DatabaseConstants.INDEX_EMAILID_JOBID, emailId));
+            cmd.flushCommands();
+            await(jobIds);
+            List<JobMetadata> jobList = getJobMetadata(jobIds.get());
+            for (JobMetadata jobMetadata : jobList) {
+                if (jobMetadata.getOwnerEmail() != null && !jobMetadata.getOwnerEmail().isEmpty()) {
+                    List<String> emails = Arrays.stream(jobMetadata.getOwnerEmail().split(Constants.COMMA_DELIMITER))
+                        .collect(Collectors.toList());
+                    emails.remove(emailId);
+                    jobMetadata.setOwnerEmail(emails.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
+                }
+            }
+            putJobMetadata(jobList);
+            cmd.setAutoFlushCommands(false);
+            RedisFuture<Long> deleteIndex = cmd.del(index(DatabaseConstants.INDEX_EMAILID_JOBID, emailId));
+            cmd.flushCommands();
+            await(deleteIndex);
+            emailMetadataAccessor.deleteEmailMetadata(emailMetaData);
+            log.info("Successfully deleted email {} from all related jobs", emailId);
+        } catch (ExecutionException | InterruptedException e) {
+            log.error("Error while deleting emails for jobs!", e);
+            throw new IOException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public String saveRedisJobsMetadata() throws IOException {
+        log.info("Saving redis snapshot");
+        String response;
+        try (RedisConnection<String> conn = connect()) {
+            AsyncCommands<String> cmd = conn.async();
+            cmd.setAutoFlushCommands(false);
+            RedisFuture<String> res = cmd.bgsave();
+            cmd.flushCommands();
+            await(res);
+            response = res.get();
+            log.info("Status: " + response);
+        } catch (ExecutionException | InterruptedException e) {
+            log.error("Exception while running BGSAVE", e);
+            throw new IOException(e.getMessage(), e);
+        }
+        return response;
+    }
+
 }

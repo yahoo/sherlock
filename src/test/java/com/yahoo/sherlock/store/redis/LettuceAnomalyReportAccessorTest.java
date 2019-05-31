@@ -13,6 +13,7 @@ import com.yahoo.sherlock.store.core.SyncCommands;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,7 @@ public class LettuceAnomalyReportAccessorTest {
         inject(ara, LettuceAnomalyReportAccessor.class, "jobIdName", "jobId");
         inject(ara, LettuceAnomalyReportAccessor.class, "frequencyName", "freq");
         inject(ara, LettuceAnomalyReportAccessor.class, "timeName", "time");
+        inject(ara, LettuceAnomalyReportAccessor.class, "emailIdReportName", "emailIdReportsIndex");
         inject(ara, AbstractLettuceAccessor.class, "keyName", "key");
         inject(ara, AbstractLettuceAccessor.class, "mapper", new HashMapper());
         RedisConnection<String> conn = (RedisConnection<String>) mock(RedisConnection.class);
@@ -110,25 +112,25 @@ public class LettuceAnomalyReportAccessorTest {
     @Test
     public void testPutAnomalyReports() throws IOException {
         List<AnomalyReport> reports = Lists.newArrayList(
-            make(1, "100", 1234, "day"),
-            make(2, "100", 2345, "day"),
-            make(null, "120", 1234, "hour"),
-            make(null, "120", 2345, "hour")
+                make(1, "100", 1234, "day"),
+                make(2, "100", 2345, "day"),
+                make(null, "120", 1234, "hour"),
+                make(null, "120", 2345, "hour")
         );
         mocks();
         when(ara.newIds(anyInt())).thenReturn(new Integer[] {3, 4});
-        doCallRealMethod().when(ara).putAnomalyReports(anyList());
-        ara.putAnomalyReports(reports);
+        doCallRealMethod().when(ara).putAnomalyReports(anyList(), anyList());
+        ara.putAnomalyReports(reports, Arrays.asList("aa@email.com"));
         verify(ara).newIds(2);
-        verify(async, times(12)).sadd(anyString(), anyString());
+        verify(async, times(16)).sadd(anyString(), anyString());
         verify(async, times(4)).hmset(anyString(), anyMap());
         verify(binAsync, times(4)).zadd(any(), any());
         verify(ara).awaitRaw(anyCollection());
         // verify reports with no anomaly timestamps
         reports.get(0).setAnomalyTimestamps(null);
-        ara.putAnomalyReports(reports);
+        ara.putAnomalyReports(reports, Arrays.asList("aa@email.com", "bb@email.com"));
         verify(ara).newIds(2);
-        verify(async, times(24)).sadd(anyString(), anyString());
+        verify(async, times(36)).sadd(anyString(), anyString());
         verify(async, times(8)).hmset(anyString(), anyMap());
         verify(binAsync, times(7)).zadd(any(), any());
     }
@@ -190,6 +192,14 @@ public class LettuceAnomalyReportAccessorTest {
         verify(async, times(14)).srem(anyString(), anyVararg());
         verify(async, times(7)).del(anyVararg());
         verify(binAsync, times(12)).del(anyVararg());
+        // test getAnomalyReportsForEmailId()
+        Set<String> reportIds = Sets.newHashSet("2", "3", "4", "5");
+        when(async.smembers(DatabaseConstants.INDEX_EMAILID_REPORT + ":" + "my@email.com")).thenReturn(fakeFuture(reportIds));
+        Long numReports = (long) reportIds.size();
+        String[] reports = {"2", "3", "4", "5"};
+        when(async.srem(DatabaseConstants.INDEX_EMAILID_REPORT + ":" + "my@email.com",  reports)).thenReturn(fakeFuture(numReports));
+        doCallRealMethod().when(ara).getAnomalyReportsForEmailId("my@email.com");
+        assertEquals(ara.getAnomalyReportsForEmailId("my@email.com").size(), 4);
     }
 
 }

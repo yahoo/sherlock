@@ -4,10 +4,13 @@ import com.beust.jcommander.internal.Lists;
 import com.google.common.collect.Sets;
 import com.lambdaworks.redis.RedisFuture;
 import com.yahoo.sherlock.exception.JobNotFoundException;
+import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
+import com.yahoo.sherlock.store.DBTestHelper;
 import com.yahoo.sherlock.store.DeletedJobMetadataAccessor;
+import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.store.StoreParams;
 import com.yahoo.sherlock.store.core.AsyncCommands;
@@ -16,6 +19,7 @@ import com.yahoo.sherlock.store.core.SyncCommands;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +49,7 @@ public class LettuceJobMetadataAccessorTest {
 
     private LettuceJobMetadataAccessor jma;
     private DeletedJobMetadataAccessor djma;
+    private EmailMetadataAccessor ema;
     private AnomalyReportAccessor ara;
     private AsyncCommands<String> async;
     private SyncCommands<String> sync;
@@ -53,8 +58,10 @@ public class LettuceJobMetadataAccessorTest {
         jma = mock(LettuceJobMetadataAccessor.class);
         djma = mock(DeletedJobMetadataAccessor.class);
         ara = mock(AnomalyReportAccessor.class);
+        ema = mock(EmailMetadataAccessor.class);
         inject(jma, LettuceJobMetadataAccessor.class, "anomalyReportAccessor", ara);
         inject(jma, LettuceJobMetadataAccessor.class, "deletedAccessor", djma);
+        inject(jma, LettuceJobMetadataAccessor.class, "emailMetadataAccessor", ema);
         inject(jma, LettuceJobMetadataAccessor.class, "jobIdName", "id");
         inject(jma, LettuceJobMetadataAccessor.class, "jobStatusName", "status");
         inject(jma, LettuceJobMetadataAccessor.class, "clusterIdName", "cluster");
@@ -185,17 +192,22 @@ public class LettuceJobMetadataAccessorTest {
         // missing ID
         mocks();
         doCallRealMethod().when(jma).putJobMetadata(any(JobMetadata.class));
+        doNothing().when(ema).putEmailMetadataIfNotExist(anyString(), anyString());
         when(jma.newId()).thenReturn(123);
         JobMetadata job = make(null, "CREATED", 23);
+        job.setOwnerEmail("my@email.com");
         jma.putJobMetadata(job);
         assertEquals((Integer) 123, job.getJobId());
         verify(jma).newId();
         verify(async).hmset(anyString(), anyMap());
+        verify(ema, times(1)).putEmailMetadataIfNotExist(anyString(), anyString());
         verify(async, times(3)).sadd(anyString(), anyVararg());
         // update
+        job.setOwnerEmail("");
         job.setJobStatus("RUNNING");
         jma.putJobMetadata(job);
         verify(async, times(2)).hmset(anyString(), anyMap());
+        verify(ema, times(1)).putEmailMetadataIfNotExist(anyString(), anyString());
         verify(async, times(6)).sadd(anyString(), anyVararg());
         verify(jma).newId();
     }
@@ -282,5 +294,27 @@ public class LettuceJobMetadataAccessorTest {
         jma.deleteJobs(Collections.emptySet());
         verify(jma).performDeleteJob(anySet());
         verify(djma).putDeletedJobMetadata(anySet());
+    }
+
+    @Test
+    public void testDeleteEmailFromJobs() throws IOException, JobNotFoundException {
+        mocks();
+        EmailMetaData emailMetaData = new EmailMetaData("my@gmail.com");
+        doCallRealMethod().when(jma).deleteEmailFromJobs(any(EmailMetaData.class));
+        Set<String> jobIds = Sets.newHashSet("1", "2");
+        JobMetadata jobMetadata1 = DBTestHelper.getNewJob();
+        jobMetadata1.setOwnerEmail("my@gmail.com, ab@yahoo.com, xy@sherlock.com");
+        jobMetadata1.setJobId(1);
+        JobMetadata jobMetadata2 = DBTestHelper.getNewJob();
+        jobMetadata2.setOwnerEmail("");
+        jobMetadata2.setJobId(2);
+        when(jma.getJobMetadata(jobIds)).thenReturn(Arrays.asList(jobMetadata1, jobMetadata2));
+        when(async.smembers("emailJobIndex:my@gmail.com")).thenReturn(fakeFuture(jobIds));
+        when(async.del("emailJobIndex:my@gmail.com")).thenReturn(fakeFuture(1L));
+        doNothing().when(ema).deleteEmailMetadata(any(EmailMetaData.class));
+        doNothing().when(jma).putJobMetadata(Arrays.asList(jobMetadata1, jobMetadata2));
+        jma.deleteEmailFromJobs(emailMetaData);
+        verify(jma, times(1)).putJobMetadata(Arrays.asList(jobMetadata1, jobMetadata2));
+        verify(jma, times(1)).getJobMetadata(jobIds);
     }
 }

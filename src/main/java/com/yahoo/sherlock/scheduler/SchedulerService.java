@@ -27,7 +27,9 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is responsible for handling the scheduling, rescheduling,
@@ -50,9 +52,9 @@ public class SchedulerService {
     private JobExecutionService jobExecutionService;
 
     /**
-     * Class timer instance for pinging the backend priority queue.
+     * ScheduledExecutorService interface for pinging the backend priority queue.
      */
-    private Timer timer;
+    private ScheduledExecutorService scheduledExecutorService;
 
     /**
      * Class job scheduler instance that communicates with the
@@ -71,7 +73,7 @@ public class SchedulerService {
     private SchedulerService() {
         jobExecutionService = new JobExecutionService();
         jobScheduler = Store.getJobScheduler();
-        timer = null;
+        scheduledExecutorService = null;
         executionTask = null;
     }
 
@@ -88,15 +90,15 @@ public class SchedulerService {
     }
 
     /**
-     * Create the timer instance.
+     * Create the scheduledExecutorService instance.
      */
     public void instantiateMasterScheduler() {
         log.info("Instantiating timer instance");
-        if (timer != null) {
+        if (scheduledExecutorService != null) {
             log.info("Timer is already instantiated");
             return;
         }
-        timer = new Timer();
+        scheduledExecutorService = Executors.newScheduledThreadPool(3);
     }
 
     /**
@@ -108,7 +110,7 @@ public class SchedulerService {
             log.info("Execution task has already been started");
             return;
         }
-        if (timer == null) {
+        if (scheduledExecutorService == null) {
             instantiateMasterScheduler();
         }
         executionTask = new ExecutionTask(
@@ -117,9 +119,9 @@ public class SchedulerService {
                 jobScheduler,
                 Store.getJobMetadataAccessor()
         );
-        int period = CLISettings.EXECUTION_DELAY * 1000;
+        int period = CLISettings.EXECUTION_DELAY;
         int delay = 0;
-        timer.scheduleAtFixedRate(executionTask, delay, period);
+        scheduledExecutorService.scheduleAtFixedRate(executionTask, delay, period, TimeUnit.SECONDS);
     }
 
     /**
@@ -130,9 +132,8 @@ public class SchedulerService {
             log.info("Execution task already stopped");
             return;
         }
-        executionTask.cancel();
         executionTask = null;
-        timer.purge();
+        scheduledExecutorService.shutdown();
     }
 
     /**
@@ -140,12 +141,12 @@ public class SchedulerService {
      */
     public void destroyMasterScheduler() {
         if (executionTask != null) {
-            executionTask.cancel();
+            scheduledExecutorService.shutdown();
             executionTask = null;
         }
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
+        if (scheduledExecutorService != null) {
+            scheduledExecutorService.shutdown();
+            scheduledExecutorService = null;
         }
     }
 
@@ -223,6 +224,19 @@ public class SchedulerService {
             jobScheduler.removePending(jobIds);
         } catch (IOException e) {
             log.error("Error while unscheduling jobs", e);
+            throw new SchedulerException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Stop all jobs.
+     * @throws SchedulerException if an error occurs while unscheduling the job
+     */
+    public void removeAllJobsFromQueue() throws SchedulerException {
+        try {
+            jobScheduler.removeAllQueue();
+        } catch (IOException e) {
+            log.error("Error while unscheduling all jobs", e);
             throw new SchedulerException(e.getMessage(), e);
         }
     }

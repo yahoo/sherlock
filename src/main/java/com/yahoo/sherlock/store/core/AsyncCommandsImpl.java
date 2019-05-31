@@ -40,6 +40,11 @@ public class AsyncCommandsImpl<K> implements AsyncCommands<K> {
     }
 
     @Override
+    public RedisFuture<String> set(K key, K value) {
+        return commands.set(key, value);
+    }
+
+    @Override
     public RedisFuture<K> get(K key) {
         return commands.get(key);
     }
@@ -97,5 +102,10 @@ public class AsyncCommandsImpl<K> implements AsyncCommands<K> {
     @Override
     public void close() {
         commands.close();
+    }
+
+    @Override
+    public RedisFuture<String> bgsave() {
+        return commands.bgsave();
     }
 }

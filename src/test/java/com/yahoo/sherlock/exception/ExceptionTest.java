@@ -64,6 +64,20 @@ public class ExceptionTest {
     }
 
     @Test
+    public void testEmailNotFoundExceptionConstructors() {
+        EmailNotFoundException e = new EmailNotFoundException();
+        assertNull(e.getMessage());
+        assertNull(e.getCause());
+        e = new EmailNotFoundException("some_message");
+        assertEquals(e.getMessage(), "some_message");
+        assertNull(e.getCause());
+        Exception cause = new RuntimeException("fake_message");
+        e = new EmailNotFoundException("some_message", cause);
+        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getCause().getMessage(), "fake_message");
+    }
+
+    @Test
     public void testSherlockExceptionConstructors() {
         SherlockException e = new SherlockException();
         assertNull(e.getMessage());

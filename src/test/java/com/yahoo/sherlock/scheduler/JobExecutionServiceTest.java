@@ -17,9 +17,10 @@ import com.yahoo.sherlock.service.DetectorService;
 import com.yahoo.sherlock.service.EmailService;
 import com.yahoo.sherlock.service.ServiceFactory;
 import com.yahoo.sherlock.service.TimeSeriesParserService;
-import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
+import com.yahoo.sherlock.store.DBTestHelper;
+import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.enums.Granularity;
@@ -42,6 +43,8 @@ import java.util.List;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -82,6 +85,7 @@ public class JobExecutionServiceTest {
     private DetectorService ds;
     private SchedulerService ss;
     private EmailService es;
+    private EmailMetadataAccessor ema;
     private TimeSeriesParserService ps;
 
     private void initMocks() {
@@ -94,10 +98,12 @@ public class JobExecutionServiceTest {
         es = mock(EmailService.class);
         ara = mock(AnomalyReportAccessor.class);
         ps = mock(TimeSeriesParserService.class);
+        ema = mock(EmailMetadataAccessor.class);
         inject(jes, sf);
         inject(jes, dca);
         inject(jes, jma);
         inject(jes, "anomalyReportAccessor", ara);
+        inject(jes, "emailMetadataAccessor", ema);
         when(sf.newEmailServiceInstance()).thenReturn(es);
         when(sf.newSchedulerServiceInstance()).thenReturn(ss);
         when(sf.newDetectorServiceInstance()).thenReturn(ds);
@@ -117,16 +123,29 @@ public class JobExecutionServiceTest {
     }
 
     @Test
-    public void testExecute() throws SherlockException {
+    public void testExecute() throws SherlockException, IOException {
         initMocks();
-        CLISettings.ENABLE_EMAIL = true;
         doCallRealMethod().when(jes).execute(any(JobMetadata.class));
-        when(jes.getReports(any(), any())).thenReturn(Collections.singletonList(mock(AnomalyReport.class)));
-
-        jes.execute(new JobMetadata());
+        AnomalyReport anomalyReport = DBTestHelper.getNewReport();
+        anomalyReport.setStatus(Constants.WARNING);
+        when(jes.getReports(any(), any())).thenReturn(Collections.singletonList(anomalyReport));
+        when(ema.checkEmailsInInstantIndex(anyList())).thenReturn(new ArrayList());
+        jes.execute(DBTestHelper.getNewJob());
         verify(jes, times(1)).execute(any(JobMetadata.class));
-        verify(es, times(1)).sendEmail(anyString(), anyString(), any());
-        CLISettings.ENABLE_EMAIL = false;
+        verify(es, times(0)).processEmailReports(any(JobMetadata.class), anyList(), anyListOf(AnomalyReport.class));
+        verify(ara, times(1)).putAnomalyReports(anyListOf(AnomalyReport.class), anyList());
+        // check for instant email found in the index
+        when(ema.checkEmailsInInstantIndex(anyList())).thenReturn(Arrays.asList("email"));
+        jes.execute(DBTestHelper.getNewJob());
+        verify(jes, times(2)).execute(any(JobMetadata.class));
+        verify(es, times(1)).processEmailReports(any(JobMetadata.class), anyList(), anyListOf(AnomalyReport.class));
+        verify(ara, times(2)).putAnomalyReports(anyListOf(AnomalyReport.class), anyList());
+        // check for error report case
+        anomalyReport.setStatus(Constants.ERROR);
+        jes.execute(DBTestHelper.getNewJob());
+        verify(jes, times(3)).execute(any(JobMetadata.class));
+        verify(es, times(2)).processEmailReports(any(JobMetadata.class), anyList(), anyListOf(AnomalyReport.class));
+        verify(ara, times(3)).putAnomalyReports(anyListOf(AnomalyReport.class), anyList());
     }
 
     @Test
@@ -138,7 +157,7 @@ public class JobExecutionServiceTest {
         AnomalyReport a = new AnomalyReport();
         a.setStatus(Constants.ERROR);
         when(jes.getSingletonReport(any())).thenReturn(a);
-        JobMetadata job = new JobMetadata();
+        JobMetadata job = DBTestHelper.getNewJob();
         job.setGranularity(Granularity.HOUR.toString());
         job.setEffectiveQueryTime(123456);
         jes.execute(job);
@@ -262,10 +281,10 @@ public class JobExecutionServiceTest {
         EgadsTask ftask = mock(EgadsTask.class);
         when(ftask.getReports()).thenReturn(Collections.singletonList(new AnomalyReport()));
         when(jes.createTask(any(), anyInt(), any(), any())).thenReturn(ftask);
-        JobMetadata j = new JobMetadata();
+        JobMetadata j = DBTestHelper.getNewJob();
         DruidCluster c = new DruidCluster();
         jes.performBackfillJob(j, c, query, 123, 128, Granularity.HOUR, 10);
-        verify(ara, times(1)).putAnomalyReports(any());
+        verify(ara, times(1)).putAnomalyReports(any(), anyList());
     }
 
     @Test
@@ -299,12 +318,12 @@ public class JobExecutionServiceTest {
                 .thenReturn(Collections.singletonList(new Anomaly()));
         when(jes.executeJob(any(), any(), any(), any())).thenCallRealMethod();
         assertEquals(1, jes.executeJob(new JobMetadata(),
-             new DruidCluster(), mock(Query.class), mock(EgadsConfig.class)).size());
+                new DruidCluster(), mock(Query.class), mock(EgadsConfig.class)).size());
         when(ds.detect(any(), anyDouble(), any(), any(EgadsConfig.class), anyString(), anyInt()))
                 .thenThrow(new SherlockException());
         try {
             jes.executeJob(new JobMetadata(),
-                           new DruidCluster(), mock(Query.class), mock(EgadsConfig.class));
+                    new DruidCluster(), mock(Query.class), mock(EgadsConfig.class));
         } catch (SherlockException e) {
             return;
         }
