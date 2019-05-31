@@ -173,7 +173,7 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 | --version                 |    -                | `v0.0.0`    | [version](#version)                                 |
 | --egads-config-filename   |    -                | `provided`  | [egads-config-filename](#egads-config-filename)     |
 | --port                    |    -                | `4080`      | [port](#port)                                       |
-| --interval-minutes        |    -                | `180`        | [interval-minutes](#interval-minutes)                   |
+| --interval-minutes        |    -                | `180`       | [interval-minutes](#interval-minutes)               |
 | --interval-hours          |    -                | `672`       | [interval-hours](#interval-hours)                   |
 | --interval-days           |    -                | `28`        | [interval-days](#interval-days)                     |
 | --interval-weeks          |    -                | `12`        | [interval-weeks](#interval-weeks)                   |
@@ -197,6 +197,8 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 | --debug-mode              |    -                | `false`     | [debug-mode](#debug-mode)                           |
 | --timeseries-completeness |    -                | `60`        | [timeseries-completeness](#timeseries-completeness) |
 | --http-client-timeout     |    -                | `20000`     | [http-client-timeout](#http-client-timeout)         |
+| --backup-redis-db-path    |    -                |  `null`     | [backup-redis-db-path](#backup-redis-db-path)       |
+| --druid-brokers-list-file |    -                |  `null`     | [druid-brokers-list-file](#druid-brokers-list-file) |
 
 #### help
 Prints commandline argument help message.
@@ -256,12 +258,16 @@ Debug mode enables debug routes. Ex. '/DatabaseJson' (shows redis data as json d
 This defines minimum fraction of datapoints needed in the timeseries to consider it as a valid timeseries o/w sherlock ignores such timeseries. (default value 60 i.e. 0.6 in fraction)
 #### http-client-timeout
 HttpClient timeout can be configured using this(in millis). (default value 20000)
+#### backup-redis-db-path
+Backup redis DB at given file path as json dump of indices and objects. Backup is done per day at midnight. Default this parameter is null i.e. no buckup. However, BGSAVE command is run at midnight to save redis local dump.
+#### druid-brokers-list-file
+Specify the path to a whitelist file of allowed druid broker hosts for querying. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)
 
 ## Committers
 
 Jigar Patel, [jigsdevbox@gmail.com](mailto:jigsdevbox@gmail.com)
 
-Jeff Niu, [me@jeffniu.com](mailto:me@jeffniu.com)
+Jeff Niu, [jeffniu22@gmail.com](mailto:jeffniu22@gmail.com)
 
 ## Contributors
 
