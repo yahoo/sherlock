@@ -2,9 +2,10 @@ language: java
 jdk:
   - oraclejdk8
 script:
-  - mvn verify
+  - mvn install
 after_success:
   - mvn clean test jacoco:report coveralls:report
+  - test "${TRAVIS_PULL_REQUEST}" == "false" && test "${TRAVIS_TAG}" != "" && mvn -B deploy -Dmaven.test.skip=true --settings ./settings.xml
 cache:
   directories:
     - ~/.m2
