@@ -1,8 +1,8 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.Range;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.ScriptOutputType;
+import io.lettuce.core.Range;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.ScriptOutputType;
 
 import java.util.List;
 import java.util.Map;
@@ -19,35 +19,35 @@ public interface SyncCommands<K> extends AutoCloseable {
      * @param key key to get
      * @param value value of the key
      * @return Ok if set the key
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#set(Object, Object)
+     * @see io.lettuce.core.api.sync.RedisCommands#set(Object, Object)
      */
     String set(K key, K value);
 
     /**
      * @param key key to get
      * @return value of the key
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#get(Object)
+     * @see io.lettuce.core.api.sync.RedisCommands#get(Object)
      */
     K get(K key);
 
     /**
      * @param key long key to increment
      * @return value before increment
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#incr(Object)
+     * @see io.lettuce.core.api.sync.RedisCommands#incr(Object)
      */
     Long incr(K key);
 
     /**
      * @param key set key
      * @return members in the set
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#smembers(Object)
+     * @see io.lettuce.core.api.sync.RedisCommands#smembers(Object)
      */
     Set<K> smembers(K key);
 
     /**
      * @param key hash key
      * @return hash map value
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#hgetall(Object)
+     * @see io.lettuce.core.api.sync.RedisCommands#hgetall(Object)
      */
     Map<K, K> hgetall(K key);
 
@@ -56,34 +56,22 @@ public interface SyncCommands<K> extends AutoCloseable {
      * @param score value score
      * @param value value to add
      * @return number of added values
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#zadd(Object, double, Object)
+     * @see io.lettuce.core.api.sync.RedisCommands#zadd(Object, double, Object)
      */
     Long zadd(K key, double score, K value);
-
-    /**
-     * @return always 'OK'
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#multi()
-     */
-    String multi();
-
-    /**
-     * @return list of Object responses from transaction commands
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#exec()
-     */
-    List<Object> exec();
 
     /**
      * @param key    sorted set key
      * @param values values to remove
      * @return number of removed elements
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#zrem(Object, Object[])
+     * @see io.lettuce.core.api.sync.RedisCommands#zrem(Object, Object[])
      */
     Long zrem(K key, K... values);
 
     /**
      * @param keys keys to delete
      * @return number of deleted keys
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#del(Object[])
+     * @see io.lettuce.core.api.sync.RedisCommands#del(Object[])
      */
     Long del(K... keys);
 
@@ -92,7 +80,7 @@ public interface SyncCommands<K> extends AutoCloseable {
      * @param start value start index
      * @param end   value end index
      * @return list of values
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#zrangeWithScores(Object, long, long)
+     * @see io.lettuce.core.api.sync.RedisCommands#zrangeWithScores(Object, long, long)
      */
     List<ScoredValue<K>> zrangeWithScores(K key, long start, long end);
 
@@ -101,7 +89,7 @@ public interface SyncCommands<K> extends AutoCloseable {
      * @param range value score range
      * @param <N>   range type
      * @return number of elements in the range
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#zcount(Object, Range)
+     * @see io.lettuce.core.api.sync.RedisCommands#zcount(Object, Range)
      */
     <N extends Number> Long zcount(K key, Range<N> range);
 
@@ -112,7 +100,7 @@ public interface SyncCommands<K> extends AutoCloseable {
      * @param values script arguments
      * @param <T>    script return type
      * @return script results
-     * @see com.lambdaworks.redis.api.sync.RedisCommands#eval(String, ScriptOutputType, Object[], Object[])
+     * @see io.lettuce.core.api.sync.RedisCommands#eval(String, ScriptOutputType, Object[], Object[])
      */
     <T> T eval(String script, ScriptOutputType type, K[] keys, K... values);
 
@@ -129,6 +117,4 @@ public interface SyncCommands<K> extends AutoCloseable {
      */
     String bgsave();
 
-    @Override
-    void close();
 }

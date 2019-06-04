@@ -1,16 +1,16 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.Range;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.ScriptOutputType;
-import com.lambdaworks.redis.api.StatefulRedisConnection;
-import com.lambdaworks.redis.api.async.RedisAsyncCommands;
-import com.lambdaworks.redis.api.sync.RedisCommands;
-import com.lambdaworks.redis.cluster.api.StatefulRedisClusterConnection;
-import com.lambdaworks.redis.cluster.api.async.RedisClusterAsyncCommands;
-import com.lambdaworks.redis.cluster.api.sync.RedisClusterCommands;
-import com.lambdaworks.redis.codec.ByteArrayCodec;
-import com.lambdaworks.redis.codec.StringCodec;
+import io.lettuce.core.Range;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.ScriptOutputType;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
+import io.lettuce.core.cluster.api.async.RedisClusterAsyncCommands;
+import io.lettuce.core.cluster.api.sync.RedisClusterCommands;
+import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.codec.StringCodec;
 import com.yahoo.sherlock.exception.StoreException;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.Store;
@@ -63,14 +63,12 @@ public class WrapperTests {
         verify(wrapped).hmset("key", mockMap);
         cmd.hgetall("key");
         verify(wrapped).hgetall("key");
-        ScoredValue<String> sv1 = new ScoredValue<>(1.0, "12");
-        ScoredValue<String> sv2 = new ScoredValue<>(1.2, "13");
+        ScoredValue<String> sv1 = ScoredValue.fromNullable(1.0, "12");
+        ScoredValue<String> sv2 = ScoredValue.fromNullable(1.2, "13");
         cmd.zadd("key", sv1, sv2);
         verify(wrapped).zadd("key", sv1, sv2);
         cmd.zrangeWithScores("key", 1, 100);
         verify(wrapped).zrangeWithScores("key", 1, 100);
-        cmd.close();
-        verify(wrapped).close();
     }
 
     @Test
@@ -103,14 +101,12 @@ public class WrapperTests {
         verify(wrapped).hmset("key", mockMap);
         cmd.hgetall("key");
         verify(wrapped).hgetall("key");
-        ScoredValue<String> sv1 = new ScoredValue<>(1.0, "12");
-        ScoredValue<String> sv2 = new ScoredValue<>(1.2, "13");
+        ScoredValue<String> sv1 = ScoredValue.fromNullable(1.0, "12");
+        ScoredValue<String> sv2 = ScoredValue.fromNullable(1.2, "13");
         cmd.zadd("key", sv1, sv2);
         verify(wrapped).zadd("key", sv1, sv2);
         cmd.zrangeWithScores("key", 1, 100);
         verify(wrapped).zrangeWithScores("key", 1, 100);
-        cmd.close();
-        verify(wrapped).close();
     }
 
     @Test
@@ -127,10 +123,6 @@ public class WrapperTests {
         verify(wrapped).hgetall("key");
         cmd.zadd("key", 1.0, "value");
         verify(wrapped).zadd("key", 1.0, "value");
-        cmd.multi();
-        verify(wrapped).multi();
-        cmd.exec();
-        verify(wrapped).exec();
         cmd.zrem("key", "v1", "v2");
         verify(wrapped).zrem("key", "v1", "v2");
         cmd.del("key1", "key2");
@@ -143,8 +135,6 @@ public class WrapperTests {
         verify(wrapped).zcount("key", range);
         cmd.eval("script", ScriptOutputType.MULTI, new String[]{"key1", "key2"}, "v1", "v2");
         verify(wrapped).eval("script", ScriptOutputType.MULTI, new String[]{"key1", "key2"}, "v1", "v2");
-        cmd.close();
-        verify(wrapped).close();
     }
 
     @Test
@@ -161,10 +151,6 @@ public class WrapperTests {
         verify(wrapped).hgetall("key");
         cmd.zadd("key", 1.0, "value");
         verify(wrapped).zadd("key", 1.0, "value");
-        cmd.multi();
-        verify(wrapped).multi();
-        cmd.exec();
-        verify(wrapped).exec();
         cmd.zrem("key", "v1", "v2");
         verify(wrapped).zrem("key", "v1", "v2");
         cmd.del("key1", "key2");
@@ -177,8 +163,6 @@ public class WrapperTests {
         verify(wrapped).zcount("key", range);
         cmd.eval("script", ScriptOutputType.MULTI, new String[]{"key1", "key2"}, "v1", "v2");
         verify(wrapped).eval("script", ScriptOutputType.MULTI, new String[]{"key1", "key2"}, "v1", "v2");
-        cmd.close();
-        verify(wrapped).close();
     }
 
     @Test

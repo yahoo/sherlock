@@ -1,8 +1,8 @@
 package com.yahoo.sherlock.store.redis;
 
-import com.lambdaworks.redis.LettuceFutures;
-import com.lambdaworks.redis.RedisException;
-import com.lambdaworks.redis.RedisFuture;
+import io.lettuce.core.LettuceFutures;
+import io.lettuce.core.RedisException;
+import io.lettuce.core.RedisFuture;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.StoreParams;
 import com.yahoo.sherlock.store.core.AsyncCommands;

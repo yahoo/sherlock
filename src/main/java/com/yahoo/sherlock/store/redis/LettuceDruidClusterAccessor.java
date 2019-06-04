@@ -1,6 +1,6 @@
 package com.yahoo.sherlock.store.redis;
 
-import com.lambdaworks.redis.RedisFuture;
+import io.lettuce.core.RedisFuture;
 import com.yahoo.sherlock.exception.ClusterNotFoundException;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.settings.DatabaseConstants;

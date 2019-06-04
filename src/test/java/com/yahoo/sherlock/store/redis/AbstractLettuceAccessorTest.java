@@ -1,10 +1,10 @@
 package com.yahoo.sherlock.store.redis;
 
 import com.beust.jcommander.internal.Lists;
-import com.lambdaworks.redis.RedisException;
-import com.lambdaworks.redis.RedisFuture;
-import com.lambdaworks.redis.protocol.AsyncCommand;
-import com.lambdaworks.redis.protocol.RedisCommand;
+import io.lettuce.core.RedisException;
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.protocol.AsyncCommand;
+import io.lettuce.core.protocol.RedisCommand;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.store.StoreParams;

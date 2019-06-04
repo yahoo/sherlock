@@ -1,8 +1,8 @@
 package com.yahoo.sherlock.store.redis;
 
-import com.lambdaworks.redis.Range;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.ScriptOutputType;
+import io.lettuce.core.Range;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.ScriptOutputType;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.settings.Constants;
@@ -86,11 +86,9 @@ public class LettuceJobScheduler
         log.info("Pushing [{}] jobs to the queue", jobsAndTimes.size());
         try (RedisConnection<String> conn = connect()) {
             SyncCommands<String> syncCmd = conn.sync();
-            syncCmd.multi();
             for (Pair<Integer, String> jobAndTime : jobsAndTimes) {
                 syncCmd.zadd(queueName, (double) jobAndTime.getLeft(), jobAndTime.getRight());
             }
-            syncCmd.exec();
         }
     }
 
@@ -107,11 +105,9 @@ public class LettuceJobScheduler
         log.info("Attempting to remove [{}] jobs from the queue", jobIds.size());
         try (RedisConnection<String> conn = connect()) {
             SyncCommands<String> syncCmd = conn.sync();
-            syncCmd.multi();
             for (String id : jobIds) {
                 syncCmd.zrem(queueName, id);
             }
-            syncCmd.exec();
         }
     }
 
@@ -130,7 +126,7 @@ public class LettuceJobScheduler
             List<ScoredValue<String>> jobs = conn.sync().zrangeWithScores(queueName, 0, -1);
             Set<String> ids = new HashSet<>((int) (1.5 * jobs.size()));
             for (ScoredValue<String> job : jobs) {
-                ids.add(job.value);
+                ids.add(job.getValue());
             }
             return jobAccessor.getJobMetadata(ids);
         }
@@ -182,11 +178,9 @@ public class LettuceJobScheduler
         log.info("Attempting to remove [{}] jobs from pending queue", jobIds.size());
         try (RedisConnection<String> conn = connect()) {
             SyncCommands<String> syncCmd = conn.sync();
-            syncCmd.multi();
             for (String id : jobIds) {
                 syncCmd.zrem(pendingQueueName, id);
             }
-            syncCmd.exec();
         }
     }
 }

@@ -2,7 +2,7 @@ package com.yahoo.sherlock.store.redis;
 
 import com.beust.jcommander.internal.Lists;
 import com.google.common.collect.Sets;
-import com.lambdaworks.redis.RedisFuture;
+import io.lettuce.core.RedisFuture;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;

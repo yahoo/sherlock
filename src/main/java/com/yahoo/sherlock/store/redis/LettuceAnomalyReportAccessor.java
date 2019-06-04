@@ -1,8 +1,8 @@
 package com.yahoo.sherlock.store.redis;
 
 import com.beust.jcommander.internal.Lists;
-import com.lambdaworks.redis.RedisFuture;
-import com.lambdaworks.redis.ScoredValue;
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.ScoredValue;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.DatabaseConstants;
@@ -280,9 +280,9 @@ public class LettuceAnomalyReportAccessor
         List<ScoredValue<byte[]>> valuesEnd = new ArrayList<>(timestamps.size());
         for (int i = 0; i < timestamps.size(); i++) {
             int[] timestamp = timestamps.get(i);
-            valuesStart.add(new ScoredValue<>((double) i, NumberUtils.toBytesCompressed(timestamp[0])));
+            valuesStart.add(ScoredValue.fromNullable((double) i, NumberUtils.toBytesCompressed(timestamp[0])));
             if (timestamp[1] != 0 && timestamp[1] != timestamp[0]) {
-                valuesEnd.add(new ScoredValue<>((double) i, NumberUtils.toBytesCompressed(timestamp[1])));
+                valuesEnd.add(ScoredValue.fromNullable((double) i, NumberUtils.toBytesCompressed(timestamp[1])));
             }
         }
         List<RedisFuture> futures = new ArrayList<>(3);
@@ -367,10 +367,10 @@ public class LettuceAnomalyReportAccessor
         byte[][] startBytes = new byte[startVals.size()][];
         byte[][] endBytes = new byte[startVals.size()][];
         for (ScoredValue<byte[]> val : startVals) {
-            startBytes[(int) val.score] = val.value;
+            startBytes[(int) val.getScore()] = val.getValue();
         }
         for (ScoredValue<byte[]> val : endVals) {
-            endBytes[(int) val.score] = val.value;
+            endBytes[(int) val.getScore()] = val.getValue();
         }
         report.setAnomalyTimestampsFromBytes(startBytes, endBytes);
     }

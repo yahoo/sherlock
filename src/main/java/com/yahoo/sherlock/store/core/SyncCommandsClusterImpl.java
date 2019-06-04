@@ -1,9 +1,9 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.Range;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.ScriptOutputType;
-import com.lambdaworks.redis.cluster.api.sync.RedisClusterCommands;
+import io.lettuce.core.Range;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.ScriptOutputType;
+import io.lettuce.core.cluster.api.sync.RedisClusterCommands;
 
 import java.util.List;
 import java.util.Map;
@@ -56,16 +56,6 @@ public class SyncCommandsClusterImpl<K> implements SyncCommands<K> {
     }
 
     @Override
-    public String multi() {
-        return commands.multi();
-    }
-
-    @Override
-    public List<Object> exec() {
-        return commands.exec();
-    }
-
-    @Override
     public Long zrem(K key, K... values) {
         return commands.zrem(key, values);
     }
@@ -96,8 +86,8 @@ public class SyncCommandsClusterImpl<K> implements SyncCommands<K> {
     }
 
     @Override
-    public void close() {
-        commands.close();
+    public void close() throws Exception {
+
     }
 
     @Override

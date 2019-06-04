@@ -1,8 +1,8 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.RedisFuture;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.cluster.api.async.RedisClusterAsyncCommands;
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.cluster.api.async.RedisClusterAsyncCommands;
 
 import java.util.List;
 import java.util.Map;
@@ -100,8 +100,8 @@ public class AsyncCommandsClusterImpl<K> implements AsyncCommands<K> {
     }
 
     @Override
-    public void close() {
-        commands.close();
+    public void close() throws Exception {
+
     }
 
     @Override

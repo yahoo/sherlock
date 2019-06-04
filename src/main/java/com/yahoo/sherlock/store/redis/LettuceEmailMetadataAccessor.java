@@ -1,6 +1,6 @@
 package com.yahoo.sherlock.store.redis;
 
-import com.lambdaworks.redis.RedisFuture;
+import io.lettuce.core.RedisFuture;
 import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.exception.EmailNotFoundException;
 import com.yahoo.sherlock.model.EmailMetaData;

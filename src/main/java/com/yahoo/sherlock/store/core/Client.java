@@ -1,10 +1,10 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisURI;
-import com.lambdaworks.redis.cluster.ClusterClientOptions;
-import com.lambdaworks.redis.cluster.ClusterTopologyRefreshOptions;
-import com.lambdaworks.redis.cluster.RedisClusterClient;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.cluster.ClusterClientOptions;
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
+import io.lettuce.core.cluster.RedisClusterClient;
 import com.yahoo.sherlock.exception.StoreException;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.StoreParams;
@@ -135,17 +135,15 @@ public class Client {
         redisClusterClient = RedisClusterClient.create(produceURI(params));
         // Adaptive cluster topology refresh for redis cluster client
         ClusterTopologyRefreshOptions topologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
-            .enableAdaptiveRefreshTrigger(ClusterTopologyRefreshOptions.RefreshTrigger.MOVED_REDIRECT,
-                                          ClusterTopologyRefreshOptions.RefreshTrigger.ASK_REDIRECT,
-                                          ClusterTopologyRefreshOptions.RefreshTrigger.PERSISTENT_RECONNECTS)
-            .adaptiveRefreshTriggersTimeout(5, TimeUnit.SECONDS)
-            .refreshTriggersReconnectAttempts(5)
             .enablePeriodicRefresh(true)
-            .refreshPeriod(5, TimeUnit.MINUTES)
+            .enableAllAdaptiveRefreshTriggers()
+            .dynamicRefreshSources(true)
+            .closeStaleConnections(true)
             .build();
 
         redisClusterClient.setOptions(ClusterClientOptions.builder()
-                                          .validateClusterNodeMembership(false)
+                                          .validateClusterNodeMembership(true)
+                                          .maxRedirects(5)
                                           .topologyRefreshOptions(topologyRefreshOptions)
                                           .build());
     }

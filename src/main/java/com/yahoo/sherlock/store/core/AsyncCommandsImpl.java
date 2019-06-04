@@ -1,8 +1,8 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.RedisFuture;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.api.async.RedisAsyncCommands;
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 
 import java.util.List;
 import java.util.Map;
@@ -100,12 +100,12 @@ public class AsyncCommandsImpl<K> implements AsyncCommands<K> {
     }
 
     @Override
-    public void close() {
-        commands.close();
+    public RedisFuture<String> bgsave() {
+        return commands.bgsave();
     }
 
     @Override
-    public RedisFuture<String> bgsave() {
-        return commands.bgsave();
+    public void close() throws Exception {
+
     }
 }

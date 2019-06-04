@@ -1,6 +1,6 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.cluster.api.StatefulRedisClusterConnection;
+import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 
 /**
  * This class implements {@code RedisConnection} to wrap a {@code StatefulRedisClusterConnection}.

@@ -1,6 +1,6 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.codec.RedisCodec;
+import io.lettuce.core.codec.RedisCodec;
 
 /**
  * Generic class used to create {@code RedisConnection} instances.

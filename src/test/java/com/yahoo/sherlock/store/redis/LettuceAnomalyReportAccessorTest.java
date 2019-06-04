@@ -2,7 +2,7 @@ package com.yahoo.sherlock.store.redis;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.lambdaworks.redis.ScoredValue;
+import io.lettuce.core.ScoredValue;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.Store;
@@ -155,13 +155,13 @@ public class LettuceAnomalyReportAccessorTest {
             when(async.hgetall("key:" + aArr[i].getUniqueId())).thenReturn(fakeFuture(mArr[i]));
         }
         List<ScoredValue<byte[]>> common = Lists.newArrayList(
-                new ScoredValue<>(0.0, new byte[]{12, 34}),
-                new ScoredValue<>(1.0, new byte[]{23, 45}),
-                new ScoredValue<>(2.0, new byte[]{34, 56}),
-                new ScoredValue<>(3.0, new byte[]{45, 67})
+            ScoredValue.fromNullable(0.0, new byte[]{12, 34}),
+            ScoredValue.fromNullable(1.0, new byte[]{23, 45}),
+            ScoredValue.fromNullable(2.0, new byte[]{34, 56}),
+            ScoredValue.fromNullable(3.0, new byte[]{45, 67})
         );
         List<ScoredValue<byte[]>> end = Lists.newArrayList(
-                new ScoredValue<>(2.0, new byte[]{55, 55})
+            ScoredValue.fromNullable(2.0, new byte[]{55, 55})
         );
         int[] iPtr = {0};
         when(binAsync.zrangeWithScores(any(byte[].class), anyLong(), anyLong()))

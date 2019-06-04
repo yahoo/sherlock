@@ -1,9 +1,9 @@
 package com.yahoo.sherlock.store.redis;
 
 import com.beust.jcommander.internal.Lists;
-import com.lambdaworks.redis.Range;
-import com.lambdaworks.redis.ScoredValue;
-import com.lambdaworks.redis.ScriptOutputType;
+import io.lettuce.core.Range;
+import io.lettuce.core.ScoredValue;
+import io.lettuce.core.ScriptOutputType;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
@@ -93,8 +93,6 @@ public class LettuceJobSchedulerTest {
                 ImmutablePair.of(3000, "3")
         );
         sch.pushQueue(pairs);
-        verify(sync).multi();
-        verify(sync).exec();
         verify(sync, times(3)).zadd(anyString(), anyDouble(), anyString());
     }
 
@@ -111,8 +109,6 @@ public class LettuceJobSchedulerTest {
         mocks();
         doCallRealMethod().when(sch).removeQueue(anyCollection());
         sch.removeQueue(Lists.newArrayList("1", "2", "3"));
-        verify(sync).multi();
-        verify(sync).exec();
         verify(sync, times(3)).zrem(anyString(), anyString());
     }
 
@@ -129,9 +125,9 @@ public class LettuceJobSchedulerTest {
         mocks();
         when(sch.getAllQueue()).thenCallRealMethod();
         when(sync.zrangeWithScores(anyString(), anyLong(), anyLong())).thenReturn(Lists.newArrayList(
-                new ScoredValue<>(1.0, "1"),
-                new ScoredValue<>(2.0, "2"),
-                new ScoredValue<>(3.0, "3")
+                ScoredValue.fromNullable(1.0, "1"),
+                ScoredValue.fromNullable(2.0, "2"),
+                ScoredValue.fromNullable(3.0, "3")
         ));
         sch.getAllQueue();
         verify(sync).zrangeWithScores(anyString(), anyLong(), anyLong());
@@ -185,8 +181,6 @@ public class LettuceJobSchedulerTest {
         mocks();
         doCallRealMethod().when(sch).removePending(anyCollection());
         sch.removePending(Lists.newArrayList("1", "2", "3"));
-        verify(sync).multi();
-        verify(sync).exec();
         verify(sync, times(3)).zrem(anyString(), anyString());
     }
 

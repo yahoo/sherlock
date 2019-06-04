@@ -1,7 +1,7 @@
 package com.yahoo.sherlock.store.core;
 
-import com.lambdaworks.redis.codec.ByteArrayCodec;
-import com.lambdaworks.redis.codec.StringCodec;
+import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.codec.StringCodec;
 import com.yahoo.sherlock.store.StoreParams;
 
 /**

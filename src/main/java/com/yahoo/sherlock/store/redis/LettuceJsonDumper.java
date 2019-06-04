@@ -5,8 +5,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import com.lambdaworks.redis.RedisFuture;
-import com.lambdaworks.redis.ScoredValue;
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.ScoredValue;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
@@ -317,7 +317,7 @@ public class LettuceJsonDumper
 
     /**
      * Method to write anomaly timestamps from ({@link com.yahoo.sherlock.model.AnomalyReport}) to redis.
-     * @param anomalyTimestamps map : key - redis key, value - list of timestamps as {@link com.lambdaworks.redis.ScoredValue}
+     * @param anomalyTimestamps map : key - redis key, value - list of timestamps as {@link io.lettuce.core.ScoredValue}
      */
     public void writeAnomalyTimestampsToRedis(Map<String, List<ScoredValue<byte[]>>> anomalyTimestamps) {
         RedisConnection<byte[]> conn = binary();
