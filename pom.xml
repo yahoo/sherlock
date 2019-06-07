@@ -47,7 +47,7 @@
         <repository>
             <id>bintray-yahoo-sherlock</id>
             <name>yahoo-sherlock</name>
-            <url>https://api.bintray.com/maven/yahoo/maven/sherlock;publish=1</url>
+            <url>https://api.bintray.com/maven/yahoo/maven/Sherlock;publish=1</url>
         </repository>
     </distributionManagement>
 
