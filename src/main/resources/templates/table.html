@@ -10,7 +10,7 @@
         <tr th:attr="style=${emailHtml != null ? 'background-color: white;' : ''}">
             <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Anomaly Test Name</th>
             <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Report Time(Latest missing datapoint)</th>
-            <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Report Status</th>
+            <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Job Status</th>
             <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Visualization Link</th>
         </tr>
         </thead>
@@ -18,7 +18,7 @@
         <tr th:each="anomaly: ${Anomalies}" th:attr="style=${emailHtml != null ? 'background-color: #f9f9f9;' : ''}">
             <td th:text="${anomaly.getTestName()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Test Name</td>
             <td th:text="${anomaly.getFormattedReportGenerationTime()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;color: rgba(240,0,0,0.8)' : ''}">Report Endtime</td>
-            <td th:text="${anomaly.getStatus()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;color: rgba(240,0,0,0.8)' : ''}">Report status</td>
+            <td th:text="${anomaly.getStatus()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;color: rgba(240,0,0,0.8)' : ''}">Job status</td>
             <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
                 <a th:if="${anomaly.getQueryURL() != null and not #strings.isEmpty(anomaly.getQueryURL())}"
                    target="_blank" class="btn custom-report-btn" th:href="@{${anomaly.getQueryURL()}}">
@@ -41,6 +41,9 @@
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Group By Dimensions</th>
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Anomaly Info</th>
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Metric Deviation</th>
+                    <div th:if="${emailHtml != null}">
+                        <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Job Status</th>
+                    </div>
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Model Info</th>
                     <div th:if="${instantView == null}">
                         <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Visualization Link</th>
@@ -53,6 +56,9 @@
                     <td th:text="${anomaly.getGroupByFilters()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">List of group by dimensions</td>
                     <td th:text="${anomaly.getFormattedAnomalyTimestamps()}" th:styleappend="'color: rgba(255,0,0,0.6)'" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">List of anomalies</td>
                     <td th:utext="${anomaly.getFormattedDeviation()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Deviation</td>
+                    <div th:if="${emailHtml != null}">
+                        <td th:text="${anomaly.getStatus()}" th:styleappend="${anomaly.getStatus() == 'success' ? 'color: rgba(100,200,0,1.0)' : 'color: rgba(255,0,0,1.0)'}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Job status</td>
+                    </div>
                     <td th:text="${anomaly.getModelInfo()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Model Info</td>
                     <div th:if="${instantView == null}">
                         <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">

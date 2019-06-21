@@ -7,6 +7,7 @@ import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.service.DetectorService;
+import com.yahoo.sherlock.service.JobExecutionService;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.redis.LettuceAnomalyReportAccessor;
 

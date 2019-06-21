@@ -4,12 +4,16 @@
  * See the accompanying LICENSE file for terms.
  */
 
-package com.yahoo.sherlock.scheduler;
+package com.yahoo.sherlock.service;
 
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.exception.JobNotFoundException;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.scheduler.BackupTask;
+import com.yahoo.sherlock.scheduler.EmailSenderTask;
+import com.yahoo.sherlock.scheduler.ExecutionTask;
+import com.yahoo.sherlock.scheduler.RecoverableThreadScheduler;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.JobScheduler;
 import com.yahoo.sherlock.utils.TimeUtils;
@@ -26,6 +30,8 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -33,7 +39,9 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 /**
@@ -41,9 +49,9 @@ import static org.mockito.Mockito.when;
  */
 public class SchedulerServiceTest {
 
-    private static void inject(SchedulerService ss, Object b) {
+    private static void inject(SchedulerService ss, String fieldName, Object b) {
         try {
-            Field f = SchedulerService.class.getDeclaredField("jobScheduler");
+            Field f = SchedulerService.class.getDeclaredField(fieldName);
             f.setAccessible(true);
             f.set(ss, b);
         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -51,13 +59,45 @@ public class SchedulerServiceTest {
         }
     }
 
+    private class MockRecoverableThreadScheduler extends RecoverableThreadScheduler {
+
+        public MockRecoverableThreadScheduler(int corePoolSize) {
+            super(corePoolSize);
+        }
+
+        @Override
+        public ScheduledFuture<?> scheduleAtFixedRate(Runnable runnable, long initialDelay, long period, TimeUnit unit) {
+            return null;
+        }
+
+        @Override
+        protected void afterExecute(Runnable runnable, Throwable throwable) {
+
+        }
+    }
+
     private JobScheduler js;
     private SchedulerService ss;
+    private ExecutionTask et;
+    private BackupTask bt;
+    private EmailSenderTask est;
+    private RecoverableThreadScheduler rts;
+    private JobExecutionService jes;
 
     private void init() {
         js = mock(JobScheduler.class);
         ss = mock(SchedulerService.class);
-        inject(ss, js);
+        jes = mock(JobExecutionService.class);
+        rts = new MockRecoverableThreadScheduler(0);
+        et = null;
+        bt = null;
+        est = null;
+        inject(ss, "recoverableThreadScheduler", rts);
+        inject(ss, "jobScheduler", js);
+        inject(ss, "executionTask", et);
+        inject(ss, "emailSenderTask", est);
+        inject(ss, "backupTask", bt);
+        inject(ss, "jobExecutionService", jes);
     }
 
     @Test
@@ -198,5 +238,32 @@ public class SchedulerServiceTest {
         Assert.assertEquals(imp.getLeft(), (Integer) expectedQueryTime);
         expectedRunTime = expectedQueryTime + hoursOfLag * 60 + 1;
         Assert.assertEquals(imp.getRight(), (Integer) expectedRunTime);
+    }
+
+    @Test
+    public void testStartMasterScheduler() {
+        init();
+        doNothing().when(ss).instantiateMasterScheduler();
+        doCallRealMethod().when(ss).startMasterScheduler();
+        ss.startMasterScheduler();
+        Mockito.verify(ss, times(0)).instantiateMasterScheduler();
+    }
+
+    @Test
+    public void testStartEmailSenderScheduler() {
+        init();
+        doNothing().when(ss).instantiateMasterScheduler();
+        doCallRealMethod().when(ss).startEmailSenderScheduler();
+        ss.startEmailSenderScheduler();
+        Mockito.verify(ss, times(0)).instantiateMasterScheduler();
+    }
+
+    @Test
+    public void testStartBackupScheduler() {
+        init();
+        doNothing().when(ss).instantiateMasterScheduler();
+        doCallRealMethod().when(ss).startBackupScheduler();
+        ss.startBackupScheduler();
+        Mockito.verify(ss, times(0)).instantiateMasterScheduler();
     }
 }

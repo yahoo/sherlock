@@ -6,8 +6,6 @@
 
 package com.yahoo.sherlock.service;
 
-import com.yahoo.sherlock.scheduler.JobExecutionService;
-import com.yahoo.sherlock.scheduler.SchedulerService;
 /**
  * Service class to access all the services.
  */

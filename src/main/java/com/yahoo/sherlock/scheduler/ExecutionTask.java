@@ -7,23 +7,18 @@ package com.yahoo.sherlock.scheduler;
 
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.enums.JobStatus;
-import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
-import com.yahoo.sherlock.service.EmailService;
-import com.yahoo.sherlock.settings.CLISettings;
+import com.yahoo.sherlock.service.JobExecutionService;
+import com.yahoo.sherlock.service.SchedulerService;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.JobScheduler;
-import com.yahoo.sherlock.utils.BackupUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 
 /**
  * ScheduledExecutorService which polls the backend task queue for
@@ -32,6 +27,9 @@ import java.time.ZonedDateTime;
  */
 @Slf4j
 public class ExecutionTask implements Runnable {
+
+    /** Thread name prefix. */
+    private static final String THREAD_NAME_PREFIX = "ExecutionTask-";
 
     /**
      * Job execution service instance, which
@@ -53,10 +51,6 @@ public class ExecutionTask implements Runnable {
      * that have been ran.
      */
     private final JobMetadataAccessor jobMetadataAccessor;
-    /**
-     * Email Service obj to send emails.
-     */
-    private EmailService emailService;
 
     /**
      * Create a new execution task.
@@ -76,7 +70,6 @@ public class ExecutionTask implements Runnable {
         this.schedulerService = schedulerService;
         this.jobScheduler = jobScheduler;
         this.jobMetadataAccessor = jobMetadataAccessor;
-        this.emailService = new EmailService();
     }
 
     /**
@@ -85,13 +78,12 @@ public class ExecutionTask implements Runnable {
      */
     @Override
     public void run() {
-        long seconds = TimeUtils.getTimestampSeconds();
         try {
-            consumeAndExecuteTasks(seconds / 60L);
-            runEmailSender(seconds / 60L);
-            backupRedisDB(seconds);
+            String name = THREAD_NAME_PREFIX + Thread.currentThread().getName();
+            log.info("Running thread {}", name);
+            consumeAndExecuteTasks(TimeUtils.getTimestampMinutes());
         } catch (Exception e) {
-            log.error("Error while running job", e);
+            log.error("Error while running execution task!", e);
         }
     }
 
@@ -158,38 +150,4 @@ public class ExecutionTask implements Runnable {
             jobScheduler.removePending(jobMetadata.getJobId());
         }
     }
-
-    /**
-     * Method to send email if required at this time.
-     * @param timestampMinutes input current timestamp in minutes
-     * @throws IOException     if an error sending email
-     */
-    public void runEmailSender(long timestampMinutes) throws IOException {
-        ZonedDateTime date = TimeUtils.zonedDateTimeFromMinutes(timestampMinutes);
-        emailService.sendConsolidatedEmail(date, Triggers.DAY.toString());
-        emailService.sendConsolidatedEmail(date, Triggers.HOUR.toString());
-        if (date.getDayOfMonth() == 1) {
-            emailService.sendConsolidatedEmail(date, Triggers.MONTH.toString());
-        } else if (date.getDayOfWeek().getValue() == 1) {
-            emailService.sendConsolidatedEmail(date, Triggers.WEEK.toString());
-        }
-    }
-
-    /**
-     * Method to backup redis data as redis local dump and (as json dump if specified).
-     * @param timestamp    ping timestamp of execution task thread
-     * @throws IOException exception
-     */
-    public void backupRedisDB(long timestamp) throws IOException {
-        ZonedDateTime date = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneOffset.UTC);
-        // save redis snapshot
-        if (date.getMinute() == 0 && date.getHour() == 0 && date.getSecond() < CLISettings.EXECUTION_DELAY) {
-            jobMetadataAccessor.saveRedisJobsMetadata();
-            // save redis data as json file if path is specified
-            if (CLISettings.BACKUP_REDIS_DB_PATH != null) {
-                BackupUtils.startBackup();
-            }
-        }
-    }
-
 }

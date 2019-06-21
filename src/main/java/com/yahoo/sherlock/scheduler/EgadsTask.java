@@ -13,6 +13,7 @@ import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.service.DetectorService;
+import com.yahoo.sherlock.service.JobExecutionService;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -30,8 +30,8 @@ import com.yahoo.sherlock.model.UserQuery;
 import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.query.QueryBuilder;
-import com.yahoo.sherlock.scheduler.JobExecutionService;
-import com.yahoo.sherlock.scheduler.SchedulerService;
+import com.yahoo.sherlock.service.JobExecutionService;
+import com.yahoo.sherlock.service.SchedulerService;
 import com.yahoo.sherlock.service.DetectorService;
 import com.yahoo.sherlock.service.DruidQueryService;
 import com.yahoo.sherlock.service.EmailService;
@@ -133,6 +133,8 @@ public class Routes {
         jsonDumper = Store.getJsonDumper();
         schedulerService.instantiateMasterScheduler();
         schedulerService.startMasterScheduler();
+        schedulerService.startEmailSenderScheduler();
+        schedulerService.startBackupScheduler();
     }
 
     /**

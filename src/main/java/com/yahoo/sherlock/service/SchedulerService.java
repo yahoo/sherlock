@@ -4,13 +4,17 @@
  * See the accompanying LICENSE file for terms.
  */
 
-package com.yahoo.sherlock.scheduler;
+package com.yahoo.sherlock.service;
 
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.enums.Triggers;
 import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.scheduler.BackupTask;
+import com.yahoo.sherlock.scheduler.EmailSenderTask;
+import com.yahoo.sherlock.scheduler.ExecutionTask;
+import com.yahoo.sherlock.scheduler.RecoverableThreadScheduler;
 import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.JobScheduler;
@@ -27,8 +31,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,7 +56,7 @@ public class SchedulerService {
     /**
      * ScheduledExecutorService interface for pinging the backend priority queue.
      */
-    private ScheduledExecutorService scheduledExecutorService;
+    private RecoverableThreadScheduler recoverableThreadScheduler;
 
     /**
      * Class job scheduler instance that communicates with the
@@ -68,13 +70,25 @@ public class SchedulerService {
     private ExecutionTask executionTask;
 
     /**
+     * Class backup task instance.
+     */
+    private BackupTask backupTask;
+
+    /**
+     * Class email sender task instance.
+     */
+    private EmailSenderTask emailSenderTask;
+
+    /**
      * Private singleton constructor.
      */
     private SchedulerService() {
         jobExecutionService = new JobExecutionService();
         jobScheduler = Store.getJobScheduler();
-        scheduledExecutorService = null;
+        recoverableThreadScheduler = null;
         executionTask = null;
+        backupTask = null;
+        emailSenderTask = null;
     }
 
     /**
@@ -90,15 +104,15 @@ public class SchedulerService {
     }
 
     /**
-     * Create the scheduledExecutorService instance.
+     * Create the recoverableThreadScheduler instance.
      */
     public void instantiateMasterScheduler() {
         log.info("Instantiating timer instance");
-        if (scheduledExecutorService != null) {
+        if (recoverableThreadScheduler != null) {
             log.info("Timer is already instantiated");
             return;
         }
-        scheduledExecutorService = Executors.newScheduledThreadPool(3);
+        recoverableThreadScheduler = new RecoverableThreadScheduler(6);
     }
 
     /**
@@ -110,7 +124,7 @@ public class SchedulerService {
             log.info("Execution task has already been started");
             return;
         }
-        if (scheduledExecutorService == null) {
+        if (recoverableThreadScheduler == null) {
             instantiateMasterScheduler();
         }
         executionTask = new ExecutionTask(
@@ -121,7 +135,43 @@ public class SchedulerService {
         );
         int period = CLISettings.EXECUTION_DELAY;
         int delay = 0;
-        scheduledExecutorService.scheduleAtFixedRate(executionTask, delay, period, TimeUnit.SECONDS);
+        recoverableThreadScheduler.scheduleAtFixedRate(executionTask, delay, period, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Start the redis db backup task.
+     */
+    public void startEmailSenderScheduler() {
+        log.info("Starting email sender task");
+        if (emailSenderTask != null) {
+            log.info("Email sender task has already been started");
+            return;
+        }
+        if (recoverableThreadScheduler == null) {
+            instantiateMasterScheduler();
+        }
+        emailSenderTask = new EmailSenderTask();
+        int period = Constants.SECONDS_IN_MINUTE;
+        int delay = 10;
+        recoverableThreadScheduler.scheduleAtFixedRate(emailSenderTask, delay, period, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Start the redis db backup task.
+     */
+    public void startBackupScheduler() {
+        log.info("Starting backup task");
+        if (backupTask != null) {
+            log.info("Backup task has already been started");
+            return;
+        }
+        if (recoverableThreadScheduler == null) {
+            instantiateMasterScheduler();
+        }
+        backupTask = new BackupTask();
+        int period = Constants.SECONDS_IN_MINUTE;
+        int delay = 20;
+        recoverableThreadScheduler.scheduleAtFixedRate(backupTask, delay, period, TimeUnit.SECONDS);
     }
 
     /**
@@ -133,7 +183,7 @@ public class SchedulerService {
             return;
         }
         executionTask = null;
-        scheduledExecutorService.shutdown();
+        recoverableThreadScheduler.shutdown();
     }
 
     /**
@@ -141,12 +191,12 @@ public class SchedulerService {
      */
     public void destroyMasterScheduler() {
         if (executionTask != null) {
-            scheduledExecutorService.shutdown();
+            recoverableThreadScheduler.shutdown();
             executionTask = null;
         }
-        if (scheduledExecutorService != null) {
-            scheduledExecutorService.shutdown();
-            scheduledExecutorService = null;
+        if (recoverableThreadScheduler != null) {
+            recoverableThreadScheduler.shutdown();
+            recoverableThreadScheduler = null;
         }
     }
 

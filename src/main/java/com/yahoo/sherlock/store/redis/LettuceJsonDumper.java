@@ -123,6 +123,7 @@ public class LettuceJsonDumper
                 RedisConnection<String> conn = connect();
                 RedisConnection<byte[]> binary = binary()
         ) {
+            log.info("Starting to fetch all redis keys...");
             List<RedisFuture> futures = new LinkedList<>();
             AsyncCommands<String> cmd = conn.async();
             AsyncCommands<byte[]> bin = binary.async();
@@ -146,6 +147,7 @@ public class LettuceJsonDumper
             RedisFuture<List<ScoredValue<String>>> pendingQueue = cmd.zrangeWithScores(
                 pendingQueueName + "Pending", 0, -1
             );
+            log.info("Fetched queued jobs...");
             for (String indexKey : INDEX_NAMES) {
                 indexKeys.put(params.get(indexKey), cmd.keys(index(params.get(indexKey), "*")));
             }
@@ -154,6 +156,7 @@ public class LettuceJsonDumper
                 globals.put(params.get(DatabaseConstants.ID_NAME), cmd.get(params.get(DatabaseConstants.ID_NAME)));
                 hashKeys.put(params.get(DatabaseConstants.DB_NAME), cmd.keys(index(params.get(DatabaseConstants.DB_NAME), "*")));
             }
+            log.info("Fetched all keys...");
             futures.add(jobQueue);
             futures.add(pendingQueue);
             futures.addAll(indexKeys.values());
@@ -187,7 +190,7 @@ public class LettuceJsonDumper
             futures.addAll(indices.values());
             awaitRaw(futures);
             futures.clear();
-            Gson gson = new Gson();
+            log.info("Fetched all objects...");
             JsonObject result = new JsonObject();
             JsonElement queueEl = gson.toJsonTree(jobQueue.get(), new TypeToken<List<ScoredValue<String>>>() { }.getType());
             JsonElement pendingEl = gson.toJsonTree(pendingQueue.get(), new TypeToken<List<ScoredValue<String>>>() { }.getType());
@@ -206,6 +209,7 @@ public class LettuceJsonDumper
             for (Map.Entry<String, RedisFuture<List<ScoredValue<byte[]>>>> binEl : binaries.entrySet()) {
                 result.add(binEl.getKey(), gson.toJsonTree(binEl.getValue().get(), new TypeToken<List<ScoredValue<byte[]>>>() { }.getType()));
             }
+            log.info("sending back the json with {} keys", result.size());
             return result;
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error while retrieving Redis database!", e);

@@ -4,7 +4,7 @@
  * See the accompanying LICENSE file for terms.
  */
 
-package com.yahoo.sherlock.scheduler;
+package com.yahoo.sherlock.service;
 
 import com.beust.jcommander.internal.Lists;
 import com.google.gson.JsonArray;
@@ -22,10 +22,7 @@ import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.query.QueryBuilder;
-import com.yahoo.sherlock.service.DetectorService;
-import com.yahoo.sherlock.service.EmailService;
-import com.yahoo.sherlock.service.ServiceFactory;
-import com.yahoo.sherlock.service.TimeSeriesParserService;
+import com.yahoo.sherlock.scheduler.EgadsTask;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;

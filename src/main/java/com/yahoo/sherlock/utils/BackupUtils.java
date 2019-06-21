@@ -30,7 +30,9 @@ public class BackupUtils {
     public static void startBackup() throws IOException {
         JsonDumper jsonDumper = Store.getJsonDumper();
         JsonObject jsonObject = jsonDumper.getRawData();
+        log.info("Got the json object");
         try (FileWriter file = new FileWriter(CLISettings.BACKUP_REDIS_DB_PATH)) {
+            log.info("Writing to the file {}", CLISettings.BACKUP_REDIS_DB_PATH);
             file.write(gson.toJson(jsonObject));
             file.close();
             log.info("Successfully wrote redis data to json file");
