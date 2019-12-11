@@ -20,6 +20,7 @@ public class QueryConstants {
     // Query constants
     public static final String AGGREGATOR = "aggregator";
     public static final String NAME = "name";
+    public static final String DATASOURCES= "dataSources";
     public static final String DIMENSIONS = "dimensions";
     public static final String DIMENSION = "dimension";
     public static final String DATE_TIME_SPLIT = "\\.";
@@ -27,9 +28,11 @@ public class QueryConstants {
     public static final String PERIOD = "period";
     public static final String DATASOURCE = "dataSource";
     public static final String ORIGIN = "origin";
+    public static final String TABLE = "table";
     public static final String TYPE = "type";
     public static final String TIMEZONE = "timeZone";
     public static final String UTC = "UTC";
     public static final String OUTPUT_NAME = "outputName";
     public static final String UNKNOWN = "unknown";
+    public static final String UNION = "union";
 }
