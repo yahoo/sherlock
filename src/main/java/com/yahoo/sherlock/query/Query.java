@@ -178,7 +178,20 @@ public class Query {
             if (this.queryObj.get(QueryConstants.DATASOURCE).isJsonPrimitive()) {
                 return this.queryObj.get(QueryConstants.DATASOURCE);
             } else if (this.queryObj.get(QueryConstants.DATASOURCE).isJsonObject()) {
-                return this.queryObj.getAsJsonObject(QueryConstants.DATASOURCE).get(QueryConstants.NAME);
+                JsonObject dataSourceInfo = this.queryObj.getAsJsonObject(QueryConstants.DATASOURCE);
+                String dataSourceType = dataSourceInfo.get(QueryConstants.TYPE).getAsString();
+                //ref : https://druid.apache.org/docs/latest/querying/datasource.html
+                JsonElement dataSource;
+                switch (dataSourceType) {
+                    case QueryConstants.UNION:
+                        dataSource = dataSourceInfo.get(QueryConstants.DATASOURCES);
+                        break;
+                    default:
+                        dataSource = dataSourceInfo.get(QueryConstants.NAME);
+                        break;
+                }
+
+                return dataSource;
             }
         }
         return null;
