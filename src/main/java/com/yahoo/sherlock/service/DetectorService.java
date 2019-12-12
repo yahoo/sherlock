@@ -68,8 +68,8 @@ public class DetectorService {
      * Method to detect anomalies.
      * This method handles the control/data flow between the components of detection system.
      *
-     * @param cluster     the Druid query to issue the query
-     * @param jobMetadata job metadata
+     * @param cluster           the Druid query to issue the query
+     * @param jobMetadata       job metadata
      * @return list of anomalies
      * @throws SherlockException exeption thrown while runnig the anomaly detector components
      * @throws DruidException    if an error querying druid occurs
@@ -94,21 +94,28 @@ public class DetectorService {
      */
     public void checkDatasource(Query query, DruidCluster cluster) throws DruidException {
         JsonElement datasourceInfo = query.getDatasource();
+        ArrayList<String> inValidDataSources = new ArrayList<>();
         JsonArray druidDataSources = httpService.queryDruidDatasources(cluster);
         boolean isValidDataSource = true;
         if (datasourceInfo.isJsonArray()) {
             JsonArray dataSources = datasourceInfo.getAsJsonArray();
             for (JsonElement dataSource :
                     dataSources) {
-                isValidDataSource = (isValidDataSource && (druidDataSources.contains(dataSource)));
+                if (!druidDataSources.contains(dataSource)) {
+                    isValidDataSource = false;
+                    inValidDataSources.add(dataSource.getAsString());
+                }
             }
         } else {
-            isValidDataSource = druidDataSources.contains(datasourceInfo);
+            if (!druidDataSources.contains(datasourceInfo)) {
+                isValidDataSource = false;
+                inValidDataSources.add(datasourceInfo.getAsString());
+            }
         }
 
         if (!isValidDataSource) {
-            log.error("Druid datasource {} does not exist!", datasourceInfo);
-            throw new DruidException("Querying unknown datasource: " + datasourceInfo);
+            log.error("Druid datasource {} does not exist!", inValidDataSources.toString());
+            throw new DruidException("Querying unknown datasource: " + inValidDataSources.toString());
         }
     }
 

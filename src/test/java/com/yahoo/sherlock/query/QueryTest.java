@@ -71,7 +71,7 @@ public class QueryTest {
                     add("dim1");
                 }
             };
-            JsonElement expectedElement = gson.toJsonTree(new String[]{"s1"});
+            JsonElement expectedElement = gson.toJsonTree(new String[]{"s1" , "s2"});
             Assert.assertEquals(dimExpected, query.getGroupByDimensions());
             Assert.assertEquals(Collections.singletonList("m3"), query.getMetricNames());
             Assert.assertTrue(query.getDatasource().isJsonArray());
