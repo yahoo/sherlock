@@ -93,27 +93,24 @@ public class DetectorService {
      * @throws DruidException if the datasource is not found
      */
     public void checkDatasource(Query query, DruidCluster cluster) throws DruidException {
-        JsonElement datasourceInfo = query.getDatasource();
         ArrayList<String> inValidDataSources = new ArrayList<>();
+        JsonElement datasourceInfo = query.getDatasource();
         JsonArray druidDataSources = httpService.queryDruidDatasources(cluster);
-        boolean isValidDataSource = true;
         if (datasourceInfo.isJsonArray()) {
             JsonArray dataSources = datasourceInfo.getAsJsonArray();
             for (JsonElement dataSource :
                     dataSources) {
                 if (!druidDataSources.contains(dataSource)) {
-                    isValidDataSource = false;
                     inValidDataSources.add(dataSource.getAsString());
                 }
             }
         } else {
             if (!druidDataSources.contains(datasourceInfo)) {
-                isValidDataSource = false;
                 inValidDataSources.add(datasourceInfo.getAsString());
             }
         }
 
-        if (!isValidDataSource) {
+        if (inValidDataSources.size() > 0) {
             log.error("Druid datasource {} does not exist!", inValidDataSources.toString());
             throw new DruidException("Querying unknown datasource: " + inValidDataSources.toString());
         }
