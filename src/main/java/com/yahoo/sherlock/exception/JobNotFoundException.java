@@ -12,6 +12,9 @@ package com.yahoo.sherlock.exception;
  */
 public class JobNotFoundException extends Exception {
 
+    /** Exception message. */
+    public static final String EXEPTION_MSG = "Job is not available";
+
     /**
      * Default constructor.
      */
@@ -25,7 +28,7 @@ public class JobNotFoundException extends Exception {
      * @param message exception message
      */
     public JobNotFoundException(String message) {
-        super(message);
+        super(EXEPTION_MSG);
     }
 
     /**
@@ -35,7 +38,7 @@ public class JobNotFoundException extends Exception {
      * @param cause   cause of exception
      */
     public JobNotFoundException(String message, Throwable cause) {
-        super(message, cause);
+        super(EXEPTION_MSG, cause);
     }
 
 }

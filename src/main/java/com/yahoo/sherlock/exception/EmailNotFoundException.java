@@ -6,6 +6,9 @@ package com.yahoo.sherlock.exception;
  */
 public class EmailNotFoundException extends Exception {
 
+    /** Exception message. */
+    public static final String EXEPTION_MSG = "Email is not available";
+
     /**
      * Default constructor.
      */
@@ -19,7 +22,7 @@ public class EmailNotFoundException extends Exception {
      * @param message exception message
      */
     public EmailNotFoundException(String message) {
-        super(message);
+        super(EXEPTION_MSG);
     }
 
     /**
@@ -29,7 +32,7 @@ public class EmailNotFoundException extends Exception {
      * @param cause   cause of exception
      */
     public EmailNotFoundException(String message, Throwable cause) {
-        super(message, cause);
+        super(EXEPTION_MSG, cause);
     }
 
 }

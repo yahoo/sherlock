@@ -25,12 +25,12 @@ public class ExceptionTest {
         assertNull(e.getCause());
         // Construtor with message
         e = new ClusterNotFoundException("some_message");
-        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getMessage(), ClusterNotFoundException.EXEPTION_MSG);
         assertNull(e.getCause());
         // Constructor with message and cause
         Exception cause = new RuntimeException("fake_message");
         e = new ClusterNotFoundException("some_message", cause);
-        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getMessage(), ClusterNotFoundException.EXEPTION_MSG);
         assertNotNull(e.getCause());
         assertEquals(e.getCause().getMessage(), "fake_message");
     }
@@ -55,11 +55,11 @@ public class ExceptionTest {
         assertNull(e.getMessage());
         assertNull(e.getCause());
         e = new JobNotFoundException("some_message");
-        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getMessage(), JobNotFoundException.EXEPTION_MSG);
         assertNull(e.getCause());
         Exception cause = new RuntimeException("fake_message");
         e = new JobNotFoundException("some_message", cause);
-        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getMessage(), JobNotFoundException.EXEPTION_MSG);
         assertEquals(e.getCause().getMessage(), "fake_message");
     }
 
@@ -69,11 +69,11 @@ public class ExceptionTest {
         assertNull(e.getMessage());
         assertNull(e.getCause());
         e = new EmailNotFoundException("some_message");
-        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getMessage(), EmailNotFoundException.EXEPTION_MSG);
         assertNull(e.getCause());
         Exception cause = new RuntimeException("fake_message");
         e = new EmailNotFoundException("some_message", cause);
-        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getMessage(), EmailNotFoundException.EXEPTION_MSG);
         assertEquals(e.getCause().getMessage(), "fake_message");
     }
 

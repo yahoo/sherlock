@@ -27,14 +27,14 @@
                                            disabled="true" th:value="${email.getEmailId()}" />
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="hourDiv" name="hourDiv">
                                 <label class="control-label" for="sendOutHour">Send Out Hour(0-23):</label>
                                 <div>
                                     <input id="sendOutHour" name="sendOutHour" type="number"
                                            class="form-control input-md" size="25" th:value="${email.getSendOutHour()}" max="23" th:required="true" onchange="updateMetadata()"/>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="minuteDiv" name="minuteDiv">
                                 <label class="control-label" for="sendOutMinute">Send Out Minute(0-59):</label>
                                 <div>
                                     <input id="sendOutMinute" name="sendOutMinute" type="number"
@@ -86,10 +86,14 @@
 	$(document).ready(function() {
 		if ([[${email.getRepeatInterval()}]] === 'instant') {
             $('#sendOutHour').attr("disabled", true);
+            $('#hourDiv').attr("hidden", true);
             $('#sendOutMinute').attr("disabled", true);
+            $('#minuteDiv').attr("hidden", true);
 		} else if([[${email.getRepeatInterval()}]] === 'hour') {
             $('#sendOutHour').attr("disabled", true);
+            $('#hourDiv').attr("hidden", true);
             $('#sendOutMinute').attr("disabled", false);
+            $('#minuteDiv').attr("hidden", false);
 		}
 		$('#submit').attr("disabled", true);
 	});
@@ -103,7 +107,7 @@
         data.repeatInterval = $('#trigger').val();
         $.ajax({
             type: 'POST',
-            url: '/Emails/' + $('#emailId').val(),
+            url: '/UpdateEmail',
             data: JSON.stringify(data),
             contentType: "application/json",
             dataType: 'text',
@@ -111,7 +115,7 @@
                 if (status === 'success') {
                     showInfoMessage("Email info updated successfully.");
                     setTimeout(function() {
-                        window.location.href = '/Emails/' + response;
+                        window.location.href = '/Emails/' + $('#emailId').val();
                     }, 1500);
                 } else {
                     showErrorMessage("Something went wrong in updating email info! Try again.");
@@ -134,12 +138,18 @@
         if ($('#trigger').val() === 'instant') {
             $('#sendOutHour').attr("disabled", true);
             $('#sendOutMinute').attr("disabled", true);
+            $('#hourDiv').attr("hidden", true);
+            $('#minuteDiv').attr("hidden", true);
 		} else if($('#trigger').val() === 'hour') {
             $('#sendOutMinute').attr("disabled", false);
-            $('#sendOutHour').attr("disabled", true);
+            $('#minuteDiv').attr("hidden", false);
+            $('#sendOutHour').attr("hidden", true);
+            $('#hourDiv').attr("hidden", true);
 		} else {
 		    $('#sendOutHour').attr("disabled", false);
+		    $('#hourDiv').attr("hidden", false);
             $('#sendOutMinute').attr("disabled", false);
+            $('#minuteDiv').attr("hidden", false);
         }
 		$('#submit').attr("disabled", false);
         $('#cancelButton').attr("hidden", false);
@@ -151,14 +161,17 @@
     }
 
     function deleteEmail() {
+        var data = {};
+        data.emailId = $('#emailId').val();
         $.ajax({
             type: 'POST',
-            url: '/DeleteEmail/' + $('#emailId').val(),
+            url: '/DeleteEmail',
+            data: JSON.stringify(data),
             contentType: "application/json",
             dataType: 'text',
             success: function (response, status, jQxhr) {
                 if (status === 'success') {
-                    showInfoMessage("Email info updated successfully.");
+                    showInfoMessage("Email info deleted successfully.");
                     setTimeout(function() {
                         window.location.href = '/Meta-Manager';
                     }, 1500);

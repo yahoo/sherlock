@@ -10,12 +10,24 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.settings.CLISettings;
+import com.yahoo.sherlock.settings.Constants;
+
+import org.pac4j.core.authorization.authorizer.csrf.CsrfAuthorizer;
+import org.pac4j.core.authorization.authorizer.csrf.CsrfTokenGeneratorAuthorizer;
+import org.pac4j.core.authorization.authorizer.csrf.DefaultCsrfTokenGenerator;
+import org.pac4j.core.client.Clients;
+import org.pac4j.core.client.direct.AnonymousClient;
+import org.pac4j.core.config.Config;
+import org.pac4j.sparkjava.DefaultHttpActionAdapter;
+import org.pac4j.sparkjava.SecurityFilter;
+
 import lombok.extern.slf4j.Slf4j;
 
 import spark.template.thymeleaf.ThymeleafTemplateEngine;
 
 import java.io.IOException;
 
+import static spark.Spark.before;
 import static spark.Spark.get;
 import static spark.Spark.port;
 import static spark.Spark.post;
@@ -40,6 +52,10 @@ class App {
      * Class application instance.
      */
     private static App app = new App();
+    /**
+     * Thymeleaf template engine object.
+     */
+    private static ThymeleafTemplateEngine thymeleafTemplateEngine = new ThymeleafTemplateEngine();
 
     /**
      * Main() function.
@@ -113,29 +129,38 @@ class App {
             staticFiles.externalLocation(CLISettings.EXTERNAL_FILE_PATH);
         }
 
+        // add security/authorization config
+        Config config = new Config();
+        config.setHttpActionAdapter(new DefaultHttpActionAdapter());
+        config.setAuthorizer(new CsrfTokenGeneratorAuthorizer(new DefaultCsrfTokenGenerator()));
+        config.setAuthorizer(new CsrfAuthorizer());
+        config.setClients(new Clients(AnonymousClient.INSTANCE));
+
+        before("/*", new SecurityFilter(config, null, Constants.CSRF + Constants.COMMA_DELIMITER + Constants.XSS_PROTECTION));
+
         // Home Page
-        get("/sherlock", Routes::viewHomePage, new ThymeleafTemplateEngine());
+        get("/sherlock", Routes::viewHomePage, thymeleafTemplateEngine);
 
         // Default redirect
         redirect.get("/", "/sherlock");
 
         // Route for New job submission form
-        get("/New", Routes::viewNewAnomalyJobForm, new ThymeleafTemplateEngine());
+        get("/New", Routes::viewNewAnomalyJobForm, thymeleafTemplateEngine);
 
         // Route for instant anomaly-detection form
-        get("/Flash-Query", Routes::viewInstantAnomalyJobForm, new ThymeleafTemplateEngine());
+        get("/Flash-Query", Routes::viewInstantAnomalyJobForm, thymeleafTemplateEngine);
 
         // Route for instant anomaly-detection on user input query
-        post("/Flash-Query/ProcessAnomalyReport", Routes::processInstantAnomalyJob, new ThymeleafTemplateEngine());
+        post("/Flash-Query/ProcessAnomalyReport", Routes::processInstantAnomalyJob, thymeleafTemplateEngine);
 
         // Route for viewing deleted jobs
-        get("/DeletedJobs", Routes::viewDeletedJobsList, new ThymeleafTemplateEngine());
+        get("/DeletedJobs", Routes::viewDeletedJobsList, thymeleafTemplateEngine);
 
         // Route for viewing currently active jobs
-        get("/Jobs", Routes::viewJobsList, new ThymeleafTemplateEngine());
+        get("/Jobs", Routes::viewJobsList, thymeleafTemplateEngine);
 
         // Route for viewing selected job detail-page
-        get("/Jobs/:id", Routes::viewJobInfo, new ThymeleafTemplateEngine());
+        get("/Jobs/:id", Routes::viewJobInfo, thymeleafTemplateEngine);
 
         // Route for saving user job
         post("/SaveJobInfo", Routes::saveUserJob);
@@ -144,7 +169,7 @@ class App {
         post("/DeletedJobs/:id", Routes::deleteJob);
 
         // Route for viewing deleted job
-        get("/DeletedJobs/:id", Routes::viewDeletedJobInfo, new ThymeleafTemplateEngine());
+        get("/DeletedJobs/:id", Routes::viewDeletedJobInfo, thymeleafTemplateEngine);
 
         // Route for cloning job
         post("/CloneJob/:id", Routes::cloneJob);
@@ -159,22 +184,22 @@ class App {
         post("/StopJob/:id", Routes::stopJob);
 
         // Routes to view reports of the selected job
-        get("/Reports/:id/:frequency", Routes::viewJobReport, new ThymeleafTemplateEngine());
+        get("/Reports/:id/:frequency", Routes::viewJobReport, thymeleafTemplateEngine);
 
         // Routes to send reports as HTML to render on UI as requested by users
         post("/Reports/:id/:frequency", Routes::sendJobReport);
 
         // Routes to show the new Druid Cluster form
-        get("/Druid/NewCluster", Routes::viewNewDruidClusterForm, new ThymeleafTemplateEngine());
+        get("/Druid/NewCluster", Routes::viewNewDruidClusterForm, thymeleafTemplateEngine);
 
         // Routes to add a new Druid cluster
         post("/Druid/NewCluster", Routes::addNewDruidCluster);
 
         // Routes to view the list of Druid clusters
-        get("/Druid/Clusters", Routes::viewDruidClusterList, new ThymeleafTemplateEngine());
+        get("/Druid/Clusters", Routes::viewDruidClusterList, thymeleafTemplateEngine);
 
         // Routes to view a Druid cluster
-        get("/Druid/Cluster/:id", Routes::viewDruidCluster, new ThymeleafTemplateEngine());
+        get("/Druid/Cluster/:id", Routes::viewDruidCluster, thymeleafTemplateEngine);
 
         // Routes to delete a Druid cluster
         post("/Druid/DeleteCluster/:id", Routes::deleteDruidCluster);
@@ -183,10 +208,10 @@ class App {
         post("/Druid/UpdateCluster/:id", Routes::updateDruidCluster);
 
         // Routes to Rerun the job for given timestamp in minutes
-        post("/Rerun/:id/:timestamp", Routes::rerunJob);
+        post("/Rerun", Routes::rerunJob);
 
         // Routes to meta manager
-        get("/Meta-Manager", Routes::viewSettings, new ThymeleafTemplateEngine());
+        get("/Meta-Manager", Routes::viewSettings, thymeleafTemplateEngine);
 
         // Routes to delete selected jobs
         post("/Meta-Manager/Delete/:ids", Routes::deleteSelectedJobs);
@@ -201,24 +226,24 @@ class App {
         post("/Meta-Manager/ClearReports/:ids", Routes::clearReportsOfSelectedJobs);
 
         // Routes to view Emails
-        get("/Emails/:id", Routes::viewEmails, new ThymeleafTemplateEngine());
+        get("/Emails/:id", Routes::viewEmails, thymeleafTemplateEngine);
 
         // Routes to update Emails
-        post("/Emails/:id", Routes::updateEmails);
+        post("/UpdateEmail", Routes::updateEmails);
 
         // Routes to delete Email
-        post("/DeleteEmail/:id", Routes::deleteEmail);
+        post("/DeleteEmail", Routes::deleteEmail);
 
         // Enable debug routes only in debug mode
         if (CLISettings.DEBUG_MODE) {
             // Routes to get the database as a JSON dump
             get("/DatabaseJson", Routes::getDatabaseJsonDump);
             // Debug job form route
-            get("/Debug/InstantReport", Routes::debugInstantReport, new ThymeleafTemplateEngine());
+            get("/Debug/InstantReport", Routes::debugInstantReport, thymeleafTemplateEngine);
             // Debug job post route
-            get("/Debug/ProcessInstantReport", Routes::debugPowerQuery, new ThymeleafTemplateEngine());
+            get("/Debug/ProcessInstantReport", Routes::debugPowerQuery, thymeleafTemplateEngine);
             // Debug back fill jobs
-            get("/Debug/BackfillReports", Routes::debugBackfillForm, new ThymeleafTemplateEngine());
+            get("/Debug/BackfillReports", Routes::debugBackfillForm, thymeleafTemplateEngine);
             // Debug back fill jobs post
             post("/Debug/BackfillReports", Routes::debugRunBackfillJob);
             // Debug remove reports for job
@@ -226,11 +251,11 @@ class App {
             // Debug remove debug jobs
             get("/Debug/DeleteDebugJobs", Routes::debugClearDebugJobs);
             // Debug egads configuration query
-            get("/Debug/EgadsQuery", Routes::debugShowEgadsConfigurableQuery, new ThymeleafTemplateEngine());
+            get("/Debug/EgadsQuery", Routes::debugShowEgadsConfigurableQuery, thymeleafTemplateEngine);
             // Submit egads query
             post("/Debug/EgadsQuery", Routes::debugPerformEgadsQuery);
             // Restore redis db form
-            get("/Debug/Restore", Routes::restoreRedisDBForm, new ThymeleafTemplateEngine());
+            get("/Debug/Restore", Routes::restoreRedisDBForm, thymeleafTemplateEngine);
             // Restore redis db
             post("/Debug/Restore", Routes::restoreRedisDB);
         }

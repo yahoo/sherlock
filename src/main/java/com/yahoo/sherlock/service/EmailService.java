@@ -77,7 +77,7 @@ public class EmailService {
      * CLISettings.
      * @return list of valid domains
      */
-    public List<String> getValidDomainsFromSettings() {
+    public static List<String> getValidDomainsFromSettings() {
         if (CLISettings.VALID_DOMAINS == null || CLISettings.VALID_DOMAINS.isEmpty()) {
             return Collections.emptyList();
         }
@@ -96,7 +96,7 @@ public class EmailService {
      * @param validDomains list of valid domains
      * @return true if the email matches
      */
-    public boolean validateEmail(String email, List<String> validDomains) {
+    public static boolean validateEmail(String email, List<String> validDomains) {
         String[] allEmails = email.replace(" ", "").split(Constants.COMMA_DELIMITER);
         if (email.isEmpty()) {
             return false;

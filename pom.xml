@@ -171,6 +171,11 @@
             <artifactId>lettuce-core</artifactId>
             <version>5.1.6.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>spark-pac4j</artifactId>
+            <version>3.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>

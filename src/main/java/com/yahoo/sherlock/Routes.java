@@ -65,12 +65,13 @@ import java.lang.reflect.Type;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static spark.Spark.halt;
 
 /**
  * Routes logic for web requests.
@@ -96,6 +97,7 @@ public class Routes {
     private static DeletedJobMetadataAccessor deletedJobAccessor;
     private static EmailMetadataAccessor emailMetadataAccessor;
     private static JsonDumper jsonDumper;
+    private static JobTimeline jobTimeline;
 
     /**
      * Initialize the default Route parameters.
@@ -135,6 +137,7 @@ public class Routes {
         schedulerService.startMasterScheduler();
         schedulerService.startEmailSenderScheduler();
         schedulerService.startBackupScheduler();
+        jobTimeline = new JobTimeline();
     }
 
     /**
@@ -346,6 +349,10 @@ public class Routes {
      */
     public static String deleteJob(Request request, Response response) {
         Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (jobId == null) {
+            response.status(500);
+            return "Invalid Job!";
+        }
         log.info("Getting job list from database to delete the job [{}]", jobId);
         try {
             schedulerService.stopJob(jobId);
@@ -366,7 +373,11 @@ public class Routes {
      * @return Nothing on success (200 status), or error message (500 status)
      */
     public static String deleteSelectedJobs(Request request, Response response) {
-        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        Set<String> jobIds = NumberUtils.convertValidIntNumbers(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER));
+        if (jobIds == null || jobIds.size() == 0) {
+            response.status(500);
+            return "Invalid Jobs!";
+        }
         log.info("Getting job list from database to delete the job [{}]", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
         try {
             schedulerService.stopJob(jobIds);
@@ -391,7 +402,7 @@ public class Routes {
         try {
             log.info("Getting job list from database");
             params.put("jobs", jobAccessor.getJobMetadataList());
-            params.put("timelineData", new JobTimeline().getCurrentTimelineJson(Granularity.HOUR));
+            params.put("timelineData", jobTimeline.getCurrentTimelineJson(Granularity.HOUR));
             params.put(Constants.TITLE, "Active Jobs");
         } catch (Exception e) {
             // add the error to the params
@@ -455,6 +466,7 @@ public class Routes {
             // add the error to the params
             params.put(Constants.ERROR, e.getMessage());
             log.error("Error in getting job info!", e);
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
         }
         return new ModelAndView(params, "jobInfo");
     }
@@ -480,6 +492,7 @@ public class Routes {
             // add the error to the params
             params.put(Constants.ERROR, e.getMessage());
             log.error("Error in getting deleted job info!", e);
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
         }
         return new ModelAndView(params, "jobInfo");
     }
@@ -501,7 +514,11 @@ public class Routes {
      * @throws IOException IO exception
      */
     public static String updateJobInfo(Request request, Response response) throws IOException {
-        String jobId = request.params(Constants.ID);
+        Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (jobId == null) {
+            response.status(500);
+            return "Invalid Job!";
+        }
         log.info("Updating job metadata [{}]", jobId);
         try {
             // Parse user request and get existing job
@@ -511,7 +528,7 @@ public class Routes {
             if (!validEmail(userQuery.getOwnerEmail(), emailService)) {
                 throw new SherlockException("Invalid owner email passed");
             }
-            JobMetadata currentJob = jobAccessor.getJobMetadata(jobId);
+            JobMetadata currentJob = jobAccessor.getJobMetadata(jobId.toString());
             // Validate query change if any
             Query query = null;
             String newQuery = userQuery.getQuery().replaceAll(Constants.WHITESPACE_REGEX, "");
@@ -549,11 +566,16 @@ public class Routes {
      * @throws IOException IO exception
      */
     public static String launchJob(Request request, Response response) throws IOException {
+        Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (jobId == null) {
+            response.status(500);
+            return "Invalid Job!";
+        }
         log.info("Launching the job requested by user.");
         JobMetadata jobMetadata;
         try {
             // get jobinfo from database
-            jobMetadata = jobAccessor.getJobMetadata(request.params(Constants.ID));
+            jobMetadata = jobAccessor.getJobMetadata(jobId.toString());
             DruidCluster cluster = clusterAccessor.getDruidCluster(jobMetadata.getClusterId());
             jobMetadata.setHoursOfLag(cluster.getHoursOfLag());
             log.info("Scheduling job.");
@@ -581,7 +603,11 @@ public class Routes {
      * @throws IOException IO exception
      */
     public static String launchSelectedJobs(Request request, Response response) throws IOException {
-        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        Set<String> jobIds = NumberUtils.convertValidIntNumbers(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER));
+        if (jobIds == null || jobIds.size() == 0) {
+            response.status(500);
+            return "Invalid Jobs!";
+        }
         log.info("Launching the jobs id:[{}] requested by user", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
         JobMetadata jobMetadata;
         for (String id : jobIds) {
@@ -619,6 +645,11 @@ public class Routes {
      * @throws IOException IO exception
      */
     public static String stopJob(Request request, Response response) throws IOException {
+        Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (jobId == null) {
+            response.status(500);
+            return "Invalid Job!";
+        }
         log.info("Stopping the job requested by user.");
         JobMetadata jobMetadata;
         try {
@@ -648,7 +679,11 @@ public class Routes {
      * @throws IOException IO exception
      */
     public static String stopSelectedJobs(Request request, Response response) throws IOException {
-        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        Set<String> jobIds = NumberUtils.convertValidIntNumbers(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER));
+        if (jobIds == null || jobIds.size() == 0) {
+            response.status(500);
+            return "Invalid Jobs!";
+        }
         log.info("Stopping the jobs id:[{}] requested by user", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
         JobMetadata jobMetadata;
         for (String id : jobIds) {
@@ -679,12 +714,17 @@ public class Routes {
      * @throws IOException IO exception
      */
     public static String cloneJob(Request request, Response response) throws IOException {
+        Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (jobId == null) {
+            response.status(500);
+            return "Invalid Job!";
+        }
         log.info("Cloning the job...");
         JobMetadata jobMetadata;
         JobMetadata clonedJobMetadata;
         try {
             // get jobinfo from database
-            jobMetadata = jobAccessor.getJobMetadata(request.params(Constants.ID));
+            jobMetadata = jobAccessor.getJobMetadata(jobId.toString());
             // copy the job metadata
             clonedJobMetadata = JobMetadata.copyJob(jobMetadata);
             clonedJobMetadata.setJobStatus(JobStatus.CREATED.getValue());
@@ -713,9 +753,13 @@ public class Routes {
                 request.body(),
                 new TypeToken<Map<String, String>>() { }.getType()
             );
-            String jobId = params.get("jobId");
-            JobMetadata job = jobAccessor.getJobMetadata(jobId);
-            long start = Long.valueOf(params.get("timestamp"));
+            Integer jobId = NumberUtils.parseInt(params.get("jobId"));
+            Long start = NumberUtils.parseLong(params.get("timestamp"));
+            if (jobId == null || start == null) {
+                response.status(500);
+                return "Invalid Job!";
+            }
+            JobMetadata job = jobAccessor.getJobMetadata(jobId.toString());
             long end = start + Granularity.getValue(job.getGranularity()).getMinutes();
             serviceFactory.newJobExecutionService().performBackfillJob(job, TimeUtils.zonedDateTimeFromMinutes(start), TimeUtils.zonedDateTimeFromMinutes(end));
             response.status(200);
@@ -739,6 +783,10 @@ public class Routes {
         // Get the job id
         String jobId = request.params(Constants.ID);
         String frequency = request.params(Constants.FREQUENCY_PARAM);
+        if (!NumberUtils.isInteger(jobId) || !Triggers.getAllValues().contains(frequency)) {
+            params.put(Constants.ERROR, "Invalid Request");
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
+        }
         // Get the json timeline data from database
         try {
             List<AnomalyReport> report = reportAccessor.getAnomalyReportsForJob(jobId, frequency);
@@ -753,7 +801,8 @@ public class Routes {
             params.put(Constants.TITLE, jobMetadata.getTestName());
         } catch (Exception e) {
             log.error("Error while viewing job report!", e);
-            params.put(Constants.ERROR, e.toString());
+            params.put(Constants.ERROR, e.getMessage());
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
         }
         return new ModelAndView(params, "report");
     }
@@ -774,6 +823,10 @@ public class Routes {
             Map<String, String> requestParamsMap = new Gson().fromJson(request.body(), Map.class);
             String selectedDate = requestParamsMap.get(Constants.SELECTED_DATE);
             String frequency = requestParamsMap.get(Constants.FREQUENCY);
+            if (!NumberUtils.isNonNegativeLong(selectedDate) || !Triggers.getAllValues().contains(frequency) || !NumberUtils.isInteger(request.params(Constants.ID))) {
+                response.status(500);
+                return "Invalid Request";
+            }
             // get the report from the database
             List<AnomalyReport> reports = reportAccessor.getAnomalyReportsForJobAtTime(
                     request.params(Constants.ID),
@@ -875,6 +928,7 @@ public class Routes {
         } catch (Exception e) {
             log.error("Fatal error while retrieving cluster!", e);
             params.put(Constants.ERROR, e.getMessage());
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
         }
         return new ModelAndView(params, "druidInfo");
     }
@@ -887,16 +941,20 @@ public class Routes {
      * @return success if the cluster was deleted or else an error message
      */
     public static String deleteDruidCluster(Request request, Response response) {
-        String clusterId = request.params(Constants.ID);
+        Integer clusterId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (clusterId == null) {
+            response.status(500);
+            return "Invalid Cluster!";
+        }
         log.info("Deleting cluster with ID {}", clusterId);
         try {
-            List<JobMetadata> associatedJobs = jobAccessor.getJobsAssociatedWithCluster(clusterId);
+            List<JobMetadata> associatedJobs = jobAccessor.getJobsAssociatedWithCluster(clusterId.toString());
             if (associatedJobs.size() > 0) {
                 log.info("Attempting to delete a cluster that has {} associated jobs", associatedJobs.size());
                 response.status(400);
                 return String.format("Cannot delete cluster with %d associated jobs", associatedJobs.size());
             }
-            clusterAccessor.deleteDruidCluster(clusterId);
+            clusterAccessor.deleteDruidCluster(clusterId.toString());
             response.status(200);
             return Constants.SUCCESS;
         } catch (IOException | ClusterNotFoundException e) {
@@ -914,12 +972,16 @@ public class Routes {
      * @return 'success' or an error message
      */
     public static String updateDruidCluster(Request request, Response response) {
-        String clusterId = request.params(Constants.ID);
+        Integer clusterId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (clusterId == null) {
+            response.status(500);
+            return "Invalid Cluster!";
+        }
         log.info("Updating cluster with ID {}", clusterId);
         DruidCluster existingCluster;
         DruidCluster updatedCluster;
         try {
-            existingCluster = clusterAccessor.getDruidCluster(clusterId);
+            existingCluster = clusterAccessor.getDruidCluster(clusterId.toString());
             updatedCluster = new Gson().fromJson(request.body(), DruidCluster.class);
             updatedCluster.validate();
             boolean requireReschedule = !existingCluster.getHoursOfLag().equals(updatedCluster.getHoursOfLag());
@@ -1027,6 +1089,7 @@ public class Routes {
         } catch (Exception e) {
             log.error("Fatal error while retrieving email settings!", e);
             params.put(Constants.ERROR, e.getMessage());
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
         }
         return new ModelAndView(params, "emailInfo");
     }
@@ -1039,17 +1102,20 @@ public class Routes {
      * @return emailid as string
      */
     public static String updateEmails(Request request, Response response) {
-        String emailId = request.params(Constants.ID);
-        log.info("Updating email metadata for [{}]", emailId);
+        log.info("Updating email metadata");
         try {
             EmailMetaData newEmailMetaData = new Gson().fromJson(request.body(), EmailMetaData.class);
+            if (!EmailService.validateEmail(newEmailMetaData.getEmailId(), EmailService.getValidDomainsFromSettings())) {
+                response.status(500);
+                return "Invalid Email!";
+            }
             EmailMetaData oldEmailMetadata = emailMetadataAccessor.getEmailMetadata(newEmailMetaData.getEmailId());
             if (!newEmailMetaData.getRepeatInterval().equalsIgnoreCase(oldEmailMetadata.getRepeatInterval())) {
                 emailMetadataAccessor.removeFromTriggerIndex(newEmailMetaData.getEmailId(), oldEmailMetadata.getRepeatInterval());
             }
             emailMetadataAccessor.putEmailMetadata(newEmailMetaData);
             response.status(200);
-            return emailId;
+            return Constants.SUCCESS;
         } catch (Exception e) {
             log.error("Exception while stopping the job!", e);
             response.status(500);
@@ -1064,10 +1130,14 @@ public class Routes {
      * @return status string
      */
     public static String deleteEmail(Request request, Response response) {
-        String emailId = request.params(Constants.ID);
-        log.info("Deleting email metadata for [{}]", emailId);
+        log.info("Deleting email metadata");
         try {
-            EmailMetaData emailMetadata = emailMetadataAccessor.getEmailMetadata(emailId);
+            EmailMetaData emailMetaData = new Gson().fromJson(request.body(), EmailMetaData.class);
+            if (!EmailService.validateEmail(emailMetaData.getEmailId(), EmailService.getValidDomainsFromSettings())) {
+                response.status(500);
+                return "Invalid Email!";
+            }
+            EmailMetaData emailMetadata = emailMetadataAccessor.getEmailMetadata(emailMetaData.getEmailId());
             jobAccessor.deleteEmailFromJobs(emailMetadata);
             response.status(200);
             return Constants.SUCCESS;
@@ -1197,7 +1267,11 @@ public class Routes {
      * @return 'success' or an error message is something goes wrong
      */
     public static String clearReportsOfSelectedJobs(Request request, Response response) {
-        Set<String> jobIds = Arrays.stream(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER)).collect(Collectors.toSet());
+        Set<String> jobIds = NumberUtils.convertValidIntNumbers(request.params(Constants.IDS).split(Constants.COMMA_DELIMITER));
+        if (jobIds == null || jobIds.size() == 0) {
+            response.status(500);
+            return "Invalid Jobs!";
+        }
         log.info("Clearing reports of jobs id:[{}] requested by user", jobIds.stream().collect(Collectors.joining(Constants.COMMA_DELIMITER)));
         for (String id : jobIds) {
             try {

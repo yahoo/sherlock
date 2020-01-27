@@ -87,8 +87,8 @@
                                             <tbody>
                                                 <tr th:each="email: ${emails}" class='clickable-row' th:attr="data-href=${'/Emails/' + email.getEmailId()}">
                                                     <td th:text="${email.getEmailId()}">email</td>
-                                                    <td th:text="${email.getSendOutHour()}">hour</td>
-                                                    <td th:text="${email.getSendOutMinute()}">minute</td>
+                                                    <td th:text="${email.getRepeatInterval().equals('instant') || email.getRepeatInterval().equals('hour') ? 'N/A' : email.getSendOutHour()}">hour</td>
+                                                    <td th:text="${email.getRepeatInterval().equals('instant') ? 'N/A' :email.getSendOutMinute()}">minute</td>
                                                     <td th:text="${email.getRepeatInterval()}">interval</td>
                                                 </tr>
                                             </tbody>

@@ -1,7 +1,11 @@
 package com.yahoo.sherlock.utils;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Utility functions specific to Numbers.
@@ -258,4 +262,13 @@ public class NumberUtils {
         return scnr.nextBoolean();
     }
 
+    /**
+     * Parse valid strings to integer numbers.
+     * @param nums array of strings
+     * @return set of valid numbers as a string set
+     */
+    public static Set<String> convertValidIntNumbers(String[] nums) {
+        return Arrays.stream(nums).map(NumberUtils::parseInt).filter(
+                Objects::nonNull).map(String::valueOf).collect(Collectors.toSet());
+    }
 }

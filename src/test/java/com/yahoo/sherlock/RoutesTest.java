@@ -21,6 +21,7 @@ import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.EgadsResult;
 import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.model.JobTimeline;
 import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.service.JobExecutionService;
@@ -41,6 +42,7 @@ import com.yahoo.sherlock.store.JsonDumper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import spark.HaltException;
 import spark.ModelAndView;
 import spark.QueryParamsMap;
 import spark.Request;
@@ -62,6 +64,8 @@ import java.util.Set;
 
 import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -79,8 +83,44 @@ import static org.testng.Assert.assertTrue;
 
 public class RoutesTest {
 
-    private Request fRequest = mock(Request.class);
-    private Response fResponse = mock(Response.class);
+    private Request req;
+    private Response res;
+    private DruidQueryService qs;
+    private DetectorService ds;
+    private DruidClusterAccessor dca;
+    private JobMetadataAccessor jma;
+    private AnomalyReportAccessor ara;
+    private EmailMetadataAccessor ema;
+    private JobExecutionService jes;
+    private ThymeleafTemplateEngine tte;
+    private ServiceFactory sf;
+    private SchedulerService ss;
+
+    private void mocks() {
+        req = mock(Request.class);
+        res = mock(Response.class);
+        qs = mock(DruidQueryService.class);
+        ds = mock(DetectorService.class);
+        jes = mock(JobExecutionService.class);
+        sf = mock(ServiceFactory.class);
+        ss = mock(SchedulerService.class);
+        when(sf.newJobExecutionService()).thenReturn(jes);
+        when(sf.newDetectorServiceInstance()).thenReturn(ds);
+        when(sf.newDruidQueryServiceInstance()).thenReturn(qs);
+        inject("serviceFactory", sf);
+        tte = mock(ThymeleafTemplateEngine.class);
+        inject("thymeleaf", tte);
+        dca = mock(DruidClusterAccessor.class);
+        inject("clusterAccessor", dca);
+        jma = mock(JobMetadataAccessor.class);
+        inject("jobAccessor", jma);
+        ara = mock(AnomalyReportAccessor.class);
+        inject("reportAccessor", ara);
+        ema = mock(EmailMetadataAccessor.class);
+        inject("emailMetadataAccessor", ema);
+        @SuppressWarnings("unchecked") Map<String, Object> dp = (Map<String, Object>) mock(Map.class);
+        inject("defaultParams", dp);
+    }
 
     private static void inject(String name, Object mock) {
         CLISettingsTest.setField(CLISettingsTest.getField(name, Routes.class), mock);
@@ -149,7 +189,8 @@ public class RoutesTest {
     @Test
     public void testViewHomePage() {
         Routes.initParams();
-        ModelAndView mav = Routes.viewHomePage(fRequest, fResponse);
+        mocks();
+        ModelAndView mav = Routes.viewHomePage(req, res);
         assertEquals(mav.getViewName(), "homePage");
     }
 
@@ -157,10 +198,10 @@ public class RoutesTest {
     @SuppressWarnings("unchecked")
     public void testViewInstantAnomalyFormEmptyDruidList() throws IOException {
         Routes.initParams();
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         when(dca.getDruidClusterList()).thenThrow(new IOException());
         inject("clusterAccessor", dca);
-        ModelAndView mav = Routes.viewInstantAnomalyJobForm(fRequest, fResponse);
+        ModelAndView mav = Routes.viewInstantAnomalyJobForm(req, res);
         assertEquals(params(mav.getModel()).get(Constants.INSTANTVIEW), "true");
         List<DruidCluster> clusters = (List<DruidCluster>) params(mav.getModel()).get(Constants.DRUID_CLUSTERS);
         assertEquals(clusters.size(), 0);
@@ -170,13 +211,13 @@ public class RoutesTest {
     @SuppressWarnings("unchecked")
     public void testViewInstantAnomalyForm() throws IOException {
         Routes.initParams();
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         DruidCluster cl = new DruidCluster();
         cl.setClusterId(5);
         List<DruidCluster> cls = Collections.singletonList(cl);
         when(dca.getDruidClusterList()).thenReturn(cls);
         inject("clusterAccessor", dca);
-        ModelAndView mav = Routes.viewInstantAnomalyJobForm(fRequest, fResponse);
+        ModelAndView mav = Routes.viewInstantAnomalyJobForm(req, res);
         List<DruidCluster> clusters = (List<DruidCluster>) params(mav.getModel()).get(Constants.DRUID_CLUSTERS);
         assertEquals(clusters.size(), 1);
         assertEquals(clusters.get(0).getClusterId(), (Integer) 5);
@@ -186,13 +227,13 @@ public class RoutesTest {
     @SuppressWarnings("unchecked")
     public void testViewNewAnomalyForm() throws IOException {
         Routes.initParams();
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         DruidCluster cl = new DruidCluster();
         cl.setClusterId(5);
         List<DruidCluster> cls = Collections.singletonList(cl);
         when(dca.getDruidClusterList()).thenReturn(cls);
         inject("clusterAccessor", dca);
-        ModelAndView mav = Routes.viewNewAnomalyJobForm(fRequest, fResponse);
+        ModelAndView mav = Routes.viewNewAnomalyJobForm(req, res);
         List<DruidCluster> clusters = (List<DruidCluster>) params(mav.getModel()).get(Constants.DRUID_CLUSTERS);
         assertEquals(clusters.size(), 1);
         assertEquals(clusters.get(0).getClusterId(), (Integer) 5);
@@ -202,25 +243,22 @@ public class RoutesTest {
     @SuppressWarnings("unchecked")
     public void testViewNewAnomalyFormEmptyDruidList() throws IOException {
         Routes.initParams();
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         when(dca.getDruidClusterList()).thenThrow(new IOException());
         inject("clusterAccessor", dca);
-        ModelAndView mav = Routes.viewNewAnomalyJobForm(fRequest, fResponse);
+        ModelAndView mav = Routes.viewNewAnomalyJobForm(req, res);
         assertTrue(params(mav.getModel()).containsKey(Constants.ERROR));
     }
 
     @Test
     public void testSaveUserJob() throws Exception {
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
+        mocks();
         when(req.body()).thenReturn(
                 "{" +
                         "\"clusterId\":\"1\"," +
                         "\"ownerEmail\":\"someone@something.com\"" +
                         "}"
         );
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
-        ServiceFactory sf = mock(ServiceFactory.class);
         when(sf.newEmailServiceInstance()).thenCallRealMethod();
         DruidQueryService dqs = mock(DruidQueryService.class);
         Query query = mock(Query.class);
@@ -228,7 +266,6 @@ public class RoutesTest {
         when(query.getQueryJsonObject()).thenReturn(jo);
         when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt(), anyInt())).thenReturn(query);
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = mock(DruidCluster.class);
         when(dca.getDruidCluster(anyInt())).thenReturn(dc);
         when(dc.getHoursOfLag()).thenReturn(0);
@@ -248,15 +285,13 @@ public class RoutesTest {
 
     @Test
     public void testSaveUserJobException() throws Exception {
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
+        mocks();
         when(req.body()).thenReturn(
                 "{" +
                         "\"clusterId\":\"1\"," +
                         "\"ownerEmail\":\"someone@something.com\"" +
                         "}"
         );
-        ServiceFactory sf = mock(ServiceFactory.class);
         when(sf.newEmailServiceInstance()).thenCallRealMethod();
         DruidQueryService dqs = mock(DruidQueryService.class);
         when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt(), anyInt())).thenThrow(new SherlockException("exception"));
@@ -268,38 +303,40 @@ public class RoutesTest {
 
     @Test
     public void testDeleteJob() throws SchedulerException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
-        SchedulerService ss = mock(SchedulerService.class);
-        Request req = mock(Request.class);
+        mocks();
         when(req.params(Constants.ID)).thenReturn("1");
         inject("jobAccessor", jma);
         inject("schedulerService", ss);
-        assertEquals(Routes.deleteJob(req, fResponse), Constants.SUCCESS);
+        assertEquals(Routes.deleteJob(req, res), Constants.SUCCESS);
         verify(ss, times(1)).stopJob(1);
     }
 
     @Test
     public void testDeleteJobException() throws IOException, JobNotFoundException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
-        SchedulerService ss = mock(SchedulerService.class);
+        mocks();
+        when(req.params(anyString())).thenReturn("1");
         inject("schedulerService", ss);
         doThrow(new IOException("fake")).when(jma).deleteJobMetadata(anyInt());
         inject("jobAccessor", jma);
-        Response res = mock(Response.class);
-        assertEquals(Routes.deleteJob(fRequest, res), "fake");
+        assertEquals(Routes.deleteJob(req, res), "fake");
         verify(res, times(1)).status(500);
+        when(req.params(anyString())).thenReturn("%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%31%29%3c%2f%73%63%72%69%70%74%3e");
+        assertEquals(Routes.deleteJob(req, res), "Invalid Job!");
     }
 
     @Test
     @SuppressWarnings("unchecked")
     public void testViewJobsList() throws IOException {
         Routes.initParams();
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         List<JobMetadata> jobsList = (List<JobMetadata>) mock(List.class);
         when(jobsList.size()).thenReturn(1);
         when(jma.getJobMetadataList()).thenReturn(jobsList);
         inject("jobAccessor", jma);
-        ModelAndView mav = Routes.viewJobsList(fRequest, fResponse);
+        JobTimeline jobTimeline = mock(JobTimeline.class);
+        inject("jobTimeline", jobTimeline);
+        when(jobTimeline.getCurrentTimeline(any())).thenReturn(null);
+        ModelAndView mav = Routes.viewJobsList(req, res);
         assertTrue(params(mav).containsKey(Constants.TITLE));
         assertEquals(((List) params(mav).get("jobs")).size(), 1);
         assertEquals(mav.getViewName(), "listJobs");
@@ -308,10 +345,10 @@ public class RoutesTest {
     @Test
     public void testViewJobsListException() throws IOException {
         Routes.initParams();
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         when(jma.getJobMetadataList()).thenThrow(new IOException("exception"));
         inject("jobAccessor", jma);
-        ModelAndView mav = Routes.viewJobsList(fRequest, fResponse);
+        ModelAndView mav = Routes.viewJobsList(req, res);
         assertTrue(params(mav).containsKey(Constants.ERROR));
         assertEquals(params(mav).get(Constants.ERROR), "exception");
         assertEquals(mav.getViewName(), "listJobs");
@@ -321,11 +358,12 @@ public class RoutesTest {
     @SuppressWarnings("unchecked")
     public void testViewDeletedJobsList() throws IOException {
         Routes.initParams();
+        mocks();
         List<JobMetadata> ljm = (List<JobMetadata>) mock(List.class);
         DeletedJobMetadataAccessor dma = mock(DeletedJobMetadataAccessor.class);
         inject("deletedJobAccessor", dma);
         when(dma.getDeletedJobMetadataList()).thenReturn(ljm);
-        ModelAndView mav = Routes.viewDeletedJobsList(fRequest, fResponse);
+        ModelAndView mav = Routes.viewDeletedJobsList(req, res);
         assertTrue(params(mav).containsKey(Constants.TITLE));
         assertEquals(params(mav).get(Constants.DELETEDJOBSVIEW), "true");
         assertEquals(mav.getViewName(), "listJobs");
@@ -335,72 +373,77 @@ public class RoutesTest {
     @Test
     public void testDeletedJobsListException() throws IOException {
         Routes.initParams();
+        mocks();
         DeletedJobMetadataAccessor dma = mock(DeletedJobMetadataAccessor.class);
         inject("deletedJobAccessor", dma);
         when(dma.getDeletedJobMetadataList()).thenThrow(new IOException("exception"));
-        ModelAndView mav = Routes.viewDeletedJobsList(fRequest, fResponse);
+        ModelAndView mav = Routes.viewDeletedJobsList(req, res);
         assertTrue(params(mav).containsKey(Constants.ERROR));
     }
 
     @Test
-    public void testViewJobInfo() throws IOException, JobNotFoundException {
+    public void testViewJobInfo() throws IOException, JobNotFoundException, ClusterNotFoundException {
         Routes.initParams();
-        Request req = mock(Request.class);
-        when(req.params(Constants.ID)).thenReturn("1");
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
-        JobMetadata jm = mock(JobMetadata.class);
-        when(jma.getJobMetadata("1")).thenReturn(jm);
+        mocks();
         inject("jobAccessor", jma);
-        ModelAndView mav = Routes.viewJobInfo(req, fResponse);
+        inject("clusterAccessor", dca);
+        when(req.params(Constants.ID)).thenReturn("1");
+        JobMetadata jm = mock(JobMetadata.class);
+        DruidCluster dc = mock(DruidCluster.class);
+        when(jma.getJobMetadata("1")).thenReturn(jm);
+        when(jm.getClusterId()).thenReturn(2);
+        when(dca.getDruidCluster(anyInt())).thenReturn(dc);
+        when(dc.getClusterName()).thenReturn("druid");
+        ModelAndView mav = Routes.viewJobInfo(req, res);
         assertTrue(params(mav).containsKey(Constants.TITLE));
         assertEquals(params(mav).get("job"), jm);
     }
 
-    @Test
+    @Test(expectedExceptions = HaltException.class)
     public void testViewJobInfoException() throws IOException, JobNotFoundException {
         Routes.initParams();
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         inject("jobAccessor", jma);
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("fake"));
-        ModelAndView mav = Routes.viewJobInfo(fRequest, fResponse);
-        assertEquals(params(mav).get(Constants.ERROR), "fake");
+        inject("thymeleaf", tte);
+        when(tte.render(anyObject())).thenReturn("404");
+        Routes.viewJobInfo(req, res);
     }
 
     @Test
     public void testViewDeletedJobInfo() throws IOException, JobNotFoundException, ClusterNotFoundException {
         Routes.initParams();
-        DeletedJobMetadataAccessor dma = mock(DeletedJobMetadataAccessor.class);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         when(dca.getDruidCluster(anyInt())).thenReturn(new DruidCluster());
         inject("clusterAccessor", dca);
         JobMetadata jm = mock(JobMetadata.class);
-        Request req = mock(Request.class);
         when(req.params(Constants.ID)).thenReturn("1");
+        DeletedJobMetadataAccessor dma = mock(DeletedJobMetadataAccessor.class);
         when(dma.getDeletedJobMetadata("1")).thenReturn(jm);
         inject("deletedJobAccessor", dma);
-        ModelAndView mav = Routes.viewDeletedJobInfo(req, fResponse);
+        ModelAndView mav = Routes.viewDeletedJobInfo(req, res);
         assertEquals(params(mav).get(Constants.DELETEDJOBSVIEW), "true");
         assertEquals(params(mav).get("job"), jm);
     }
 
-    @Test
+    @Test(expectedExceptions = HaltException.class)
     public void testViewDeletedJobInfoException() throws IOException, JobNotFoundException {
         Routes.initParams();
+        mocks();
         DeletedJobMetadataAccessor dma = mock(DeletedJobMetadataAccessor.class);
         when(dma.getDeletedJobMetadata(anyString())).thenThrow(new IOException("fake"));
         inject("deletedJobAccessor", dma);
-        ModelAndView mav = Routes.viewDeletedJobInfo(fRequest, fResponse);
-        assertEquals(params(mav).get(Constants.ERROR), "fake");
+        inject("thymeleaf", tte);
+        when(tte.render(anyObject())).thenReturn("404");
+        Routes.viewDeletedJobInfo(req, res);
     }
 
     @Test
     public void testUpdateJobInfo() throws Exception {
         String body = "{\"granularity\":\"day\",\"frequency\":\"day\",\"sigmaThreshold\":\"3\",\"ownerEmail\":\"someone@something.com\",\"query\":\"{}\"}";
-        Request req = mock(Request.class);
+        mocks();
         when(req.body()).thenReturn(body);
         when(req.params(Constants.ID)).thenReturn("1");
-        Response res = mock(Response.class);
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
         JobMetadata jm = new JobMetadata();
         jm.setJobId(1);
         jm.setGranularity("day");
@@ -410,8 +453,6 @@ public class RoutesTest {
         jm.setUserQuery("query");
         jm.setQuery("query");
         when(jma.getJobMetadata("1")).thenReturn(jm);
-        SchedulerService ss = mock(SchedulerService.class);
-        ServiceFactory sf = mock(ServiceFactory.class);
         DruidQueryService dqs = mock(DruidQueryService.class);
         Query q = mock(Query.class);
         JsonObject j = new JsonObject();
@@ -429,28 +470,24 @@ public class RoutesTest {
 
     @Test
     public void testUpdateJobInfoException() throws IOException, JobNotFoundException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
+        when(req.params(anyString())).thenReturn("1");
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("exception"));
-        Request req = mock(Request.class);
         when(req.body()).thenReturn("{\"ownerEmail\":\"someone@something.com\"}");
         inject("jobAccessor", jma);
-        ServiceFactory sf = new ServiceFactory();
         inject("serviceFactory", sf);
-        Response res = mock(Response.class);
         assertEquals(Routes.updateJobInfo(req, res), "exception");
         verify(res, times(1)).status(500);
+        when(req.params(anyString())).thenReturn("1%24%");
+        assertEquals(Routes.updateJobInfo(req, res), "Invalid Job!");
     }
 
     @Test
     public void testLaunchJob() throws IOException, JobNotFoundException, SchedulerException, ClusterNotFoundException {
         mocks();
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
         JobMetadata jm = new JobMetadata();
-        SchedulerService ss = mock(SchedulerService.class);
         inject("jobAccessor", jma);
         inject("schedulerService", ss);
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
         DruidCluster cluster = new DruidCluster();
         cluster.setHoursOfLag(10);
         jm.setClusterId(123);
@@ -467,25 +504,24 @@ public class RoutesTest {
 
     @Test
     public void testLaunchJobException() throws IOException, JobNotFoundException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
+        when(req.params(anyString())).thenReturn("1");
         inject("jobAccessor", jma);
-        Response res = mock(Response.class);
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("exception"));
-        assertEquals(Routes.launchJob(fRequest, res), "exception");
+        assertEquals(Routes.launchJob(req, res), "exception");
         verify(res, times(1)).status(500);
+        when(req.params(anyString())).thenReturn("%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%31%29%3c%2f%73%63%72%69%70%74%3e");
+        assertEquals(Routes.deleteJob(req, res), "Invalid Job!");
     }
 
     @Test
     public void testStopJob() throws IOException, JobNotFoundException, SchedulerException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         JobMetadata jm = new JobMetadata();
-        Request req = mock(Request.class);
         when(req.params(Constants.ID)).thenReturn("1");
-        Response res = mock(Response.class);
         inject("jobAccessor", jma);
         jm.setJobId(1);
         jm.setFrequency("day");
-        SchedulerService ss = mock(SchedulerService.class);
         inject("schedulerService", ss);
         when(jma.getJobMetadata("1")).thenReturn(jm);
         assertEquals(Routes.stopJob(req, res), Constants.SUCCESS);
@@ -496,29 +532,27 @@ public class RoutesTest {
 
     @Test
     public void testStopJobException() throws IOException, JobNotFoundException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
+        when(req.params(Constants.ID)).thenReturn("1");
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("exception"));
-        Response res = mock(Response.class);
         inject("jobAccessor", jma);
-        assertEquals(Routes.stopJob(fRequest, res), "exception");
+        assertEquals(Routes.stopJob(req, res), "exception");
         verify(res, times(1)).status(500);
     }
 
     @Test
     public void testViewJobReport() throws Exception {
         Routes.initParams();
-        Request req = mock(Request.class);
+        mocks();
         when(req.params(Constants.ID)).thenReturn("1");
         when(req.params(Constants.FREQUENCY_PARAM)).thenReturn("day");
-        AnomalyReportAccessor ara = mock(AnomalyReportAccessor.class);
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
         JobMetadata jm = new JobMetadata();
         List<AnomalyReport> lar = Collections.emptyList();
         when(ara.getAnomalyReportsForJob(anyString(), anyString())).thenReturn(lar);
         inject("reportAccessor", ara);
         inject("jobAccessor", jma);
         when(jma.getJobMetadata(anyString())).thenReturn(jm);
-        ModelAndView mav = Routes.viewJobReport(req, fResponse);
+        ModelAndView mav = Routes.viewJobReport(req, res);
         assertEquals(mav.getViewName(), "report");
         assertEquals(params(mav).get(Constants.FREQUENCY), "day");
         assertTrue(params(mav).containsKey(Constants.TIMELINE_POINTS));
@@ -527,30 +561,29 @@ public class RoutesTest {
     @Test
     public void testSendJobReport() throws IOException {
         Routes.initParams();
-        ThymeleafTemplateEngine tte = mock(ThymeleafTemplateEngine.class);
+        mocks();
         when(tte.render(any(ModelAndView.class))).thenReturn("table");
-        Response res = mock(Response.class);
-        AnomalyReportAccessor ara = mock(AnomalyReportAccessor.class);
         AnomalyReport a = mock(AnomalyReport.class);
         List<AnomalyReport> lar = Collections.singletonList(a);
         when(ara.getAnomalyReportsForJobAtTime(anyString(), anyString(), anyString())).thenReturn(lar);
-        Request req = mock(Request.class);
-        when(req.body()).thenReturn("{\"" + Constants.SELECTED_DATE + "\":\"5678\"}");
+        when(req.body()).thenReturn("{\"" + Constants.SELECTED_DATE + "\":\"5678\", \"frequency\":\"day\"}");
+        when(req.params(anyString())).thenReturn("4");
         inject("thymeleaf", tte);
         inject("reportAccessor", ara);
         assertEquals(Routes.sendJobReport(req, res), "table");
         verify(res, times(1)).status(200);
+        when(req.body()).thenReturn("{\"" + Constants.SELECTED_DATE + "\":\"-5678\", \"frequency\":\"dayss\"}");
+        assertEquals(Routes.sendJobReport(req, res), "Invalid Request");
     }
 
     @Test
     public void testSendJobReportException() throws IOException {
         Routes.initParams();
-        AnomalyReportAccessor ara = mock(AnomalyReportAccessor.class);
+        mocks();
         when(ara.getAnomalyReportsForJobAtTime(anyString(), anyString(), anyString())).thenThrow(new IOException("exception"));
-        Request req = mock(Request.class);
         inject("reportAccessor", ara);
-        when(req.body()).thenReturn("{}");
-        Response res = mock(Response.class);
+        when(req.body()).thenReturn("{\"" + Constants.SELECTED_DATE + "\":\"5678\", \"frequency\":\"day\"}");
+        when(req.params(anyString())).thenReturn("2");
         assertTrue(Routes.sendJobReport(req, res).contains("exception"));
         verify(res, times(1)).status(500);
     }
@@ -558,12 +591,13 @@ public class RoutesTest {
     @Test
     public void testViewNewDruidClusterForm() {
         Routes.initParams();
-        ModelAndView mav = Routes.viewNewDruidClusterForm(fRequest, fResponse);
+        ModelAndView mav = Routes.viewNewDruidClusterForm(req, res);
         assertEquals(mav.getViewName(), "druidForm");
     }
 
     @Test
     public void testAddNewDruidCluster() throws IOException {
+        mocks();
         String body =
                 "{" +
                         "\"clusterName\":\"name\"," +
@@ -571,10 +605,7 @@ public class RoutesTest {
                         "\"brokerPort\":\"5080\"," +
                         "\"brokerEndpoint\":\"druid/v2\"" +
                         "}";
-        Request req = mock(Request.class);
         when(req.body()).thenReturn(body);
-        Response res = mock(Response.class);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         inject("clusterAccessor", dca);
         doAnswer(iom -> {
                 ((DruidCluster) iom.getArguments()[0]).setClusterId(1);
@@ -587,16 +618,16 @@ public class RoutesTest {
 
     @Test
     public void testAddNewClusterInvalidCluster() {
+        mocks();
         String body = "{}";
-        Request req = mock(Request.class);
         when(req.body()).thenReturn(body);
-        Response res = mock(Response.class);
         assertEquals(Routes.addNewDruidCluster(req, res), "Cluster name cannot be empty");
         verify(res, times(1)).status(500);
     }
 
     @Test
     public void testAddNewClusterException() throws IOException {
+        mocks();
         String body =
                 "{" +
                         "\"clusterName\":\"name\"," +
@@ -604,10 +635,7 @@ public class RoutesTest {
                         "\"brokerPort\":\"5080\"," +
                         "\"brokerEndpoint\":\"druid/v2\"" +
                         "}";
-        Request req = mock(Request.class);
         when(req.body()).thenReturn(body);
-        Response res = mock(Response.class);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         inject("clusterAccessor", dca);
         doThrow(new IOException("exception")).when(dca).putDruidCluster(any(DruidCluster.class));
         assertEquals(Routes.addNewDruidCluster(req, res), "exception");
@@ -616,58 +644,55 @@ public class RoutesTest {
 
     @Test
     public void testViewDruidClusterList() throws IOException {
+        mocks();
         Routes.initParams();
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         inject("clusterAccessor", dca);
         when(dca.getDruidClusterList()).thenReturn(Collections.emptyList());
-        ModelAndView mav = Routes.viewDruidClusterList(fRequest, fResponse);
+        ModelAndView mav = Routes.viewDruidClusterList(req, res);
         assertEquals(mav.getViewName(), "druidList");
         assertEquals(((List) params(mav).get("clusters")).size(), 0);
     }
 
     @Test
     public void testViewDruidClusterListException() throws IOException {
+        mocks();
         Routes.initParams();
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         inject("clusterAccessor", dca);
         when(dca.getDruidClusterList()).thenThrow(new IOException("exception"));
-        ModelAndView mav = Routes.viewDruidClusterList(fRequest, fResponse);
+        ModelAndView mav = Routes.viewDruidClusterList(req, res);
         assertEquals(params(mav).get(Constants.ERROR), "exception");
     }
 
     @Test
     public void testViewDruidCluster() throws IOException, ClusterNotFoundException {
-        Request req = mock(Request.class);
+        mocks();
         when(req.params(Constants.ID)).thenReturn("1");
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         DruidCluster dc = new DruidCluster();
         dc.setClusterId(1);
         when(dca.getDruidCluster("1")).thenReturn(dc);
         inject("clusterAccessor", dca);
-        ModelAndView mav = Routes.viewDruidCluster(req, fResponse);
+        ModelAndView mav = Routes.viewDruidCluster(req, res);
         assertEquals(mav.getViewName(), "druidInfo");
         assertEquals(((DruidCluster) params(mav).get("cluster")).getClusterId(), (Integer) 1);
     }
 
-    @Test
+    @Test(expectedExceptions = HaltException.class)
     public void testViewDruidClusterException() throws IOException, ClusterNotFoundException {
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         when(dca.getDruidCluster(anyString())).thenThrow(new IOException("exception"));
         inject("clusterAccessor", dca);
-        ModelAndView mav = Routes.viewDruidCluster(fRequest, fResponse);
-        assertEquals(params(mav).get(Constants.ERROR), "exception");
+        inject("thymeleaf", tte);
+        when(tte.render(anyObject())).thenReturn("404");
+        Routes.viewDruidCluster(req, res);
     }
 
     @Test
     public void testDeleteDruidCluster() throws IOException, ClusterNotFoundException {
-        Request req = mock(Request.class);
+        mocks();
         when(req.params(Constants.ID)).thenReturn("1");
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
         when(jma.getJobsAssociatedWithCluster(anyString())).thenReturn(Collections.emptyList());
         inject("jobAccessor", jma);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
         inject("clusterAccessor", dca);
-        Response res = mock(Response.class);
         assertEquals(Routes.deleteDruidCluster(req, res), Constants.SUCCESS);
         verify(res, times(1)).status(200);
         verify(dca, times(1)).deleteDruidCluster("1");
@@ -675,36 +700,40 @@ public class RoutesTest {
 
     @Test
     public void testDeleteDruidClusterAssociatedJobs() throws IOException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         inject("jobAccessor", jma);
         JobMetadata jm = new JobMetadata();
         jm.setJobId(2);
         List<JobMetadata> jlist = Collections.singletonList(jm);
         when(jma.getJobsAssociatedWithCluster(anyString())).thenReturn(jlist);
-        Response res = mock(Response.class);
+        when(req.params(anyString())).thenReturn("1");
         assertEquals(
-                Routes.deleteDruidCluster(fRequest, res),
+                Routes.deleteDruidCluster(req, res),
                 "Cannot delete cluster with 1 associated jobs"
         );
         verify(res, times(1)).status(400);
+        when(req.params(anyString())).thenReturn("1cv%32c%32");
+        assertEquals(
+            Routes.deleteDruidCluster(req, res),
+            "Invalid Cluster!"
+        );
     }
 
     @Test
     public void testDeleteDruidClusterException() throws IOException, ClusterNotFoundException {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         when(jma.getJobsAssociatedWithCluster(anyString())).thenReturn(Collections.emptyList());
+        when(req.params(anyString())).thenReturn("100");
         doThrow(new IOException("exception")).when(dca).deleteDruidCluster(anyString());
         inject("jobAccessor", jma);
         inject("clusterAccessor", dca);
-        Response res = mock(Response.class);
-        assertEquals(Routes.deleteDruidCluster(fRequest, res), "exception");
+        assertEquals(Routes.deleteDruidCluster(req, res), "exception");
         verify(res, times(1)).status(500);
     }
 
     @Test
-    public void testUpdateDruidCluster() throws IOException, ClusterNotFoundException {
-        Request req = mock(Request.class);
+    public void testUpdateDruidCluster() throws IOException, ClusterNotFoundException, SchedulerException {
+        mocks();
         when(req.params(Constants.ID)).thenReturn("1");
         JsonObject dcjson = new JsonObject();
         dcjson.addProperty("clusterName", "name");
@@ -714,7 +743,10 @@ public class RoutesTest {
         dcjson.addProperty("brokerEndpoint", "druid/v2");
         String body = new Gson().toJson(dcjson);
         when(req.body()).thenReturn(body);
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        when(jma.getRunningJobsAssociatedWithCluster(anyString())).thenReturn(new ArrayList<>());
+        inject("schedulerService", ss);
+        doNothing().when(ss).stopAndReschedule(anyList());
+        doNothing().when(jma).putJobMetadata(anyList());
         DruidCluster dc = new DruidCluster();
         dc.setClusterId(1);
         dc.setBrokerHost("localhost");
@@ -724,7 +756,6 @@ public class RoutesTest {
         dc.setClusterName("name");
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
         inject("clusterAccessor", dca);
-        Response res = mock(Response.class);
         assertEquals(Routes.updateDruidCluster(req, res), Constants.SUCCESS);
         assertEquals(dc.getBrokerHost(), "hostname");
         assertEquals(dc.getBrokerPort(), (Integer) 431);
@@ -734,12 +765,14 @@ public class RoutesTest {
 
     @Test
     public void testUpdateDruidClusterException() throws IOException, ClusterNotFoundException {
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        mocks();
         inject("clusterAccessor", dca);
+        when(req.params(Constants.ID)).thenReturn("1");
         when(dca.getDruidCluster(anyString())).thenThrow(new IOException("exception"));
-        Response res = mock(Response.class);
-        assertEquals(Routes.updateDruidCluster(fRequest, res), "exception");
+        assertEquals(Routes.updateDruidCluster(req, res), "exception");
         verify(res, times(1)).status(500);
+        when(req.params(Constants.ID)).thenReturn("!%41");
+        assertEquals(Routes.updateDruidCluster(req, res), "Invalid Cluster!");
     }
 
     @Test
@@ -749,15 +782,14 @@ public class RoutesTest {
         JsonDumper jd = mock(JsonDumper.class);
         when(jd.getRawData()).thenReturn(o);
         inject("jsonDumper", jd);
-        assertEquals(Routes.getDatabaseJsonDump(fRequest, fResponse), "{\"key\":\"val\"}");
+        assertEquals(Routes.getDatabaseJsonDump(req, res), "{\"key\":\"val\"}");
         when(jd.getRawData()).thenThrow(new IOException("exception"));
-        assertEquals(Routes.getDatabaseJsonDump(fRequest, fResponse), "exception");
+        assertEquals(Routes.getDatabaseJsonDump(req, res), "exception");
     }
 
     @Test
     public void testWriteDatabaseJsonDump() throws IOException {
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
+        mocks();
         JsonDumper jd = mock(JsonDumper.class);
         when(req.body()).thenReturn("{\"key\":\"val\"}");
         inject("jsonDumper", jd);
@@ -769,42 +801,6 @@ public class RoutesTest {
         verify(res, times(1)).status(500);
     }
 
-    private Request req;
-    private Response res;
-    private DruidQueryService qs;
-    private DetectorService ds;
-    private DruidClusterAccessor dca;
-    private JobMetadataAccessor jma;
-    private AnomalyReportAccessor ara;
-    private EmailMetadataAccessor ema;
-    private JobExecutionService jes;
-    private ThymeleafTemplateEngine tte;
-
-
-    private void mocks() {
-        req = mock(Request.class);
-        res = mock(Response.class);
-        qs = mock(DruidQueryService.class);
-        ds = mock(DetectorService.class);
-        jes = mock(JobExecutionService.class);
-        ServiceFactory sf = mock(ServiceFactory.class);
-        when(sf.newJobExecutionService()).thenReturn(jes);
-        when(sf.newDetectorServiceInstance()).thenReturn(ds);
-        when(sf.newDruidQueryServiceInstance()).thenReturn(qs);
-        inject("serviceFactory", sf);
-        tte = mock(ThymeleafTemplateEngine.class);
-        inject("thymeleaf", tte);
-        dca = mock(DruidClusterAccessor.class);
-        inject("clusterAccessor", dca);
-        jma = mock(JobMetadataAccessor.class);
-        inject("jobAccessor", jma);
-        ara = mock(AnomalyReportAccessor.class);
-        inject("reportAccessor", ara);
-        ema = mock(EmailMetadataAccessor.class);
-        inject("emailMetadataAccessor", ema);
-        @SuppressWarnings("unchecked") Map<String, Object> dp = (Map<String, Object>) mock(Map.class);
-        inject("defaultParams", dp);
-    }
 
     @Test
     public void testProcessInstantAnomalyJob() throws Exception {
@@ -1025,11 +1021,9 @@ public class RoutesTest {
 
     @Test
     public void testCloneJob() throws Exception {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         JobMetadata jm = new JobMetadata();
-        Request req = mock(Request.class);
         when(req.params(Constants.ID)).thenReturn("1");
-        Response res = mock(Response.class);
         inject("jobAccessor", jma);
         jm.setJobId(1);
         jm.setTestName("test1");
@@ -1052,11 +1046,8 @@ public class RoutesTest {
 
     @Test
     public void testRerunJob() throws Exception {
-        JobMetadataAccessor jma = mock(JobMetadataAccessor.class);
+        mocks();
         ServiceFactory sf = mock(ServiceFactory.class);
-        JobExecutionService jes = mock(JobExecutionService.class);
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
         JobMetadata jm = new JobMetadata();
         when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\",\"jobId\":\"2\",\"timestamp\":\"20000000\"}");
         inject("jobAccessor", jma);
@@ -1070,8 +1061,10 @@ public class RoutesTest {
         verify(jma, times(1)).getJobMetadata(anyString());
         verify(jes, times(1)).performBackfillJob(any(JobMetadata.class), any(ZonedDateTime.class), any(ZonedDateTime.class));
         when(jma.getJobMetadata(anyString())).thenThrow(new IOException("rerun error"));
-        assertEquals(Routes.cloneJob(req, res), "rerun error");
+        assertEquals(Routes.rerunJob(req, res), "rerun error");
         verify(res, times(1)).status(500);
+        when(req.body()).thenReturn("{\"query\":\"{}\",\"granularity\":\"day\",\"jobId\":\"%3c%73%\",\"timestamp\":\"20000000\"}");
+        assertEquals(Routes.rerunJob(req, res), "Invalid Job!");
     }
 
     @Test
@@ -1164,9 +1157,6 @@ public class RoutesTest {
     @Test
     public void testUpdateEmail() throws IOException, EmailNotFoundException {
         mocks();
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
-        when(req.params(Constants.ID)).thenReturn("my@email.com");
         when(req.body()).thenReturn(
             "{" +
             "\"emailId\":\"my@email.com\"," +
@@ -1178,15 +1168,22 @@ public class RoutesTest {
         when(ema.getEmailMetadata("my@email.com")).thenReturn(new EmailMetaData("my@email.com"));
         doNothing().when(ema).removeFromTriggerIndex(anyString(), anyString());
         doNothing().when(ema).putEmailMetadata(any(EmailMetaData.class));
-        assertEquals(Routes.updateEmails(req, res), "my@email.com");
+        assertEquals(Routes.updateEmails(req, res), Constants.SUCCESS);
         verify(ema, times(1)).removeFromTriggerIndex(anyString(), anyString());
+        when(req.body()).thenReturn(
+            "{" +
+            "\"emailId\":\"invalid.com\"," +
+            "\"sendOutHour\":\"23\"," +
+            "\"sendOutMinute\":\"54\"," +
+            "\"repeatInterval\":\"day\"" +
+            "}"
+        );
+        assertEquals(Routes.updateEmails(req, res), "Invalid Email!");
     }
 
     @Test
     public void testViewEmail() throws IOException, EmailNotFoundException {
         mocks();
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
         when(req.params(Constants.ID)).thenReturn("my@email.com");
         when(ema.getEmailMetadata(anyString())).thenReturn(new EmailMetaData("my@email.com"));
         ModelAndView mav = Routes.viewEmails(req, res);
@@ -1196,9 +1193,7 @@ public class RoutesTest {
     @Test
     public void testDeleteEmail() throws IOException, EmailNotFoundException {
         mocks();
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
-        when(req.params(Constants.ID)).thenReturn("my@email.com");
+        when(req.body()).thenReturn("{\"emailId\":\"xyz@abc.com\"}");
         when(ema.getEmailMetadata(anyString())).thenReturn(new EmailMetaData("my@email.com"));
         doNothing().when(jma).deleteEmailFromJobs(any(EmailMetaData.class));
         String result = Routes.deleteEmail(req, res);
@@ -1207,13 +1202,14 @@ public class RoutesTest {
         doThrow(new IOException("error")).when(jma).deleteEmailFromJobs(any(EmailMetaData.class));
         result = Routes.deleteEmail(req, res);
         assertEquals(result, Constants.ERROR);
+        when(req.body()).thenReturn("{\"emailId\":\"xyzabc.com\"}");
+        result = Routes.deleteEmail(req, res);
+        assertEquals(result, "Invalid Email!");
     }
 
     @Test
     public void testRestoreRedisDBForm() throws IOException, EmailNotFoundException {
         mocks();
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
         ModelAndView mav = Routes.restoreRedisDBForm(req, res);
         assertEquals(mav.getViewName(), "redisRestoreForm");
     }
@@ -1221,8 +1217,6 @@ public class RoutesTest {
     @Test
     public void testRestoreRedisDB() throws IOException, EmailNotFoundException, SchedulerException {
         mocks();
-        Request req = mock(Request.class);
-        Response res = mock(Response.class);
         when(req.body()).thenReturn("{\"path\":\"//path//test//file//dump.json\"}");
         SchedulerService ss = mock(SchedulerService.class);
         inject("schedulerService", ss);

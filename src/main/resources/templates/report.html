@@ -124,7 +124,7 @@
         data.timestamp = $("#selectedTimestamp").val();
         $.ajax({
             type: 'POST',
-            url: '/Rerun/' + data.jobId + '/' + data.timestamp,
+            url: '/Rerun',
             data: JSON.stringify(data),
             contentType: "application/json",
             dataType: 'text',

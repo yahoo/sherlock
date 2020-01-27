@@ -71,6 +71,16 @@ public final class Constants {
     public static final String TIMESTAMP_FORMAT_NO_SECONDS = "EEE dd MMM yyyy HH:mm z";
 
     /**
+     * Constant for csrf authorizer to use for security.
+     */
+    public static final String CSRF = "csrf";
+
+    /**
+     * Constant for xss protection authorizer to use for security.
+     */
+    public static final String XSS_PROTECTION = "xssprotection";
+
+    /**
      * JobId key in job datamap.
      */
     public static final String JOB_ID = "jobId";

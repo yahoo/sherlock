@@ -35,7 +35,7 @@ function showWarningMessage(msg) {
     toastr.warning(msg);
 }
 // Return ajax message
-function ajaxMessage(jqXHR, exception) {
+function ajaxMessage(jqXHR, exception, error) {
     // Show the error message
     if (jqXHR.status === 0) {
         showErrorMessage('Not connected. Verify network connection.');
@@ -51,3 +51,26 @@ function ajaxMessage(jqXHR, exception) {
         showErrorMessage(jqXHR.responseText);
     }
 }
+
+function csrfSafeMethod(method) {
+    return (/^(GET|HEAD|OPTIONS)$/.test(method));
+}
+
+function getTokenValue(token) {
+    var tokens = document.cookie.split(';')
+    for (var i = 0; i < tokens.length; i++) {
+        var t = tokens[i].trim().split('=')
+        if (t.length > 1 && t[0] == token) {
+            return t[1]
+        }
+    }
+    return ""
+}
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("pac4jCsrfToken", getTokenValue("pac4jCsrfToken"));
+        }
+    }
+});
