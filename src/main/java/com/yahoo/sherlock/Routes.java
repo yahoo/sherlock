@@ -98,6 +98,7 @@ public class Routes {
     private static EmailMetadataAccessor emailMetadataAccessor;
     private static JsonDumper jsonDumper;
     private static JobTimeline jobTimeline;
+    private static Map<String, Object> instantReportParams;
 
     /**
      * Initialize the default Route parameters.
@@ -116,6 +117,7 @@ public class Routes {
         defaultParams.put(Constants.FREQUENCIES, frequencies);
         defaultParams.put(Constants.EMAIL_HTML, null);
         defaultParams.put(Constants.EMAIL_ERROR, null);
+        instantReportParams = new HashMap<>(defaultParams);
     }
 
     /**
@@ -245,18 +247,17 @@ public class Routes {
      * @param response Anomaly detector response
      * @return Nothing on success (200 status), or error message (500 status)
      */
-    public static ModelAndView processInstantAnomalyJob(Request request, Response response) {
+    public static String processInstantAnomalyJob(Request request, Response response) {
         log.info("Getting user query from request.");
         Map<String, Object> params = new HashMap<>(defaultParams);
         Map<String, Object> tableParams = new HashMap<>(defaultParams);
         params.put(Constants.TITLE, "Anomaly Report");
         try {
-            Map<String, String> paramsMap = Utils.queryParamsToStringMap(request.queryMap());
-            UserQuery userQuery = UserQuery.fromQueryParams(request.queryMap());
+            UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
             // regenerate user query
-            Granularity granularity = Granularity.getValue(paramsMap.get("granularity"));
+            Granularity granularity = Granularity.getValue(userQuery.getGranularity());
             Integer granularityRange = userQuery.getGranularityRange();
-            Integer hoursOfLag = clusterAccessor.getDruidCluster(paramsMap.get("clusterId")).getHoursOfLag();
+            Integer hoursOfLag = clusterAccessor.getDruidCluster(userQuery.getClusterId().toString()).getHoursOfLag();
             Integer intervalEndTime;
             ZonedDateTime endTime = TimeUtils.parseDateTime(userQuery.getQueryEndTimeText());
             if (ZonedDateTime.now(ZoneOffset.UTC).minusHours(hoursOfLag).toEpochSecond() < endTime.toEpochSecond()) {
@@ -292,18 +293,39 @@ public class Routes {
             List<AnomalyReport> reports = serviceFactory.newJobExecutionService().getReports(anomalies, job);
             tableParams.put(Constants.INSTANTVIEW, "true");
             tableParams.put(DatabaseConstants.ANOMALIES, reports);
-            params.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
+            instantReportParams.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
             Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
-            params.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
-            params.put("timeseriesNames", timeseriesNames);
+            instantReportParams.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
+            instantReportParams.put("timeseriesNames", timeseriesNames);
         } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
             log.error("Error while processing instant job!", e);
             params.put(Constants.ERROR, e.toString());
+            return e.getMessage();
         } catch (Exception e) {
             log.error("Unexpected error!", e);
             params.put(Constants.ERROR, e.toString());
+            return e.getMessage();
         }
-        return new ModelAndView(params, "reportInstant");
+        return Constants.SUCCESS;
+    }
+
+    /**
+     * Show instant anomaly report.
+     *
+     * @param request  User request
+     * @param response Anomaly detector response
+     * @return render the report
+     */
+    public static ModelAndView getInstantAnomalyJob(Request request, Response response) {
+        Map<String, Object> params = new HashMap<>(defaultParams);
+        if (instantReportParams.containsKey("data")) {
+            params.putAll(instantReportParams);
+            return new ModelAndView(params, "reportInstant");
+        } else {
+            params.put(Constants.ERROR, "Not Found!");
+            halt(404, thymeleaf.render(new ModelAndView(params, "404")));
+        }
+        return null;
     }
 
     /**

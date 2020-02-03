@@ -151,7 +151,10 @@ class App {
         get("/Flash-Query", Routes::viewInstantAnomalyJobForm, thymeleafTemplateEngine);
 
         // Route for instant anomaly-detection on user input query
-        post("/Flash-Query/ProcessAnomalyReport", Routes::processInstantAnomalyJob, thymeleafTemplateEngine);
+        post("/Flash-Query/ProcessAnomalyReport", Routes::processInstantAnomalyJob);
+
+        // Route to get instant anomaly-detection report
+        get("/Flash-Query/ProcessAnomalyReport", Routes::getInstantAnomalyJob, thymeleafTemplateEngine);
 
         // Route for viewing deleted jobs
         get("/DeletedJobs", Routes::viewDeletedJobsList, thymeleafTemplateEngine);

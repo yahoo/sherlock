@@ -804,19 +804,25 @@ public class RoutesTest {
 
     @Test
     public void testProcessInstantAnomalyJob() throws Exception {
+        Routes.initParams();
         mocks();
         Query query = mock(Query.class);
         when(query.getQueryJsonObject()).thenReturn(new JsonObject());
         when(qs.build(anyString(), any(), anyInt(), anyInt(), anyInt())).thenReturn(query);
-        QueryParamsMap map = mock(QueryParamsMap.class);
-        Map<String, String[]> smap = new HashMap<>();
-        when(map.toMap()).thenReturn(smap);
-        when(req.queryMap()).thenReturn(map);
-        smap.put("granularity", new String[]{"hour"});
-        smap.put("clusterId", new String[]{"1"});
-        smap.put("sigmaThreshold", new String[]{"3.5"});
-        smap.put("queryEndTimeText", new String[]{"2017-06-02T12:00"});
-        DruidClusterAccessor dca = mock(DruidClusterAccessor.class);
+        when(req.body()).thenReturn(
+            "{" +
+            "\"clusterId\":\"1\"," +
+            "\"granularity\":\"hour\"," +
+            "\"sigmaThreshold\":\"3.5\"," +
+            "\"frequency\":\"hour\"," +
+            "\"queryEndTimeText\":\"2017-06-02T12:00\"," +
+            "\"granularityRange\":\"1\"," +
+            "\"timeseriesRange\":\"24\"," +
+            "\"detectionWindow\":\"24\"," +
+            "\"tsModels\":\"OlympicModel\"," +
+            "\"adModels\":\"KSigmaModel\"" +
+            "}"
+        );
         DruidCluster dc = mock(DruidCluster.class);
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
         when(dc.getHoursOfLag()).thenReturn(0);
@@ -833,14 +839,13 @@ public class RoutesTest {
         when(ds.detectWithResults(any(), anyDouble(), any(), any(), any()))
                 .thenReturn(reslist);
         when(tte.render(any(ModelAndView.class))).thenReturn("<div></div>");
-        ModelAndView mav = Routes.processInstantAnomalyJob(req, res);
+        String a = Routes.processInstantAnomalyJob(req, res);
         verify(tte, times(1)).render(any(ModelAndView.class));
         verify(jes, times(1)).getReports(any(), any());
-        when(qs.build(any(), any(), anyInt(), anyInt(), anyInt())).thenThrow(new SherlockException());
-        assertEquals(mav.getViewName(), "reportInstant");
-        assertEquals(params(mav).get("tableHtml"), "<div></div>");
-        mav = Routes.processInstantAnomalyJob(req, res);
-        assertNotNull(params(mav).get(Constants.ERROR));
+        when(qs.build(any(), any(), anyInt(), anyInt(), anyInt())).thenThrow(new SherlockException("error"));
+        assertEquals(a, Constants.SUCCESS);
+        String error = Routes.processInstantAnomalyJob(req, res);
+        assertEquals(error, Constants.ERROR);
     }
 
     @Test

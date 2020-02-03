@@ -14,8 +14,7 @@
                     <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">
                         Error message
                     </div>
-                    <form id="queryForm" method='post'
-                          th:action="${instantView != null ? '/Flash-Query/ProcessAnomalyReport' : ''}">
+                    <form id="queryForm" method='post'>
                         <fieldset>
 
                             <div class="form-group" th:if="${instantView == null}">
@@ -321,6 +320,35 @@
                 }
                 $('#saveConfirmModalCode').html();
                 $('#saveConfirmModal').modal('show');
+            } else {
+                e.preventDefault();
+                var data = {};
+                data.query = queryText.getValue();
+                data.granularity = $('#granularity').val();
+                data.granularityRange = $('#granularityRange').val();
+                data.timeseriesRange = $('#timeseriesRange').val();
+                data.frequency = $('#frequency').val();
+                data.queryEndTimeText = $('#queryEndTimeText').val();
+                data.detectionWindow = $('#detectionWindow').val();
+                data.sigmaThreshold = $('#sdSliderVal').text();
+                data.clusterId = $druidCluster.val();
+                data.tsModels = $('#tsModels').val();
+                data.adModels = $('#adModels').val();
+                $.ajax({
+                    type: 'POST',
+                    url: '/Flash-Query/ProcessAnomalyReport',
+                    data: JSON.stringify(data),
+                    contentType: "application/json",
+                    dataType: 'text',
+                    success: function (response) {
+                        if (response == 'success') {
+                            window.location.href = '/Flash-Query/ProcessAnomalyReport'
+                        } else {
+                            showWarningMessage(response);
+                        }
+                    },
+                    error: ajaxMessage
+                });
             }
         });
     });
