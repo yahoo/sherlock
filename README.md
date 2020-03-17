@@ -280,6 +280,8 @@ Jeff Niu, [jeffniu22@gmail.com](mailto:jeffniu22@gmail.com)
 
 Josh Walters, [josh@joshwalters.com](mailto:josh@joshwalters.com)
 
+Stephan Stiefel, [Stephan3555](linkto:https://github.com/Stephan3555)
+
 ## License
 
 Code licensed under the [GPL v3 License](https://www.gnu.org/licenses/quick-guide-gplv3.en.html). See LICENSE file for terms.
