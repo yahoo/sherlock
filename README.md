@@ -184,6 +184,8 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 | --reply-to                | if email `enabled`  |             | [reply-to](#reply-to)                               |
 | --smtp-host               | if email `enabled`  |             | [smtp-host](#smtp-host)                             |
 | --smtp-port               |    -                | `25`        | [smtp-port](#smtp-port)                             |
+| --smtp-user               |    -                |             | [smtp-user](#smtp-user)                             |
+| --smtp-password           |    -                |             | [smtp-password](#smtp-password)                     |
 | --failure-email           | if email `enabled`  |             | [failure-email](#failure-email)                     |
 | --execution-delay         |    -                | `30`        | [execution-delay](#execution-delay)                 |
 | --valid-domains           |    -                | `null`      | [valid-domains](#valid-domains)                     |
@@ -231,6 +233,10 @@ The handle's `REPLY TO` email where replies will be sent.
 The email service's `SMTP HOST`.
 #### smtp-port
 The email service's `SMTP PORT`. The default value is `25`.
+#### smtp-user
+The email service's `SMTP USER`.
+#### smtp-password
+The email service's `SMTP PASSWORD`.
 #### failure-email
 A dedicated email which may be set to receive job failure notifications.
 #### execution-delay
