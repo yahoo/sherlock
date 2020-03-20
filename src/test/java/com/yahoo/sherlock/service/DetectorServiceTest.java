@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
 import com.yahoo.sherlock.enums.Granularity;
+import com.yahoo.sherlock.exception.DruidException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.EgadsResult;
@@ -153,7 +154,7 @@ public class DetectorServiceTest {
             detectorService.detect(DBTestHelper.getNewDruidCluster(), job);
             Assert.fail();
         } catch (Exception e) {
-            assertEquals(e.getMessage(), "Querying unknown datasource: \"s1\"");
+            assertEquals(e.getMessage(), "Querying unknown datasource: [s1]");
         }
     }
 
@@ -234,4 +235,44 @@ public class DetectorServiceTest {
         verify(egads, times(1)).configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), 2);
         verify(egads, times(5)).detectAnomaliesResult(any());
     }
+
+    @Test
+    public void testCheckDataSourceWithValidUnionOfDataSourceQuery() throws Exception {
+        String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_4.json")));
+        JsonObject queryJsonObject = gson.fromJson(queryString, JsonObject.class);
+        Query query = new Query(queryJsonObject, 1, 1234, Granularity.HOUR, 1);
+        DruidCluster dc = new DruidCluster();
+
+        HttpService mockHttpService = mock(HttpService.class);
+        JsonArray fakeDataSources = gson.fromJson("[\"s1\", \"s2\", \"s3\"]", JsonArray.class);
+        when(mockHttpService.queryDruidDatasources(Mockito.anyObject())).thenReturn(fakeDataSources);
+        httpService = mockHttpService;
+        try {
+            DetectorService detectorService = new MockDetectorService();
+            inject(detectorService, "httpService", httpService);
+            detectorService.checkDatasource(query, dc);
+        } catch (DruidException e){
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void testCheckDataSourceWithInValidUnionOfDataSourceQuery() throws Exception {
+        String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_4.json")));
+        JsonObject queryJsonObject = gson.fromJson(queryString, JsonObject.class);
+        Query query = new Query(queryJsonObject, 1, 1234, Granularity.HOUR, 1);
+        DruidCluster dc = new DruidCluster();
+        HttpService mockHttpService = mock(HttpService.class);
+        JsonArray fakeDataSources = gson.fromJson("[\"s3\", \"s4\"]", JsonArray.class);
+        when(mockHttpService.queryDruidDatasources(Mockito.anyObject())).thenReturn(fakeDataSources);
+        try {
+            DetectorService detectorService = new MockDetectorService();
+            inject(detectorService, "httpService", mockHttpService);
+            detectorService.checkDatasource(query, dc);
+            Assert.fail();
+        } catch (DruidException e){
+            assertEquals(e.getMessage(), "Querying unknown datasource: [s1, s2]");
+        }
+    }
+
 }
