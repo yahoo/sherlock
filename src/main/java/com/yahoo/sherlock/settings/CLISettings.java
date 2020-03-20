@@ -120,6 +120,18 @@ public class CLISettings {
     public static int SMTP_PORT = 25;
 
     /**
+     * SMTP user setting.
+     */
+    @Parameter(names = "--smtp-user", description = "SMTP USER setting for email service.")
+    public static String SMTP_USER;
+
+    /**
+     * SMTP password setting.
+     */
+    @Parameter(names = "--smtp-password", description = "SMTP USER setting for email service.")
+    public static String SMTP_PASSWORD;
+
+    /**
      * Job email address for failures.
      */
     @Parameter(names = "--failure-email", description = "email to recieve pipeline failures.", validateWith = EmailValidator.class)
