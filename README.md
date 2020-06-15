@@ -1,9 +1,9 @@
 # Sherlock: Anomaly Detector
 
-[![Build Status](https://travis-ci.org/yahoo/sherlock.svg?branch=master)](https://travis-ci.org/yahoo/sherlock)
+![CI](https://github.com/yahoo/sherlock/workflows/CI/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/yahoo/sherlock/badge.svg?branch=master)](https://coveralls.io/github/yahoo/sherlock?branch=master)
-![](https://github.com/yahoo/sherlock/workflows/Maven%20Package/badge.svg)
-[![Download](https://api.bintray.com/packages/yahoo/maven/Sherlock/images/download.svg) ](https://bintray.com/yahoo/maven/Sherlock/_latestVersion)
+![Maven Package](https://github.com/yahoo/sherlock/workflows/Maven%20Package/badge.svg) [after version 1.8]
+[![Download](https://api.bintray.com/packages/yahoo/maven/Sherlock/images/download.svg) ](https://bintray.com/yahoo/maven/Sherlock/_latestVersion) [up to version 1.6]
 [![GPL 3.0](https://img.shields.io/badge/license-GPL%203.0-blue.svg?style=flat)](LICENSE)
 
 ## Table of Contents

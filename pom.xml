@@ -38,11 +38,6 @@
         <url>https://github.com/yahoo/sherlock/issues</url>
     </issueManagement>
 
-    <ciManagement>
-        <system>Travis</system>
-        <url>https://travis-ci.org/yahoo/sherlock</url>
-    </ciManagement>
-
     <distributionManagement>
         <repository>
             <id>github</id>
