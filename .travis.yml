@@ -5,11 +5,7 @@ script:
 - mvn install
 after_success:
 - mvn clean test jacoco:report coveralls:report
-- test "${TRAVIS_PULL_REQUEST}" == "false" && test "${TRAVIS_TAG}" != "" && mvn -B deploy -Dmaven.test.skip=true --settings ./settings.xml
+- test "${TRAVIS_PULL_REQUEST}" == "false" && test "${TRAVIS_TAG}" != "" && mvn -B deploy -Dmaven.test.skip=true
 cache:
   directories:
   - "~/.m2"
-env:
-  global:
-  - secure: Xnci1Zfgv27NIJ0H2BBKKtjiuwIyRaKsnkM3j+z3LJhQgmVDNWIKch2PbqJ9myHeudelXg41DMB/T6T7hrdZvBvA9fn2j0lCpRCPu3a3rqrN9Baz3f/UpJjt8wM0+QvoTJTR6MFOwR52AP0gTfU7hx+kHFrPWqXlI9lp3XJ4FRcDGcdNtKn74QJEeFr8QuJZQfsbq5f0sJEMx5IPD11Vm6ZKPkH3NOk3kxeTAbd+JRJW3PmyzwOMzXaq3dPsU0mTwLVq8mwps//pyuoKiLEhoWpIGLC7gOQ+PQS5uCfHgorFgnT+ehVN1DpOtAqI0IAKIx7WLpKrZLgIj3xHV3ZVoKDcTU5zryA+H+ZlI1Gq/cD7a3mTneRjbl8JrCXorjAeyp/AzC+H2P+v8JcjRI4v5wwzgtMOE3WrP6JM9RJRdbFuxCMMZLFdopOp389YqC/yDuvAMR3Dn8qvo44jU1GvteBZv49YqdlzImA/BaKg/YqMUjXSEwDdV2CfYFyG2dT2pLABvdK1fhOYjkYZ9Sbzpoa4dIVcAXczdCkHC3C6oKJ+e496PIXZbxTgqctseAtjEkvrTZ8drd5cqTtd20KFm1F+fQCOmkz9npdecmciAewrC2khb8huCgnXw1mBJS+nSJZ+BoznYhloUBuKHN2PD4nLpELUabFvxL34v8uprig=
-  - secure: GDdreXSV18MRkwi5OiXuW98vGtxHDMusyaddwQc8mc1nwA/3M1jgwCVvUP5IR9KMlSnP8au4cymn/70rBxp4+BeHpXgoo/HgHoWgTII6Z57C91r3sTfC+kc6Wg/tVKrTLpbW9eoTxb2tF4RYgY0LIROPst7iJYkmmLUkA7nj+kWbkotZG/FwFuFkX9PJyJ5x77oOjq7/n2jiO//pctufCy5PH/5HLPNHKxBqDxJHqkroK5q0eZNfHopOfylwcvFD8nnHx9cSSXBt9V4yD148NkQoAtVJGmmCj5UHCw5a9DkgDjWhEqZ84FagY01t50fqEJ/syQmNHPXN3b3sR6k32HatcrLsuiVfDDZDDU4Ju8EgOrCrrkeAWTXcyT4dXGmx6QBPvSHqqX8Kf9SkoY3P0UHDFWhHlgnz2BgdVUOHwJb8hyPl01i3Ml+0O14n2Df8WkBNX12jmvxGY+DbqdSDn1Gjzr7/gb8IwnHFJ3/VQNAOorSrccW77ve6Xc5/xgbpDZBwfhMlgdNeKlx3EQFI5hwR5yp0my4xeYaxB/+WB00jGns1q7uDOTZZxcxcOZsMtePbLR2iZdTjejhKXbeetE1M7x6j9n0OMJaytJYuOUf+Cgtl/NkhD6YrS7ylnhOWTltXNYcnQ9xVOM4o00ShcUoPrwCURV1lUaXPrL8wddU=
