@@ -241,29 +241,29 @@ public class SchedulerServiceTest {
     }
 
     @Test
-    public void testStartMasterScheduler() {
+    public void testStartMainScheduler() {
         init();
-        doNothing().when(ss).instantiateMasterScheduler();
-        doCallRealMethod().when(ss).startMasterScheduler();
-        ss.startMasterScheduler();
-        Mockito.verify(ss, times(0)).instantiateMasterScheduler();
+        doNothing().when(ss).instantiateMainScheduler();
+        doCallRealMethod().when(ss).startMainScheduler();
+        ss.startMainScheduler();
+        Mockito.verify(ss, times(0)).instantiateMainScheduler();
     }
 
     @Test
     public void testStartEmailSenderScheduler() {
         init();
-        doNothing().when(ss).instantiateMasterScheduler();
+        doNothing().when(ss).instantiateMainScheduler();
         doCallRealMethod().when(ss).startEmailSenderScheduler();
         ss.startEmailSenderScheduler();
-        Mockito.verify(ss, times(0)).instantiateMasterScheduler();
+        Mockito.verify(ss, times(0)).instantiateMainScheduler();
     }
 
     @Test
     public void testStartBackupScheduler() {
         init();
-        doNothing().when(ss).instantiateMasterScheduler();
+        doNothing().when(ss).instantiateMainScheduler();
         doCallRealMethod().when(ss).startBackupScheduler();
         ss.startBackupScheduler();
-        Mockito.verify(ss, times(0)).instantiateMasterScheduler();
+        Mockito.verify(ss, times(0)).instantiateMainScheduler();
     }
 }

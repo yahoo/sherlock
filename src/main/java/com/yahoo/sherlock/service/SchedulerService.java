@@ -106,7 +106,7 @@ public class SchedulerService {
     /**
      * Create the recoverableThreadScheduler instance.
      */
-    public void instantiateMasterScheduler() {
+    public void instantiateMainScheduler() {
         log.info("Instantiating timer instance");
         if (recoverableThreadScheduler != null) {
             log.info("Timer is already instantiated");
@@ -118,14 +118,14 @@ public class SchedulerService {
     /**
      * Start the execution task.
      */
-    public void startMasterScheduler() {
+    public void startMainScheduler() {
         log.info("Starting execution task");
         if (executionTask != null) {
             log.info("Execution task has already been started");
             return;
         }
         if (recoverableThreadScheduler == null) {
-            instantiateMasterScheduler();
+            instantiateMainScheduler();
         }
         executionTask = new ExecutionTask(
                 jobExecutionService,
@@ -148,7 +148,7 @@ public class SchedulerService {
             return;
         }
         if (recoverableThreadScheduler == null) {
-            instantiateMasterScheduler();
+            instantiateMainScheduler();
         }
         emailSenderTask = new EmailSenderTask();
         int period = Constants.SECONDS_IN_MINUTE;
@@ -166,7 +166,7 @@ public class SchedulerService {
             return;
         }
         if (recoverableThreadScheduler == null) {
-            instantiateMasterScheduler();
+            instantiateMainScheduler();
         }
         backupTask = new BackupTask();
         int period = Constants.SECONDS_IN_MINUTE;
@@ -177,7 +177,7 @@ public class SchedulerService {
     /**
      * Stop the execution task.
      */
-    public void shutdownMasterScheduler() {
+    public void shutdownMainScheduler() {
         if (executionTask == null) {
             log.info("Execution task already stopped");
             return;
@@ -189,7 +189,7 @@ public class SchedulerService {
     /**
      * Destroy the execution task and the timer.
      */
-    public void destroyMasterScheduler() {
+    public void destroyMainScheduler() {
         if (executionTask != null) {
             recoverableThreadScheduler.shutdown();
             executionTask = null;

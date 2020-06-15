@@ -224,9 +224,9 @@ public class CLISettings {
     public static String BACKUP_REDIS_DB_PATH;
 
     /**
-     * File path to specify the whitelisted druid broker hosts.
+     * File path to specify access control list of permitted druid broker hosts.
      */
-    @Parameter(names = "--druid-brokers-list-file", description = "File to whitelist druid broker hosts. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)")
+    @Parameter(names = "--druid-brokers-list-file", description = "File to add access control list of permitted druid broker hosts. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)")
     public static String DRUID_BROKERS_LIST_FILE;
 
     /**

@@ -251,7 +251,7 @@ public class DetectorServiceTest {
             DetectorService detectorService = new MockDetectorService();
             inject(detectorService, "httpService", httpService);
             detectorService.checkDatasource(query, dc);
-        } catch (DruidException e){
+        } catch (DruidException e) {
             Assert.fail();
         }
     }
@@ -270,7 +270,7 @@ public class DetectorServiceTest {
             inject(detectorService, "httpService", mockHttpService);
             detectorService.checkDatasource(query, dc);
             Assert.fail();
-        } catch (DruidException e){
+        } catch (DruidException e) {
             assertEquals(e.getMessage(), "Querying unknown datasource: [s1, s2]");
         }
     }

@@ -135,8 +135,8 @@ public class Routes {
         deletedJobAccessor = Store.getDeletedJobMetadataAccessor();
         emailMetadataAccessor = Store.getEmailMetadataAccessor();
         jsonDumper = Store.getJsonDumper();
-        schedulerService.instantiateMasterScheduler();
-        schedulerService.startMasterScheduler();
+        schedulerService.instantiateMainScheduler();
+        schedulerService.startMainScheduler();
         schedulerService.startEmailSenderScheduler();
         schedulerService.startBackupScheduler();
         jobTimeline = new JobTimeline();

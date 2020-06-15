@@ -268,7 +268,7 @@ HttpClient timeout can be configured using this(in millis). (default value 20000
 #### backup-redis-db-path
 Backup redis DB at given file path as json dump of indices and objects. Backup is done per day at midnight. Default this parameter is null i.e. no buckup. However, BGSAVE command is run at midnight to save redis local dump.
 #### druid-brokers-list-file
-Specify the path to a whitelist file of allowed druid broker hosts for querying. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)
+Specify the path to an access control list file of permitted druid broker hosts for querying. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)
 
 ## Committers
 
