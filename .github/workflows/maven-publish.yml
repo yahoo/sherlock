@@ -1,8 +1,9 @@
 name: Maven Package
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+    - 'sherlock-[1-9]+.[0-9]+'
 
 jobs:
   build:
@@ -21,6 +22,6 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Publish to GitHub Packages Apache Maven
-      run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
+      run: mvn deploy
       env:
         GITHUB_TOKEN: ${{ github.token }}
