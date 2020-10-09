@@ -142,6 +142,7 @@ public class EmailServiceTest {
         anomalyReport.setStatus(Constants.WARNING);
         anomalyReport1.setStatus(Constants.NODATA);
         emailService.processEmailReports(jobMetadata, emails, Arrays.asList(anomalyReport, anomalyReport1));
+        CLISettings.ENABLE_EMAIL = false;
     }
 
     private EmailMetaData getEmailMetadata(String email) {

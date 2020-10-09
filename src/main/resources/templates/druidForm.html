@@ -39,13 +39,19 @@
 							</div>
 
 							<div class="form-group">
-								<label class="control-label" for="Http/Https">Http/Https:</label>
-								<div id="Http/Https">
-									<input type="radio" id="http" name="protocol" value="http" checked="true"/>
-									<label class="control-label" for="http">Http</label>
-									<span>&nbsp;&nbsp;&nbsp;</span>
-									<input type="radio" id="https" name="protocol" value="https"/>
-									<label class="control-label" for="https">Https</label>
+								<label class="control-label" for="sslAuth">mTLS Authentication:</label>
+								<div id="sslAuth">
+									<input type="checkbox" class="form-check-input" id="sslAuthCheck" name="sslAuthCheck" onclick="onSSLEnabled()" />
+									<label class="control-label" for="sslAuthCheck">Enable</label>
+								</div>
+							</div>
+
+							<div class="form-group" id="principalNameDiv" name="principalNameDiv" hidden="true">
+								<label class="control-label" for="principalNameInputDiv">TLS Principal name (optional):</label>
+								<div id="principalNameInputDiv">
+									<input id="principalName" name="principalName" type="text"
+										   placeholder="Enter the value of TLS principal (should be part of the name of the key/cert files)" class="form-control input-md"
+										   size="25"/>
 								</div>
 							</div>
 
@@ -128,6 +134,15 @@
 		});
 	});
 
+	function onSSLEnabled() {
+		if ($('#sslAuthCheck').is(':checked') == true) {
+			$('#principalNameDiv').attr("hidden", false);
+		} else {
+			$('#principalNameDiv').attr("hidden", true);
+			$('#principalName').val("");
+		}
+	}
+
 	$("#saveConfirmModalYes").click(function() {
 		var data = {
 			clusterName: $('#clusterName').val(),
@@ -136,7 +151,9 @@
 			brokerPort: $('#brokerPort').val(),
 			brokerEndpoint: $('#brokerEndpoint').val(),
 			hoursOfLag: $('#hoursOfLag').val(),
-			protocol: $('input[name=protocol]:checked', '#clusterForm').val()
+			protocol: $('#sslAuthCheck').is(':checked') ? 'https' : 'http',
+			isSSLAuth: $('#sslAuthCheck').is(':checked'),
+			principalName: $('#principalName').val()
 		};
 		$.ajax({
 			type: 'POST',

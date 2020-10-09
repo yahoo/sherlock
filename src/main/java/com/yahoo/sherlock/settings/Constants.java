@@ -241,6 +241,11 @@ public final class Constants {
     public static final String AT_DELIMITER = "@";
 
     /**
+     * Delimiter constant for file path.
+     */
+    public static final String PATH_DELIMITER = "/";
+
+    /**
      * Delimiter constant for html line break.
      */
     public static final String HTML_LINEBREAK_DELIMITER = "<br/>";
@@ -324,6 +329,66 @@ public final class Constants {
      * Constant for 'path'.
      */
     public static final String PATH = "path";
+
+    /**
+     * Constant for 'key'.
+     */
+    public static final String KEY = "key";
+
+    /**
+     * Constant for 'cert'.
+     */
+    public static final String CERT = "cert";
+
+    /**
+     * Constant for 'TRUSTSTORE_PATH'.
+     */
+    public static final String TRUSTSTORE_PATH = "TRUSTSTORE_PATH";
+
+    /**
+     * Constant for 'TRUSTSTORE_TYPE'.
+     */
+    public static final String TRUSTSTORE_TYPE = "TRUSTSTORE_TYPE";
+
+    /**
+     * Constant for 'TRUSTSTORE_PASS'.
+     */
+    public static final String TRUSTSTORE_PASS = "TRUSTSTORE_PASS";
+
+    /**
+     * Constant for 'KEYSTORE_PATH'.
+     */
+    public static final String KEYSTORE_PATH = "KEYSTORE_PATH";
+
+    /**
+     * Constant for 'KEYSTORE_TYPE'.
+     */
+    public static final String KEYSTORE_TYPE = "KEYSTORE_TYPE";
+
+    /**
+     * Constant for 'KEYSTORE_PASS'.
+     */
+    public static final String KEYSTORE_PASS = "KEYSTORE_PASS";
+
+    /**
+     * Constant for 'KEY_PATH'.
+     */
+    public static final String KEY_PATH = "KEY_PATH";
+
+    /**
+     * Constant for 'CERT_PATH'.
+     */
+    public static final String CERT_PATH = "CERT_PATH";
+
+    /**
+     * Constant for 'HOSTNAME_STRICT_VERIFICATION'.
+     */
+    public static final String HOSTNAME_STRICT_VERIFICATION = "HOSTNAME_STRICT_VERIFICATION";
+
+    /**
+     * Constant for 'REDIS_PASS'.
+     */
+    public static final String REDIS_PASS = "REDIS_PASS";
 
     /**
      * Constant set of allowed druid brokers.

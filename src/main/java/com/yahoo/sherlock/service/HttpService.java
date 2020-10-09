@@ -11,21 +11,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.yahoo.sherlock.exception.DruidException;
 import com.yahoo.sherlock.model.DruidCluster;
-import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.DruidConstants;
+import com.yahoo.sherlock.utils.SHttpClient;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,51 +35,11 @@ import java.io.InputStreamReader;
 public class HttpService {
 
     /**
-     * Method to get new HttpClient.
-     *
-     * @param timeout the connection timeout
-     * @param retries the number of times the client should reattempt connections
-     * @return HttpClient object
+     * Method to get SHttpClient instance.
+     * @return SHttpClient instance
      */
-    protected HttpClient newHttpClient(int timeout, int retries) {
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeout)
-                .setSocketTimeout(timeout)
-                .setConnectionRequestTimeout(timeout)
-                .build();
-        return HttpClientBuilder.create()
-                .setRetryHandler(new DefaultHttpRequestRetryHandler(retries, false))
-                .setDefaultRequestConfig(config)
-                .build();
-    }
-
-    /**
-     * Get a new {@code HttpClient} with a {@link CLISettings#HTTP_CLIENT_TIMEOUT} timeout.
-     *
-     * @return HttpClient
-     */
-    protected HttpClient newHttpClient() {
-        return newHttpClient(CLISettings.HTTP_CLIENT_TIMEOUT, 3);
-    }
-
-    /**
-     * Get a new post method instance with the default 3 retries.
-     *
-     * @param url the post URL
-     * @return PostMethod
-     */
-    protected HttpPost newHttpPost(String url) {
-        return new HttpPost(url);
-    }
-
-    /**
-     * Get a new get method instance with the default 3 retries.
-     *
-     * @param url the get URL
-     * @return GetMethod
-     */
-    protected HttpGet newHttpGet(String url) {
-        return new HttpGet(url);
+    public SHttpClient getHttpClient() {
+        return SHttpClient.getSHttpClient();
     }
 
     /**
@@ -97,8 +54,8 @@ public class HttpService {
     public JsonArray queryDruid(DruidCluster cluster, JsonObject druidQuery) throws DruidException {
         log.info("Calling druid broker.");
         String url = cluster.getBrokerUrl();
-        HttpClient client = newHttpClient();
-        HttpPost httpPost = newHttpPost(url);
+        HttpClient client = getHttpClient().newHttpClient(cluster.getIsSSLAuth(), cluster.getPrincipalName());
+        HttpPost httpPost = getHttpClient().newHttpPost(url);
         try {
             HttpEntity httpEntity = new StringEntity(druidQuery.toString(), ContentType.APPLICATION_JSON);
             httpPost.setEntity(httpEntity);
@@ -136,8 +93,8 @@ public class HttpService {
     public JsonArray queryDruidDatasources(DruidCluster cluster) throws DruidException {
         log.info("Calling Druid broker for datasource list.");
         String url = cluster.getBrokerUrl() + DruidConstants.DATASOURCES;
-        HttpClient client = newHttpClient(2000, 2);
-        HttpGet httpGet = newHttpGet(url);
+        HttpClient client = getHttpClient().newHttpClient(2000, 2, cluster.getIsSSLAuth(), cluster.getPrincipalName());
+        HttpGet httpGet = getHttpClient().newHttpGet(url);
         try {
             HttpResponse response = client.execute(httpGet);
             int statusCode = response.getStatusLine().getStatusCode();
@@ -168,8 +125,8 @@ public class HttpService {
     public int queryDruidClusterStatus(DruidCluster cluster) throws DruidException {
         log.info("Calling Druid broker for status.");
         String url = cluster.getBaseUrl() + DruidConstants.STATUS;
-        HttpGet httpGet = newHttpGet(url);
-        HttpClient client = newHttpClient(300, 0);
+        HttpGet httpGet = getHttpClient().newHttpGet(url);
+        HttpClient client = getHttpClient().newHttpClient(300, 0, cluster.getIsSSLAuth(), cluster.getPrincipalName());
         try {
             HttpResponse response = client.execute(httpGet);
             return response.getStatusLine().getStatusCode();

@@ -6,7 +6,9 @@
 
 package com.yahoo.sherlock.store;
 
+import com.yahoo.sherlock.service.SecretProviderService;
 import com.yahoo.sherlock.settings.CLISettings;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 
 import com.yahoo.sherlock.store.redis.LettuceAnomalyReportAccessor;
@@ -28,6 +30,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class Store {
+
+    private transient static final String REDIS_SECRETS;
+
+    static {
+        REDIS_SECRETS = SecretProviderService.getKey(Constants.REDIS_PASS);
+    }
 
     /**
      * Enumeration of the different accessor types. Each of these
@@ -85,7 +93,7 @@ public class Store {
                 put(DatabaseConstants.REDIS_PORT, String.valueOf(CLISettings.REDIS_PORT));
                 put(DatabaseConstants.REDIS_SSL, CLISettings.REDIS_SSL ? "true" : "false");
                 put(DatabaseConstants.REDIS_TIMEOUT, String.valueOf(CLISettings.REDIS_TIMEOUT));
-                put(DatabaseConstants.REDIS_PASSWORD, CLISettings.REDIS_PASSWORD);
+                put(DatabaseConstants.REDIS_PASSWORD, REDIS_SECRETS);
                 put(DatabaseConstants.REDIS_CLUSTERED, CLISettings.REDIS_CLUSTERED ? "true" : null);
                 put(DatabaseConstants.INDEX_REPORT_JOB_ID, DatabaseConstants.INDEX_REPORT_JOB_ID);
                 put(DatabaseConstants.INDEX_TIMESTAMP, DatabaseConstants.INDEX_TIMESTAMP);

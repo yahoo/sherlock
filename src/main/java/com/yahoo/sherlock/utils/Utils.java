@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import spark.QueryParamsMap;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -153,6 +155,35 @@ public class Utils {
             stringParams.put(key, multiMap.get(key)[0]);
         }
         return stringParams;
+    }
+
+    /**
+     * Method to get SecretProvider based on custom class specified by {@link com.yahoo.sherlock.settings.CLISettings#CUSTOM_SECRET_PROVIDER_CLASS}.
+     * @param className class name of the custom secret provider
+     * @return SecretProvider instance of given class
+     **/
+    public static SecretProvider createSecretProvider(String className) {
+        log.info("Initializing SecretProvider for class {}", className);
+        try {
+            Class<?> clazz = Class.forName(className);
+            Constructor<?> ctor = clazz.getConstructor();
+            return (SecretProvider) ctor.newInstance();
+        } catch (ClassNotFoundException e) {
+            log.error("class name {} is not found", className);
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            log.error("no constructor for class {} found", className);
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            log.error("the class {} cannot be instantiated, probably an abstract class or interface?", className);
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            log.error("the class {} constructor cannot be accessed", className);
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            log.error("the class {} constructor threw an exception {}", className, e);
+            throw new RuntimeException(e);
+        }
     }
 
 }
