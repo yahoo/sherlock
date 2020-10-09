@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class UtilsTest {
 
@@ -113,4 +114,8 @@ public class UtilsTest {
         Assert.assertEquals(Utils.getAnomalyReportsAsTimeline(anomalyReports), jsonTimeline);
     }
 
+    @Test
+    public void testCreateSecretProvider() {
+        assertTrue(Utils.createSecretProvider(DefaultSecretProvider.class.getCanonicalName()) instanceof DefaultSecretProvider);
+    }
 }

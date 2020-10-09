@@ -1,8 +1,15 @@
+/*
+ * Copyright 2017, Yahoo Holdings Inc.
+ * Copyrights licensed under the GPL License.
+ * See the accompanying LICENSE file for terms.
+ */
+
 package com.yahoo.sherlock;
 
 import org.mockito.verification.VerificationMode;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 import static org.mockito.Mockito.times;
 
@@ -40,6 +47,19 @@ public class TestUtilities {
         try {
             field.set(mock, value);
         } catch (IllegalAccessException e) {
+            throw new TestException(e.getMessage(), e);
+        }
+    }
+
+    public static void injectStaticFinal(Object mock, Class<?> cls, String fieldName, Object value) {
+        Field field = getField(cls, fieldName);
+        field.setAccessible(true);
+        try {
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            field.set(mock, value);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new TestException(e.getMessage(), e);
         }
     }

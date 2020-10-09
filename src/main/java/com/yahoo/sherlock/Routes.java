@@ -35,6 +35,7 @@ import com.yahoo.sherlock.service.SchedulerService;
 import com.yahoo.sherlock.service.DetectorService;
 import com.yahoo.sherlock.service.DruidQueryService;
 import com.yahoo.sherlock.service.EmailService;
+import com.yahoo.sherlock.service.SecretProviderService;
 import com.yahoo.sherlock.service.ServiceFactory;
 import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
@@ -125,6 +126,7 @@ public class Routes {
      * accessor objects.
      */
     public static void initServices() {
+        SecretProviderService.initSecretProvider();
         thymeleaf = new ThymeleafTemplateEngine();
         serviceFactory = new ServiceFactory();
         schedulerService = serviceFactory.newSchedulerServiceInstance();

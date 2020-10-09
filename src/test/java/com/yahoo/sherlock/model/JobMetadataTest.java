@@ -76,7 +76,7 @@ public class JobMetadataTest {
         assertEquals(m.getTimeseriesRange(), (Integer) 4);
         assertEquals(m.getGranularityRange(), (Integer) 1);
         assertEquals(m.getFrequency(), "n");
-        assertEquals(m.getSigmaThreshold(), 3.0);
+        assertEquals(m.getSigmaThreshold(), Double.valueOf(3.0));
         assertEquals(m.getTimeseriesModel(), "ts");
         assertEquals(m.getAnomalyDetectionModel(), "ad");
     }
@@ -107,7 +107,7 @@ public class JobMetadataTest {
         assertEquals(mCloned.getTimeseriesRange(), (Integer) 4);
         assertEquals(mCloned.getGranularityRange(), (Integer) 1);
         assertEquals(mCloned.getFrequency(), "n");
-        assertEquals(mCloned.getSigmaThreshold(), 3.0);
+        assertEquals(mCloned.getSigmaThreshold(), Double.valueOf(3.0));
         assertEquals(mCloned.getTimeseriesModel(), "ts");
         assertEquals(mCloned.getAnomalyDetectionModel(), "ad");
     }
@@ -133,7 +133,7 @@ public class JobMetadataTest {
         assertEquals(mCopy.getTimeseriesRange(), (Integer) 4);
         assertEquals(mCopy.getGranularityRange(), (Integer) 1);
         assertEquals(mCopy.getFrequency(), "n");
-        assertEquals(mCopy.getSigmaThreshold(), 3.0);
+        assertEquals(mCopy.getSigmaThreshold(), Double.valueOf(3.0));
         assertEquals(mCopy.getTimeseriesModel(), "ts");
         assertEquals(mCopy.getAnomalyDetectionModel(), "ad");
     }

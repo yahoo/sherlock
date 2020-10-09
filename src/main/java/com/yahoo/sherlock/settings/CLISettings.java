@@ -8,6 +8,8 @@ package com.yahoo.sherlock.settings;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
+import com.yahoo.sherlock.utils.DefaultSslContextProvider;
+import com.yahoo.sherlock.utils.DefaultSecretProvider;
 import com.yahoo.sherlock.utils.Utils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -230,9 +232,82 @@ public class CLISettings {
     public static String DRUID_BROKERS_LIST_FILE;
 
     /**
+     * Path to specify truststore location for mTLS connections.
+     */
+    @Parameter(names = "--truststore-path", description = "Path to specify truststore location for mTLS connections. (default null)")
+    public static String TRUSTSTORE_PATH;
+
+    /**
+     * Param to specify truststore type for mTLS connections.
+     */
+    @Parameter(names = "--truststore-type", description = "Param to specify truststore type for mTLS connections. (default \"jks\")")
+    public static String TRUSTSTORE_TYPE = "jks";
+
+    /**
+     * Param to specify truststore location for mTLS connections.
+     */
+    @Parameter(names = "--truststore-password", description = "Param to specify truststore password for mTLS connections. (default null)")
+    public static String TRUSTSTORE_PASSWORD;
+
+    /**
+     * Path to specify keystore location for mTLS connections.
+     */
+    @Parameter(names = "--keystore-path", description = "Path to specify keystore location for mTLS connections. (default null)")
+    public static String KEYSTORE_PATH;
+
+    /**
+     * Param to specify keystore type for mTLS connections.
+     */
+    @Parameter(names = "--keystore-type", description = "Param to specify keystore type for mTLS connections. (default \"jks\")")
+    public static String KEYSTORE_TYPE = "jks";
+
+    /**
+     * Param to specify keystore password for mTLS connections.
+     */
+    @Parameter(names = "--keystore-password", description = "Param to specify keystore password for mTLS connections. (default null)")
+    public static String KEYSTORE_PASSWORD;
+
+    /**
+     * Param to specify key directory containing multiple keys(per different druid cluster) for mTLS connections.
+     */
+    @Parameter(names = "--key-dir", description = "Param to specify key directory containing multiple keys(for different clusters) for mTLS connections (default null). "
+                                                  + "\nThis is used when \"Principal Name\" is given in druid cluster form."
+                                                  + "\nIt looks for filename containing \"Principal Name\" under this dir."
+                                                  + "\nIf --key-dir and --cert-dir values are same then the filename should also contain the identifier \"key\" for private key file and \"cert\" for public key file.")
+    public static String KEY_DIR;
+
+    /**
+     * Param to specify cert directory containing multiple certs(per different druid cluster) for mTLS connections.
+     */
+    @Parameter(names = "--cert-dir", description = "Param to specify cert directory containing multiple certs(for different clusters) for mTLS connections (default null)."
+                                                   + "\nThis is used when \"Principal Name\" is given in druid cluster form."
+                                                   + "\nIt looks for file name containing \"Principal Name\" under this dir."
+                                                   + "\nIf --key-dir and --cert-dir values are same then the filename should also contain the identifier \"key\" for private key file and \"cert\" for public key file.")
+
+    public static String CERT_DIR;
+
+    /**
+     * Param to enable/disable https hostname verification for mTLS connections.
+     */
+    @Parameter(names = "--https-hostname-verification", description = "Param to enable/disable https hostname verification for mTLS connections. (default true i.e. hostname verification enabled)")
+    public static boolean HTTPS_HOSTNAME_VERIFICATION = true;
+
+    /**
+     * Param to specify custom ssl context provider class for mTLS connections.
+     */
+    @Parameter(names = "--custom-ssl-context-provider-class", description = "Param to specify custom ssl context provider class for mTLS connections. (default \"com.yahoo.sherlock.utils.DefaultSslContextProvider\" which returns SSLContext with validation)")
+    public static String CUSTOM_SSL_CONTEXT_PROVIDER_CLASS = DefaultSslContextProvider.class.getCanonicalName();
+
+    /**
+     * Param to specify custom secret provider class for passwords.
+     */
+    @Parameter(names = "--custom-secret-provider-class", description = "Param to specify custom secret provider class for passwords. (default \"com.yahoo.sherlock.utils.DefaultSecretProvider\" which returns secrets specified from CLISettings)")
+    public static String CUSTOM_SECRET_PROVIDER_CLASS = DefaultSecretProvider.class.getCanonicalName();
+
+    /**
      * Parameters to ignore when printing fields.
      */
-    private static String[] PRINT_IGNORED = {"log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED"};
+    private static String[] PRINT_IGNORED = {"log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED", "TRUSTSTORE_PASSWORD", "KEYSTORE_PASSWORD"};
 
     /**
      * Print all the settings.

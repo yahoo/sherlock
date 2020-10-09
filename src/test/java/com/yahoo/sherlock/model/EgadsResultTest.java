@@ -1,3 +1,9 @@
+/*
+ * Copyright 2017, Yahoo Holdings Inc.
+ * Copyrights licensed under the GPL License.
+ * See the accompanying LICENSE file for terms.
+ */
+
 package com.yahoo.sherlock.model;
 
 import com.yahoo.egads.data.Anomaly;
@@ -39,7 +45,7 @@ public class EgadsResultTest {
         assertEquals(null, p.getY());
         p = new EgadsResult.Point(10, 10.0f);
         assertEquals(p.getX(), 10);
-        assertEquals(p.getY(), 10.0f);
+        assertEquals(p.getY(), Float.valueOf(10.0f));
     }
 
     @Test

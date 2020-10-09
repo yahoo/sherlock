@@ -23,7 +23,9 @@ public class DruidClusterTest {
                 "brokerHost",
                 123,
                 "brokerEndpoint",
-                1234
+                1234,
+                true,
+                ""
         );
         assertEquals(c.getClusterId(), (Integer) 1);
         assertEquals(c.getClusterName(), "clusterName");
@@ -32,6 +34,8 @@ public class DruidClusterTest {
         assertEquals(c.getBrokerHost(), "brokerHost");
         assertEquals(c.getBrokerPort(), (Integer) 123);
         assertEquals(c.getHoursOfLag(), (Integer) 1234);
+        assertEquals(c.getIsSSLAuth(), (Boolean) true);
+        assertEquals(c.getPrincipalName(), "");
     }
 
     @Test

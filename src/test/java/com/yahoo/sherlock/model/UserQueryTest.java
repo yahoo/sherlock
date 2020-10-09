@@ -34,7 +34,7 @@ public class UserQueryTest {
         assertEquals(query.getOwnerEmail(), "ownerEmail");
         assertEquals(query.getGranularity(), "granularity");
         assertEquals(query.getFrequency(), "frequency");
-        assertEquals(query.getSigmaThreshold(), 3.0);
+        assertEquals(query.getSigmaThreshold(), Double.valueOf(3.0));
         assertEquals(query.getDruidUrl(), "druidUrl");
         assertEquals(query.getClusterId(), (Integer) 1);
     }

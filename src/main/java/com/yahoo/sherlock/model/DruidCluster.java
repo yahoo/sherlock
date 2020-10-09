@@ -60,6 +60,14 @@ public class DruidCluster implements Serializable {
     @Attribute
     private Integer hoursOfLag;
 
+    /** Druid cluster SSL authentication enable/disable boolean param. **/
+    @Attribute
+    private Boolean isSSLAuth = false;
+
+    /** Principal to use to connect to this druid cluster. **/
+    @Attribute
+    private String principalName = "";
+
     /** Empty constructor. */
     public DruidCluster() {
     }
@@ -81,7 +89,9 @@ public class DruidCluster implements Serializable {
         String brokerHost,
         Integer brokerPort,
         String brokerEndpoint,
-        Integer hoursOfLag) {
+        Integer hoursOfLag,
+        Boolean isSSLAuth,
+        String principalName) {
         this.clusterId = clusterId;
         this.clusterName = clusterName;
         this.clusterDescription = clusterDescription;
@@ -89,6 +99,8 @@ public class DruidCluster implements Serializable {
         this.brokerPort = brokerPort;
         this.brokerEndpoint = brokerEndpoint;
         this.hoursOfLag = hoursOfLag;
+        this.isSSLAuth = isSSLAuth;
+        this.principalName = principalName;
     }
 
     /**
@@ -135,6 +147,8 @@ public class DruidCluster implements Serializable {
             errorMsg = "Broker host should not contain any '/' or ':' characters";
         } else if (!isAllowedHost(brokerHost, brokerPort)) {
             errorMsg = "Broker host or port specified is not allowed!";
+        } else if (isSSLAuth && protocol.equalsIgnoreCase(Constants.HTTP)) {
+            errorMsg = "Cannot use HTTP with SSL authentication!";
         } else {
             if (clusterDescription == null) {
                 clusterDescription = "";
@@ -174,6 +188,8 @@ public class DruidCluster implements Serializable {
         setBrokerEndpoint(newCluster.getBrokerEndpoint());
         setHoursOfLag(newCluster.getHoursOfLag());
         setProtocol(newCluster.getProtocol());
+        setIsSSLAuth(newCluster.getIsSSLAuth());
+        setPrincipalName(newCluster.getPrincipalName());
     }
 
     /**
