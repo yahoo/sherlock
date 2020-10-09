@@ -1,13 +1,10 @@
 # Sherlock: Anomaly Detector
 
-[![CI](https://github.com/yahoo/sherlock/workflows/CI/badge.svg)](https://github.com/yahoo/sherlock/actions?query=workflow%3Abuild)
+[![Build Status](https://travis-ci.org/yahoo/sherlock.svg?branch=master)](https://travis-ci.org/yahoo/sherlock)
 [![Coverage Status](https://coveralls.io/repos/github/yahoo/sherlock/badge.svg?branch=master)](https://coveralls.io/github/yahoo/sherlock?branch=master)
+![](https://github.com/yahoo/sherlock/workflows/Maven%20Package/badge.svg)
+[![Download](https://api.bintray.com/packages/yahoo/maven/Sherlock/images/download.svg) ](https://bintray.com/yahoo/maven/Sherlock/_latestVersion)
 [![GPL 3.0](https://img.shields.io/badge/license-GPL%203.0-blue.svg?style=flat)](LICENSE)
-
-[![Maven Package](https://github.com/yahoo/sherlock/workflows/Maven%20Package/badge.svg)](https://github.com/yahoo/sherlock/packages) [version 1.7 onwards]
-
-[![Download](https://api.bintray.com/packages/yahoo/maven/Sherlock/images/download.svg) ](https://bintray.com/yahoo/maven/Sherlock/_latestVersion) [version <=1.6]
-
 
 ## Table of Contents
 
@@ -171,41 +168,52 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 
 ### CLI args usage
 
-| args                      | required            | default     | description                                         |
-|-------------------------  |---------------------|-------------|-------------------------------------------------    |
-| --help                    |    -                | `false`     | [help](#help)                                       |
-| --config                  |    -                | `null`      | [config](#config)                                   |
-| --version                 |    -                | `v0.0.0`    | [version](#version)                                 |
-| --egads-config-filename   |    -                | `provided`  | [egads-config-filename](#egads-config-filename)     |
-| --port                    |    -                | `4080`      | [port](#port)                                       |
-| --interval-minutes        |    -                | `180`       | [interval-minutes](#interval-minutes)               |
-| --interval-hours          |    -                | `672`       | [interval-hours](#interval-hours)                   |
-| --interval-days           |    -                | `28`        | [interval-days](#interval-days)                     |
-| --interval-weeks          |    -                | `12`        | [interval-weeks](#interval-weeks)                   |
-| --interval-months         |    -                | `6`         | [interval-months](#interval-months)                 |
-| --enable-email            |    -                | `false`     | [enable-email](#enable-email)                       |
-| --from-mail               | if email `enabled`  |             | [from-mail](#from-mail)                             |
-| --reply-to                | if email `enabled`  |             | [reply-to](#reply-to)                               |
-| --smtp-host               | if email `enabled`  |             | [smtp-host](#smtp-host)                             |
-| --smtp-port               |    -                | `25`        | [smtp-port](#smtp-port)                             |
-| --smtp-user               |    -                |             | [smtp-user](#smtp-user)                             |
-| --smtp-password           |    -                |             | [smtp-password](#smtp-password)                     |
-| --failure-email           | if email `enabled`  |             | [failure-email](#failure-email)                     |
-| --execution-delay         |    -                | `30`        | [execution-delay](#execution-delay)                 |
-| --valid-domains           |    -                | `null`      | [valid-domains](#valid-domains)                     |
-| --redis-host              |    -                | `127.0.0.1` | [redis-host](#redis-host)                           |
-| --redis-port              |    -                | `6379`      | [redis-port](#redis-port)                           |
-| --redis-ssl               |    -                | `false`     | [redis-ssl](#redis-ssl)                             |
-| --redis-timeout           |    -                | `5000`      | [redis-timeout](#redis-timeout)                     |
-| --redis-password          |    -                |  -          | [redis-password](#redis-password)                   |
-| --redis-clustered         |    -                | `false`     | [redis-clustered](#redis-clustered)                 |
-| --project-name            |    -                |  -          | [project-name](#project-name)                       |
-| --external-file-path      |    -                |  -          | [external-file-path](#external-file-path)           |
-| --debug-mode              |    -                | `false`     | [debug-mode](#debug-mode)                           |
-| --timeseries-completeness |    -                | `60`        | [timeseries-completeness](#timeseries-completeness) |
-| --http-client-timeout     |    -                | `20000`     | [http-client-timeout](#http-client-timeout)         |
-| --backup-redis-db-path    |    -                |  `null`     | [backup-redis-db-path](#backup-redis-db-path)       |
-| --druid-brokers-list-file |    -                |  `null`     | [druid-brokers-list-file](#druid-brokers-list-file) |
+| args                                  | required            | default           | description                                         |
+|---------------------------------------|---------------------|-------------------|-----------------------------------------------------|
+| --help                                |    -                | `false`           | [help](#help)                                       |
+| --config                              |    -                | `null`            | [config](#config)                                   |
+| --version                             |    -                | `v0.0.0`          | [version](#version)                                 |
+| --egads-config-filename               |    -                | `provided`        | [egads-config-filename](#egads-config-filename)     |
+| --port                                |    -                | `4080`            | [port](#port)                                       |
+| --interval-minutes                    |    -                | `180`             | [interval-minutes](#interval-minutes)               |
+| --interval-hours                      |    -                | `672`             | [interval-hours](#interval-hours)                   |
+| --interval-days                       |    -                | `28`              | [interval-days](#interval-days)                     |
+| --interval-weeks                      |    -                | `12`              | [interval-weeks](#interval-weeks)                   |
+| --interval-months                     |    -                | `6`               | [interval-months](#interval-months)                 |
+| --enable-email                        |    -                | `false`           | [enable-email](#enable-email)                       |
+| --from-mail                           | if email `enabled`  |                   | [from-mail](#from-mail)                             |
+| --reply-to                            | if email `enabled`  |                   | [reply-to](#reply-to)                               |
+| --smtp-host                           | if email `enabled`  |                   | [smtp-host](#smtp-host)                             |
+| --smtp-port                           |    -                | `25`              | [smtp-port](#smtp-port)                             |
+| --smtp-user                           |    -                |                   | [smtp-user](#smtp-user)                             |
+| --smtp-password                       |    -                |                   | [smtp-password](#smtp-password)                     |
+| --failure-email                       | if email `enabled`  |                   | [failure-email](#failure-email)                     |
+| --execution-delay                     |    -                | `30`              | [execution-delay](#execution-delay)                 |
+| --valid-domains                       |    -                | `null`            | [valid-domains](#valid-domains)                     |
+| --redis-host                          |    -                | `127.0.0.1`       | [redis-host](#redis-host)                           |
+| --redis-port                          |    -                | `6379`            | [redis-port](#redis-port)                           |
+| --redis-ssl                           |    -                | `false`           | [redis-ssl](#redis-ssl)                             |
+| --redis-timeout                       |    -                | `5000`            | [redis-timeout](#redis-timeout)                     |
+| --redis-password                      |    -                |  -                | [redis-password](#redis-password)                   |
+| --redis-clustered                     |    -                | `false`           | [redis-clustered](#redis-clustered)                 |
+| --project-name                        |    -                |  -                | [project-name](#project-name)                       |
+| --external-file-path                  |    -                |  -                | [external-file-path](#external-file-path)           |
+| --debug-mode                          |    -                | `false`           | [debug-mode](#debug-mode)                           |
+| --timeseries-completeness             |    -                | `60`              | [timeseries-completeness](#timeseries-completeness) |
+| --http-client-timeout                 |    -                | `20000`           | [http-client-timeout](#http-client-timeout)         |
+| --backup-redis-db-path                |    -                |  `null`           | [backup-redis-db-path](#backup-redis-db-path)       |
+| --druid-brokers-list-file             |    -                |  `null`           | [druid-brokers-list-file](#druid-brokers-list-file) |
+| --truststore-path                     |    -                |  `null`           | [truststore-path](#truststore-path)                 |
+| --truststore-type                     |    -                |  `jks`            | [truststore-type](#truststore-type)                 |
+| --truststore-password                 |    -                |  `null`           | [truststore-password](#truststore-password)         |
+| --keystore-path                       |    -                |  `null`           | [keystore-path](#keystore-path)                     |
+| --keystore-type                       |    -                |  `jks`            | [keystore-type](#keystore-type)                     |
+| --keystore-password                   |    -                |  `null`           | [keystore-password](#keystore-password)             |
+| --key-dir                             |    -                |  `null`           | [key-dir](#key-dir)                                 |
+| --cert-dir                            |    -                |  `null`           | [cert-dir](#cert-dir)                               |
+| --https-hostname-verification         |    -                |  `true`           | [https-hostname-verification](#https-hostname-verification)             |
+| --custom-ssl-context-provider-class   |    -                |  [`DefaultSslContextProvider`](https://github.com/yahoo/sherlock/tree/master/src/main/java/com/yahoo/sherlock/utils)  | [custom-ssl-context-provider-class](#custom-ssl-context-provider-class) |
+| --custom-secret-provider-class        |    -                |  [`DefaultSecretProvider`](https://github.com/yahoo/sherlock/tree/master/src/main/java/com/yahoo/sherlock/utils)  | [custom-secret-provider-class](#custom-secret-provider-class)           |
 
 #### help
 Prints commandline argument help message.
@@ -272,7 +280,35 @@ HttpClient timeout can be configured using this(in millis). (default value 20000
 #### backup-redis-db-path
 Backup redis DB at given file path as json dump of indices and objects. Backup is done per day at midnight. Default this parameter is null i.e. no buckup. However, BGSAVE command is run at midnight to save redis local dump.
 #### druid-brokers-list-file
-Specify the path to an access control list file of permitted druid broker hosts for querying. Format: <host1>:<port>,<host2>:<port>... (default null i.e any host is allowed)
+Specify the path to an access control list file of permitted druid broker hosts for querying. Format: `<host1>:<port>,<host2>:<port>...` (default null i.e any host is allowed)
+#### truststore-path
+Path to specify truststore location for mTLS connections. (default `null`)
+#### truststore-type                  
+Param to specify truststore type for mTLS connections. (default `jks`)
+#### truststore-password              
+Param to specify truststore password for mTLS connections. (default `null`)
+#### keystore-path                    
+Path to specify keystore location for mTLS connections. (default `null`)
+#### keystore-type                    
+Param to specify keystore type for mTLS connections. (default `jks`)
+#### keystore-password                
+Param to specify keystore password for mTLS connections. (default `null`)
+#### key-dir                          
+Param to specify key directory containing multiple keys(for different clusters) for mTLS connections (default `null`).
+This is used when `Principal Name` is given in druid cluster form.
+It looks for filename containing `Principal Name` under this dir.
+If `--key-dir` and `--cert-dir` values are same then the filename should also contain the identifier `key` for private key file and `cert` for public key file.
+#### cert-dir                         
+Param to specify cert directory containing multiple certs(for different clusters) for mTLS connections (default `null`)."
+This is used when `Principal Name` is given in druid cluster form.
+It looks for file name containing `Principal Name` under this dir.
+If `--key-dir` and `--cert-dir` values are same then the filename should also contain the identifier `key` for private key file and `cert` for public key file.
+#### https-hostname-verification      
+Param to enable/disable https hostname verification for mTLS connections. (default `true` i.e. hostname verification enabled)
+#### custom-ssl-context-provider-class
+Param to specify custom ssl context provider class for mTLS connections. (default `com.yahoo.sherlock.utils.DefaultSslContextProvider` which returns SSLContext with validation)
+#### custom-secret-provider-class     
+Param to specify custom secret provider class for passwords. (default `com.yahoo.sherlock.utils.DefaultSecretProvider` which returns secrets specified from CLISettings)
 
 ## Committers
 
