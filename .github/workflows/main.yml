@@ -19,6 +19,13 @@ jobs:
         server-id: github
         settings-path: ${{ github.workspace }}
 
-    - name: Build with Maven
-      run: mvn install
+    - name: Build with Maven and Test
+      run: |
+        mvn install
+        mvn clean test jacoco:report coveralls:report
+        
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ github.token }}
     
