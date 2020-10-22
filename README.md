@@ -1,7 +1,7 @@
 # Sherlock: Anomaly Detector
 
-[![CI](https://github.com/yahoo/sherlock/workflows/CI/badge.svg)](https://github.com/yahoo/sherlock/actions?query=workflow%3Abuild)
-[![Coverage Status](https://coveralls.io/repos/github/yahoo/sherlock/badge.svg?branch=master)](https://coveralls.io/github/yahoo/sherlock?branch=master)
+![build](https://github.com/yahoo/sherlock/workflows/build/badge.svg?branch=master)
+![Coverage Status](https://coveralls.io/repos/github/yahoo/sherlock/badge.svg?branch=master)
 [![GPL 3.0](https://img.shields.io/badge/license-GPL%203.0-blue.svg?style=flat)](LICENSE)
 
 [![Maven Package](https://github.com/yahoo/sherlock/workflows/Maven%20Package/badge.svg)](https://github.com/yahoo/sherlock/packages) [version 1.7 onwards]
