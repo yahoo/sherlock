@@ -22,5 +22,3 @@ jobs:
     - name: Build with Maven
       run: mvn install
     
-    - name: Test
-      run: mvn clean test jacoco:report coveralls:report
