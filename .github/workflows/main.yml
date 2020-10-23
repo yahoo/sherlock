@@ -22,10 +22,6 @@ jobs:
     - name: Build with Maven and Test
       run: |
         mvn install
-        mvn clean test jacoco:report coveralls:report
-        
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ github.token }}
-    
+        mvn clean test jacoco:report coveralls:report -DrepoToken=${GITHUB_TOKEN}
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
