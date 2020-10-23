@@ -19,9 +19,6 @@ jobs:
         server-id: github
         settings-path: ${{ github.workspace }}
 
-    - name: Build with Maven and Test
+    - name: Build with Maven
       run: |
         mvn install
-        mvn clean test jacoco:report coveralls:report -DrepoToken=${GITHUB_TOKEN}
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
