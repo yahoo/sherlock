@@ -20,5 +20,5 @@ jobs:
         settings-path: ${{ github.workspace }}
 
     - name: Build with Maven
-      run: mvn install
-    
+      run: |
+        mvn install
