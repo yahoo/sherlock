@@ -52,6 +52,11 @@ public class SyncCommandsImpl<K> implements SyncCommands<K> {
     }
 
     @Override
+    public Long srem(K key, K... values) {
+        return commands.srem(key, values);
+    }
+
+    @Override
     public Map<K, K> hgetall(K key) {
         return commands.hgetall(key);
     }

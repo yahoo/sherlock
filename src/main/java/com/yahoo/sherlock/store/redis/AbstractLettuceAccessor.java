@@ -9,6 +9,8 @@ package com.yahoo.sherlock.store.redis;
 import io.lettuce.core.LettuceFutures;
 import io.lettuce.core.RedisException;
 import io.lettuce.core.RedisFuture;
+
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.settings.DatabaseConstants;
 import com.yahoo.sherlock.store.StoreParams;
 import com.yahoo.sherlock.store.core.AsyncCommands;
@@ -106,7 +108,7 @@ public class AbstractLettuceAccessor extends BaseAccessor {
      * @return a full key
      */
     protected String key(Object... qualifiers) {
-        StringJoiner joiner = new StringJoiner(":");
+        StringJoiner joiner = new StringJoiner(Constants.COLON_DELIMITER);
         joiner.add(keyName);
         for (Object qualifier : qualifiers) {
             joiner.add(qualifier == null ? null : qualifier.toString());
@@ -121,7 +123,7 @@ public class AbstractLettuceAccessor extends BaseAccessor {
      * @return a full index
      */
     protected static String index(Object... qualifiers) {
-        StringJoiner joiner = new StringJoiner(":");
+        StringJoiner joiner = new StringJoiner(Constants.COLON_DELIMITER);
         for (Object qualifier : qualifiers) {
             joiner.add(qualifier == null ? null : qualifier.toString());
         }

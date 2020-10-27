@@ -22,6 +22,7 @@ import com.yahoo.sherlock.store.Store;
 import com.yahoo.sherlock.store.StoreParams;
 import com.yahoo.sherlock.store.core.AsyncCommands;
 import com.yahoo.sherlock.store.core.RedisConnection;
+
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -97,6 +98,7 @@ public class LettuceJobMetadataAccessor
             RedisFuture<Long> delValue = cmd.del(key(jobId));
             cmd.flushCommands();
             await(delStatus, delCluster, delValue);
+            emailMetadataAccessor.removeJobIdFromEmailIndex(job.getOwnerEmailAsList(), jobId);
             anomalyReportAccessor.deleteAnomalyReportsForJob(jobId);
             log.info("Successfully deleted job [{}]", jobId);
             return job;
@@ -142,8 +144,9 @@ public class LettuceJobMetadataAccessor
             }
             cmd.flushCommands();
             await(futureArr);
-            for (String jobId : jobIds) {
-                anomalyReportAccessor.deleteAnomalyReportsForJob(jobId);
+            for (JobMetadata job : jobs) {
+                emailMetadataAccessor.removeJobIdFromEmailIndex(job.getOwnerEmailAsList(), job.getJobId().toString());
+                anomalyReportAccessor.deleteAnomalyReportsForJob(job.getJobId().toString());
             }
             log.info("Successfully delete [{}] jobs", jobs.size());
             return jobs;
@@ -158,7 +161,7 @@ public class LettuceJobMetadataAccessor
      *
      * @param jobs jobs to delete
      */
-    public void deleteGivenJobs(Set<JobMetadata> jobs) {
+    public void deleteGivenJobs(Set<JobMetadata> jobs) throws IOException {
         log.info("Deleting [{}] given jobs", jobs.size());
         try (RedisConnection<String> conn = connect()) {
             AsyncCommands<String> cmd = conn.async();
@@ -174,6 +177,11 @@ public class LettuceJobMetadataAccessor
             }
             cmd.flushCommands();
             await(futures);
+            for (JobMetadata job : jobs) {
+                emailMetadataAccessor.removeJobIdFromEmailIndex(job.getOwnerEmailAsList(), job.getJobId().toString());
+                anomalyReportAccessor.deleteAnomalyReportsForJob(job.getJobId().toString());
+            }
+            log.info("Successfully delete [{}] jobs", jobs.size());
         }
     }
 
@@ -201,7 +209,7 @@ public class LettuceJobMetadataAccessor
     }
 
     @Override
-    public JobMetadata getJobMetadata(String jobId) throws IOException, JobNotFoundException {
+    public JobMetadata getJobMetadata(String jobId) throws JobNotFoundException {
         log.info("Getting job metadata [{}]", jobId);
         try (RedisConnection<String> conn = connect()) {
             Map<String, String> jobMap = conn.sync().hgetall(key(jobId));
@@ -219,25 +227,39 @@ public class LettuceJobMetadataAccessor
             if (isMissingId(job)) {
                 job.setJobId(newId());
             }
-            AsyncCommands<String> cmd = conn.async();
-            cmd.setAutoFlushCommands(false);
             String jobId = job.getJobId().toString();
+            AsyncCommands<String> cmd = conn.async();
+            JobMetadata oldJobMetadata = null;
+            try {
+                oldJobMetadata = getJobMetadata(jobId);
+                cmd.setAutoFlushCommands(false);
+                RedisFuture[] futures = {
+                    cmd.srem(index(jobStatusName, oldJobMetadata.getJobStatus()), jobId),
+                    cmd.srem(index(clusterIdName, oldJobMetadata.getClusterId()), jobId),
+                };
+                cmd.flushCommands();
+                await(futures);
+            } catch (JobNotFoundException e) {
+                log.error("Job {} not found!", jobId);
+            }
+            cmd.setAutoFlushCommands(false);
             RedisFuture[] futures = {
-                    cmd.hmset(key(job.getJobId()), map(job)),
+                    cmd.hmset(key(jobId), map(job)),
                     cmd.sadd(index(jobIdName, "all"), jobId),
                     cmd.sadd(index(jobStatusName, job.getJobStatus()), jobId),
                     cmd.sadd(index(clusterIdName, job.getClusterId()), jobId)
             };
             cmd.flushCommands();
             await(futures);
-            String[] emails = job.getOwnerEmail() == null || job.getOwnerEmail().isEmpty() ? new String[0] : job.getOwnerEmail().split(Constants.COMMA_DELIMITER);
-            if (emails.length != 0) {
-                for (String email : emails) {
-                    emailMetadataAccessor.putEmailMetadataIfNotExist(email, jobId);
-                }
+            List<String> oldEmails = oldJobMetadata != null ? oldJobMetadata.getOwnerEmailAsList() : new ArrayList<>();
+            List<String> newEmails = job.getOwnerEmailAsList();
+            for (String email : newEmails) {
+                emailMetadataAccessor.putEmailMetadataIfNotExist(email, jobId);
             }
-            log.info("Job metadata with ID [{}] is updated", job.getJobId());
-            return String.valueOf(job.getJobId());
+            oldEmails.removeAll(newEmails);
+            emailMetadataAccessor.removeJobIdFromEmailIndex(oldEmails, jobId);
+            log.info("Job metadata with ID [{}] is updated", jobId);
+            return jobId;
         }
     }
 
@@ -258,12 +280,27 @@ public class LettuceJobMetadataAccessor
                 }
             }
             AsyncCommands<String> cmd = conn.async();
+            cmd.setAutoFlushCommands(false);
+            List<RedisFuture<Long>> indexFuture = new ArrayList<>();
+            for (JobMetadata job : jobs) {
+                String jobId = job.getJobId().toString();
+                JobMetadata oldJobMetadata;
+                try {
+                    oldJobMetadata = getJobMetadata(jobId);
+                    indexFuture.add(cmd.srem(index(jobStatusName, oldJobMetadata.getJobStatus()), jobId));
+                    indexFuture.add(cmd.srem(index(clusterIdName, oldJobMetadata.getClusterId()), jobId));
+                } catch (JobNotFoundException e) {
+                    log.error("Job {} not found!", jobId);
+                }
+            }
+            cmd.flushCommands();
+            await(indexFuture);
             RedisFuture[] futures = new RedisFuture[4 * jobs.size()];
             cmd.setAutoFlushCommands(false);
             int i = 0;
             for (JobMetadata job : jobs) {
                 String jobId = job.getJobId().toString();
-                futures[i++] = cmd.hmset(key(job.getJobId()), map(job));
+                futures[i++] = cmd.hmset(key(jobId), map(job));
                 futures[i++] = cmd.sadd(index(jobIdName, "all"), jobId);
                 futures[i++] = cmd.sadd(index(jobStatusName, job.getJobStatus()), jobId);
                 futures[i++] = cmd.sadd(index(clusterIdName, job.getClusterId()), jobId);
@@ -282,9 +319,22 @@ public class LettuceJobMetadataAccessor
     @Override
     public List<JobMetadata> getJobMetadataList() throws IOException {
         log.info("Getting job metadata list");
-        try (RedisConnection<String> conn = connect()) {
-            return getJobMetadata(conn.sync().smembers(index(jobIdName, "all")));
-        }
+        return getJobMetadata(getJobIds());
+    }
+
+    @Override
+    public Set<String> getJobIds() {
+        log.info("Getting job Id list");
+        RedisConnection<String> conn = connect();
+        return conn.sync().smembers(index(jobIdName, "all"));
+    }
+
+    @Override
+    public void removeFromJobIdIndex(String jobId) {
+        log.info("Removing job Id {} from jobs list index", jobId);
+        RedisConnection<String> conn = connect();
+        Long redisResponse = conn.sync().srem(index(jobIdName, "all"), jobId);
+        log.info("Removed job Id {} with redis response {}", jobId, redisResponse);
     }
 
     @Override

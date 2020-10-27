@@ -121,6 +121,7 @@ public class LettuceJobMetadataAccessorTest {
         JobMetadata job = jma.performDeleteJob("1");
         verify(async).del(anyVararg());
         verify(async, times(3)).srem(anyString(), anyVararg());
+        verify(ema, times(1)).removeJobIdFromEmailIndex(anyList(), anyString());
         assertEquals((Integer) 1, job.getJobId());
         assertEquals("RUNNING", job.getJobStatus());
     }
@@ -143,6 +144,7 @@ public class LettuceJobMetadataAccessorTest {
         assertEquals(3, conIds.size());
         verify(async, times(9)).srem(anyString(), anyVararg());
         verify(async, times(3)).del(anyVararg());
+        verify(ema, times(3)).removeJobIdFromEmailIndex(anyList(), anyString());
     }
 
     @Test
@@ -157,6 +159,7 @@ public class LettuceJobMetadataAccessorTest {
         jma.deleteGivenJobs(jobs);
         verify(async, times(9)).srem(anyString(), anyVararg());
         verify(async, times(3)).del(anyVararg());
+        verify(ema, times(3)).removeJobIdFromEmailIndex(anyList(), anyString());
     }
 
     @Test
@@ -201,25 +204,32 @@ public class LettuceJobMetadataAccessorTest {
         doNothing().when(ema).putEmailMetadataIfNotExist(anyString(), anyString());
         when(jma.newId()).thenReturn(123);
         JobMetadata job = make(null, "CREATED", 23);
-        job.setOwnerEmail("my@email.com");
+        job.setOwnerEmail("my@email.com,my1@email.com");
+        when(jma.getJobMetadata("123")).thenThrow(JobNotFoundException.class);
         jma.putJobMetadata(job);
         assertEquals((Integer) 123, job.getJobId());
         verify(jma).newId();
         verify(async).hmset(anyString(), anyMap());
-        verify(ema, times(1)).putEmailMetadataIfNotExist(anyString(), anyString());
+        verify(ema, times(2)).putEmailMetadataIfNotExist(anyString(), anyString());
+        verify(ema, times(1)).removeJobIdFromEmailIndex(anyList(), anyString());
         verify(async, times(3)).sadd(anyString(), anyVararg());
         // update
-        job.setOwnerEmail("");
         job.setJobStatus("RUNNING");
+        job.setJobId(1);
+        JobMetadata oldJob = make(123, "CREATED", 23);
+        oldJob.setOwnerEmail("my2@email.com,my1@email.com");
+        when(jma.getJobMetadata("1")).thenReturn(oldJob);
         jma.putJobMetadata(job);
+        verify(async, times(2)).srem(anyString(), anyString());
         verify(async, times(2)).hmset(anyString(), anyMap());
-        verify(ema, times(1)).putEmailMetadataIfNotExist(anyString(), anyString());
+        verify(ema, times(2)).removeJobIdFromEmailIndex(anyList(), anyString());
+        verify(ema, times(4)).putEmailMetadataIfNotExist(anyString(), anyString());
         verify(async, times(6)).sadd(anyString(), anyVararg());
         verify(jma).newId();
     }
 
     @Test
-    public void testPutJobMetadatas() throws IOException {
+    public void testPutJobMetadatas() throws IOException, JobNotFoundException {
         List<JobMetadata> jobs = Lists.newArrayList(
                 make(1, "RUNNING", 123),
                 make(2, "STOPPED", 123),
@@ -229,10 +239,15 @@ public class LettuceJobMetadataAccessorTest {
         mocks();
         doCallRealMethod().when(jma).putJobMetadata(anyList());
         when(jma.newIds(2)).thenReturn(new Integer[]{3, 4});
+        when(jma.getJobMetadata("1")).thenReturn(make(1, "RUNNING", 100));
+        when(jma.getJobMetadata("2")).thenReturn(make(2, "RUNNING", 105));
+        when(jma.getJobMetadata("3")).thenThrow(JobNotFoundException.class);
+        when(jma.getJobMetadata("4")).thenThrow(JobNotFoundException.class);
         jma.putJobMetadata(jobs);
         verify(jma).newIds(2);
         assertEquals(jobs.get(2).getJobId(), (Integer) 3);
         assertEquals(jobs.get(3).getJobId(), (Integer) 4);
+        verify(async, times(4)).srem(anyString(), anyString());
         verify(async, times(4)).hmset(anyString(), anyMap());
         verify(async, times(12)).sadd(anyString(), anyVararg());
     }
@@ -251,9 +266,28 @@ public class LettuceJobMetadataAccessorTest {
     public void testGetJobMetadataList() throws IOException {
         mocks();
         when(jma.getJobMetadataList()).thenCallRealMethod();
+        when(jma.getJobIds()).thenCallRealMethod();
         jma.getJobMetadataList();
         verify(jma).getJobMetadata(anySet());
         verify(sync).smembers("id:all");
+    }
+
+    @Test
+    public void testGetJobIds() {
+        mocks();
+        when(jma.getJobIds()).thenCallRealMethod();
+        jma.getJobIds();
+        verify(jma).getJobIds();
+        verify(sync).smembers("id:all");
+    }
+
+    @Test
+    public void testRemoveFromJobIdIndex() {
+        mocks();
+        doCallRealMethod().when(jma).removeFromJobIdIndex(anyString());
+        jma.removeFromJobIdIndex("2");
+        verify(jma).removeFromJobIdIndex("2");
+        verify(sync).srem("id:all", "2");
     }
 
     @Test

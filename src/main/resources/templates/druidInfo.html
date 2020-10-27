@@ -124,7 +124,10 @@
 		<div class="modal-dialog">
 			<div class="modal-content">
 				<div class="modal-body">
-					<p id="updateConfirmationModalCode">Update this cluster?</p>
+					<p>Update this cluster?</p>
+					<div id="updateConfirmModalCode">
+
+					</div>
 				</div>
 				<div class="modal-footer">
 					<button type="button" data-dismiss="modal" class="btn btn-primary" id="updateConfirmModalYes">Yes</button>
@@ -139,22 +142,40 @@
 <script language="javascript" type="text/javascript" th:inline="javascript">
 
 	$(document).ready(function() {
-		$("#clusterForm").submit(function(e) {
-			e.preventDefault();
-			$('#updateConfirmModalCode').html();
-			$('#updateConfirmModal').modal('show');
-		});
-		$('#deleteCluster').click(function(e) {
-			e.preventDefault();
-			$('#deleteConfirmModalCode').html();
-			$('#deleteConfirmModal').modal('show');
-		});
 		if ([[${cluster.getIsSSLAuth()}]] == true) {
 		    $('input[id=sslAuthCheck]', '#clusterForm').attr('checked', true);
 		    $('#principalNameDiv').attr('hidden', false);
 		} else {
 		    $('input[id=sslAuthCheck]', '#clusterForm').attr('checked', false);
 		}
+	});
+
+	$("#clusterForm").submit(function(e) {
+		e.preventDefault();
+		if ('[[${cluster.getHoursOfLag()}]]' !== $('#hoursOfLag').val()) {
+			$.ajax({
+				type: 'POST',
+				url: '/Druid/UpdateCluster/AffectedJobs/' + $('#clusterId').val(),
+				dataType: 'text',
+				success: function (response, status, jQxhr) {
+					if (status === 'success') {
+						$('#updateConfirmModalCode').html(response);
+						$('#updateConfirmModal').modal('show');
+					} else {
+						showWarningMessage('Something went wrong! Try again');
+					}
+				},
+				error: ajaxMessage
+			});
+		} else {
+			$('#updateConfirmModal').modal('show');
+		}
+	});
+
+	$('#deleteCluster').click(function(e) {
+		e.preventDefault();
+		$('#deleteConfirmModalCode').html();
+		$('#deleteConfirmModal').modal('show');
 	});
 
 	function onSSLEnabled() {
@@ -171,13 +192,12 @@
 			type: 'POST',
 			url: '/Druid/DeleteCluster/' + $('#clusterId').val(),
 			dataType: 'text',
-			success: function (response) {
-				if ($.isEmptyObject(response)) {
-					// Else there was a warning, but not a failure
-					showWarningMessage('Something went wrong! Try again');
-				} else {
+			success: function (response, status, jQxhr) {
+				if (status === 'success') {
 					window.document.location = '/Druid/Clusters';
 					showInfoMessage('Cluster deleted successfully');
+				} else {
+					showWarningMessage('Something went wrong! Try again');
 				}
 			},
 			error: ajaxMessage
@@ -202,12 +222,12 @@
 			data: JSON.stringify(data),
 			contentType: "application/json",
 			dataType: 'text',
-			success: function(response) {
-				if ($.isEmptyObject(response)) {
-					showWarningMessage('Something went wrong! Try again');
-				} else {
+			success: function(response, status, jQxhr) {
+				if (status === 'success') {
 					window.document.location = '/Druid/Clusters';
 					showInfoMessage('Cluster updated successfully');
+				} else {
+					showWarningMessage('Something went wrong! Try again');
 				}
 			},
 			error: ajaxMessage

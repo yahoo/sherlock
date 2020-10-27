@@ -13,6 +13,7 @@ import lombok.NonNull;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The {@code DruidClusterAccessor} defines an interface for
@@ -75,4 +76,16 @@ public interface DruidClusterAccessor {
     @NonNull
     List<DruidCluster> getDruidClusterList() throws IOException;
 
+    /**
+     * Get all druid cluster Ids.
+     * @return set of druid cluster Ids
+     */
+    Set<String> getDruidClusterIds();
+
+    /**
+     * Remove cluster Id from cluster index.
+     *
+     * @param clusterId cluster Id
+     */
+    void removeFromClusterIdIndex(String clusterId);
 }

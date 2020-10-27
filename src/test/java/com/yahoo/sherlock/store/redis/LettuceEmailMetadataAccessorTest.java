@@ -152,6 +152,27 @@ public class LettuceEmailMetadataAccessorTest {
     }
 
     @Test
+    public void testRemoveJobIdFromEmailIndex() throws Exception {
+        mocks();
+        doCallRealMethod().when(ema).removeJobIdFromEmailIndex(anyList(), anyString());
+        Long l = 0L;
+        when(async.srem("emailJobIndex:my@email.com", "1")).thenReturn(fakeFuture(l));
+        when(async.srem("emailJobIndex:my1@email.com", "1")).thenReturn(fakeFuture(l));
+        ema.removeJobIdFromEmailIndex(Arrays.asList("my@email.com", "my1@email.com"), "1");
+        verify(async, times(1)).srem("emailJobIndex:my@email.com", "1");
+        verify(async, times(1)).srem("emailJobIndex:my1@email.com", "1");
+    }
+
+    @Test
+    public void testGetAllEmailIds() {
+        mocks();
+        when(ema.getAllEmailIds()).thenCallRealMethod();
+        ema.getAllEmailIds();
+        verify(ema).getAllEmailIds();
+        verify(sync).smembers("emailIdIndex:Emails");
+    }
+
+    @Test
     public void testGetAllEmailMetadataByTrigger() throws IOException {
         mocks();
         doCallRealMethod().when(ema).getAllEmailMetadataByTrigger(anyString());

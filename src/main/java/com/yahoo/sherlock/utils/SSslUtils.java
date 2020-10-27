@@ -219,7 +219,7 @@ public class SSslUtils {
                 .filter(isPrincipalAndTypePresent(principal, type))
                 .findAny();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("IOException while searching for {} file for principal {} in dir {} : {}", type, principal, dir, e.getMessage());
         }
         return Optional.empty();
     }

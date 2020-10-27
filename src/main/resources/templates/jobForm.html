@@ -72,9 +72,18 @@
                                     <option th:each="druidCluster : ${druidClusters}"
                                             th:value="${druidCluster.getClusterId()}"
                                             th:selected="false"
-                                            th:attr="data-url=${druidCluster.getBrokerUrl()}"
+                                            th:attr="data-url=${druidCluster.getBrokerUrl()},data-lag=${druidCluster.getHoursOfLag()}"
                                             th:text="${druidCluster.getClusterName()}"></option>
                                 </select>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView == null}">
+                                <label class="control-label" for="hoursOfLag">Time SLA (Default to selected druid cluster's SLA):</label>
+                                <p class="bg-info">Put number of hours it takes to ingest data in druid since the actual event timestamp for this job. <code>'0' for realtime data</code></p>
+                                <div>
+                                    <input id="hoursOfLag" name="hoursOfLag" type="number" min="0"
+                                           class="form-control input-md" size="25" value="0" />
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -88,8 +97,7 @@
                                 </button>
                                 <br/>
                                 <div>
-									<textarea id="queryText" name="query" th:type="text"
-                                              class="form-control input-md" rows="20" cols="200"></textarea>
+                                    <textarea id="queryText" name="query" th:type="text" class="form-control input-md" rows="20" cols="200"></textarea>
                                 </div>
                             </div>
 
@@ -295,6 +303,15 @@
 
     const $druidCluster = $('#druidCluster');
 
+    if ([[${instantView}]] == null) {
+        $('#druidCluster').val($("#druidCluster option:first").val());
+    }
+
+    $druidCluster.change(function() {
+        var selected = $(this).find('option:selected');
+        $('#hoursOfLag').val(selected.data('lag'));
+    });
+
     $(document).ready(function () {
         $('[data-toggle="popover"]').popover({
             html: true,
@@ -380,6 +397,7 @@
         data.frequency = $('#frequency').val();
         data.sigmaThreshold = $('#sdSliderVal').text();
         data.clusterId = $druidCluster.val();
+        data.hoursOfLag = $('#hoursOfLag').val();
         data.tsModels = $('#tsModels').val();
         data.adModels = $('#adModels').val();
         $.ajax({

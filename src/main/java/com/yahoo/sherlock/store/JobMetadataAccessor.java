@@ -123,18 +123,6 @@ public interface JobMetadataAccessor {
     List<JobMetadata> getRunningJobsAssociatedWithCluster(String clusterId) throws IOException;
 
     /**
-     * Wrapper for integer cluster ID value.
-     *
-     * @param clusterId ID of the cluster as an integer value
-     * @return list of running jobs associated with the cluster
-     * @throws IOException if an error getting the job list occurs
-     */
-    @NonNull
-    default List<JobMetadata> getRunningJobsAssociatedWithCluster(Integer clusterId) throws IOException {
-        return getRunningJobsAssociatedWithCluster(clusterId.toString());
-    }
-
-    /**
      * Delete all jobs that are marked with 'DEBUG'.
      *
      * @throws IOException if an error occurs
@@ -151,6 +139,20 @@ public interface JobMetadataAccessor {
      */
     @NonNull
     List<JobMetadata> getJobMetadata(Set<String> jobIds) throws IOException;
+
+    /**
+     * Get the set of job Ids.
+     *
+     * @return set of job Ids
+     */
+    Set<String> getJobIds();
+
+    /**
+     * Remove job Id from job index.
+     *
+     * @param jobId job Id
+     */
+    void removeFromJobIdIndex(String jobId);
 
     /**
      * Issue a bulk delete on a set of jobs. This method will add

@@ -58,6 +58,22 @@ public class LettuceJsonDumper
     /* expiry time for reports in redis */
     private final long expirationTime = Constants.SECONDS_IN_DAY * 100;
 
+    private String[] INDEX_NAMES = {
+        DatabaseConstants.INDEX_REPORT_JOB_ID,
+        DatabaseConstants.INDEX_TIMESTAMP,
+        DatabaseConstants.INDEX_DELETED_ID,
+        DatabaseConstants.INDEX_CLUSTER_ID,
+        DatabaseConstants.INDEX_QUERY_ID,
+        DatabaseConstants.INDEX_JOB_CLUSTER_ID,
+        DatabaseConstants.INDEX_JOB_ID,
+        DatabaseConstants.INDEX_JOB_STATUS,
+        DatabaseConstants.INDEX_FREQUENCY,
+        DatabaseConstants.INDEX_EMAILID_REPORT,
+        DatabaseConstants.INDEX_EMAIL_ID,
+        DatabaseConstants.INDEX_EMAILID_TRIGGER,
+        DatabaseConstants.INDEX_EMAILID_JOBID
+    };
+
     /**
      * @param params store params
      */
@@ -302,6 +318,14 @@ public class LettuceJsonDumper
             log.info("Found zero Ids in json dump!");
         }
         log.info("Json dump is populated into redis.");
+    }
+
+    @Override
+    public void clearIndexes(String index, String id) {
+        String indexName = index + Constants.COLON_DELIMITER + id;
+        RedisConnection<String> conn = connect();
+        Long redisResponse = conn.sync().del(indexName);
+        log.info("Deleted index named {} with redis response {}", indexName, redisResponse);
     }
 
     /**

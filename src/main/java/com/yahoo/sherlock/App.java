@@ -210,6 +210,9 @@ class App {
         // Routes to update a Druid cluster
         post("/Druid/UpdateCluster/:id", Routes::updateDruidCluster);
 
+        // Routes to return affected jobs html while updating a Druid cluster
+        post("/Druid/UpdateCluster/AffectedJobs/:id", Routes::affectedJobs);
+
         // Routes to Rerun the job for given timestamp in minutes
         post("/Rerun", Routes::rerunJob);
 
@@ -227,6 +230,9 @@ class App {
 
         // Routes to Clear all reports of selected jobs
         post("/Meta-Manager/ClearReports/:ids", Routes::clearReportsOfSelectedJobs);
+
+        // Routes to Build Indexes for database
+        post("/Meta-Manager/BuildIndex", Routes::buildIndexes);
 
         // Routes to view Emails
         get("/Emails/:id", Routes::viewEmails, thymeleafTemplateEngine);

@@ -12,8 +12,7 @@ import static org.testng.Assert.assertEquals;
 
 public class UserQueryTest {
 
-    @Test
-    public void testUserQueryFields() {
+    public static UserQuery getUserQuery() {
         UserQuery query = new UserQuery();
         query.setQuery("query");
         query.setTestName("testName");
@@ -26,6 +25,13 @@ public class UserQueryTest {
         query.setSigmaThreshold(3.0);
         query.setDruidUrl("druidUrl");
         query.setClusterId(1);
+        query.setHoursOfLag(24);
+        return query;
+    }
+
+    @Test
+    public void testUserQueryFields() {
+        UserQuery query = getUserQuery();
         assertEquals(query.getQuery(), "query");
         assertEquals(query.getTestName(), "testName");
         assertEquals(query.getTestDescription(), "testDescription");
@@ -37,6 +43,7 @@ public class UserQueryTest {
         assertEquals(query.getSigmaThreshold(), Double.valueOf(3.0));
         assertEquals(query.getDruidUrl(), "druidUrl");
         assertEquals(query.getClusterId(), (Integer) 1);
+        assertEquals(query.getHoursOfLag(), (Integer) 24);
     }
 
 }

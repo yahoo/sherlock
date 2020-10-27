@@ -51,6 +51,14 @@ public interface SyncCommands<K> extends AutoCloseable {
     Set<K> smembers(K key);
 
     /**
+     * @param key    set key
+     * @param values values to remove
+     * @return number of removed values
+     * @see io.lettuce.core.api.sync.RedisCommands#srem(Object, Object[])
+     */
+    Long srem(K key, K... values);
+
+    /**
      * @param key hash key
      * @return hash map value
      * @see io.lettuce.core.api.sync.RedisCommands#hgetall(Object)

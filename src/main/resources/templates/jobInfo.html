@@ -21,19 +21,23 @@
 
                             <input id="jobId" type="hidden" th:value="${job.getJobId()}"/>
 
-                            <div class="form-group" hidden="true">
-                                <label class="control-label" for="clusterId">Cluster Name:</label>
-                                <div>
-                                    <input id="clusterId" name="clusterId" type="text" class="form-control input-md"
-                                           size="25" th:value="${job.getClusterId()}" disabled="true" hidden="true"/>
-                                </div>
+                            <div class="form-group">
+                                <label class="control-label" for="druidCluster">Druid Cluster:</label>
+                                <select id="druidCluster" class="form-control" name="clusterId"
+                                        th:field="${druidCluster}" th:required="true">
+                                    <option th:each="druidCluster : ${druidClusters}"
+                                            th:value="${druidCluster.getClusterId()}"
+                                            th:selected="${druidCluster.getClusterId().equals(job.getClusterId())}"
+                                            th:attr="data-url=${druidCluster.getBrokerUrl()},data-lag=${druidCluster.getHoursOfLag()}"
+                                            th:text="${druidCluster.getClusterName()}"></option>
+                                </select>
                             </div>
 
                             <div class="form-group">
-                                <label class="control-label" for="clusterName">Cluster Name:</label>
+                                <label class="control-label" for="hoursOfLag">Time SLA</label>
                                 <div>
-                                    <input id="clusterName" name="clusterName" type="text" class="form-control input-md"
-                                           size="25" th:value="${clusterName}" disabled="true" />
+                                    <input id="hoursOfLag" name="hoursOfLag" type="number"
+                                           class="form-control input-md" size="25" th:value="${job.getHoursOfLag()}"/>
                                 </div>
                             </div>
 
@@ -360,6 +364,13 @@
 
         $("#popoverInfo").load('/content/kSigmaTable.html #sensitivityTable');
 
+        const $druidCluster = $('#druidCluster');
+
+        if (![[${isClusterPresent}]]) {
+            $druidCluster.val('');
+            $('#hoursOfLag').val('');
+        }
+
         var queryText = CodeMirror.fromTextArea($('#queryText')[0], {
                             matchBrackets: true,
                             mode: "application/ld+json",
@@ -388,10 +399,10 @@
                     }
             });
             if ([[${job.getEmailOnNoData()}]] === true) {
-		        $('input[id=emailOnNoDataYes]', '#jobInfoForm').attr('checked', true);
-		    } else {
-		        $('input[id=emailOnNoDataNo]', '#jobInfoForm').attr('checked', true);
-		    }
+                $('input[id=emailOnNoDataYes]', '#jobInfoForm').attr('checked', true);
+            } else {
+                $('input[id=emailOnNoDataNo]', '#jobInfoForm').attr('checked', true);
+            }
         });
 
         if([[${deletedJobsView} != null]]) {
@@ -407,6 +418,8 @@
             $("#sdSlider").slider("disable");
             $('#tsModels').attr("disabled", true);
             $('#adModels').attr("disabled", true);
+            $druidCluster.attr("disabled", true);
+            $('#hoursOfLag').attr("disabled", true);
         }
 
         $("#sdSlider").on("slideStop", function(slideEvent) {
@@ -456,6 +469,16 @@
         });
 
         $('input[type=radio][name=emailOnNoData]').change(function() {
+            updateMode();
+        });
+
+        $druidCluster.change(function() {
+            var selected = $(this).find('option:selected');
+            $('#hoursOfLag').val(selected.data('lag'));
+            updateMode();
+        });
+
+        $('#hoursOfLag').on('input', function() {
             updateMode();
         });
 
@@ -543,7 +566,8 @@
                 data.granularityRange = $('#granularityRange').val();
                 data.frequency = $('#frequency').val();
                 data.sigmaThreshold = $('#sdSliderVal').text();
-                data.clusterId = $('#clusterId').val();
+                data.clusterId = $druidCluster.val();
+                data.hoursOfLag = $('#hoursOfLag').val();
                 data.tsModels = $('#tsModels').val();
                 data.adModels = $('#adModels').val();
                 $.ajax({
@@ -588,6 +612,10 @@
 
 
         $("#launchConfirmModalYes").click(function() {
+            if ($druidCluster.val() === null) {
+                showWarningMessage("Please select the druid cluster!");
+                return;
+            }
             $.ajax({
                 type: 'POST',
                 url: '/LaunchJob/' + $('#jobId').val(),

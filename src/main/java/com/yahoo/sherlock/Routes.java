@@ -83,7 +83,7 @@ public class Routes {
     /**
      * Default parameters.
      */
-    public static Map<String, Object> defaultParams;
+    protected static Map<String, Object> defaultParams;
 
     /**
      * Class Thymeleaf template engine instance.
@@ -344,7 +344,7 @@ public class Routes {
             UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
             // Validate user email
             EmailService emailService = serviceFactory.newEmailServiceInstance();
-            if (!validEmail(userQuery.getOwnerEmail(), emailService)) {
+            if (!validEmail(userQuery.getOwnerEmail())) {
                 throw new SherlockException("Invalid owner email passed");
             }
             log.info("User request parsing successful.");
@@ -353,7 +353,6 @@ public class Routes {
             log.info("Query generation successful.");
             // Create and store job metadata
             JobMetadata jobMetadata = new JobMetadata(userQuery, query);
-            jobMetadata.setHoursOfLag(clusterAccessor.getDruidCluster(jobMetadata.getClusterId()).getHoursOfLag());
             jobAccessor.putJobMetadata(jobMetadata);
             response.status(200);
             return jobMetadata.getJobId().toString(); // return job ID
@@ -471,8 +470,9 @@ public class Routes {
         try {
             log.info("Getting job from database.");
             JobMetadata job = jobAccessor.getJobMetadata(request.params(Constants.ID));
+            List<DruidCluster> druidClusters = clusterAccessor.getDruidClusterList();
             params.put("job", job);
-            params.put("clusterName", clusterAccessor.getDruidCluster(job.getClusterId()).getClusterName());
+            params.put(Constants.DRUID_CLUSTERS, druidClusters);
             params.put(Constants.TITLE, "Job Details");
             params.put(Triggers.MINUTE.toString(), CLISettings.INTERVAL_MINUTES);
             params.put(Triggers.HOUR.toString(), CLISettings.INTERVAL_HOURS);
@@ -486,6 +486,12 @@ public class Routes {
             params.put(Constants.MONTH, Constants.MAX_MONTH);
             params.put(Constants.TIMESERIES_MODELS, EgadsConfig.TimeSeriesModel.getAllValues());
             params.put(Constants.ANOMALY_DETECTION_MODELS, EgadsConfig.AnomalyDetectionModel.getAllValues());
+            boolean isClusterPresent = druidClusters.stream().anyMatch(c -> c.getClusterId().equals(job.getClusterId()));
+            params.put(Constants.IS_CLUSTER_PRESENT, isClusterPresent);
+            if (!isClusterPresent) {
+                log.warn("Cluster ID {} not present for job ID {}", job.getClusterId(), job.getJobId());
+                params.put(Constants.ERROR, "No associated druid cluster for this Job! Please select one below");
+            }
         } catch (Exception e) {
             // add the error to the params
             params.put(Constants.ERROR, e.getMessage());
@@ -509,7 +515,7 @@ public class Routes {
             log.info("Getting deleted job Info from database.");
             JobMetadata job = deletedJobAccessor.getDeletedJobMetadata(request.params(Constants.ID));
             params.put("job", job);
-            params.put("clusterName", clusterAccessor.getDruidCluster(job.getClusterId()).getClusterName());
+            params.put(Constants.DRUID_CLUSTERS, clusterAccessor.getDruidClusterList());
             params.put(Constants.TITLE, "Deleted Job Details");
             params.put(Constants.DELETEDJOBSVIEW, "true");
         } catch (Exception e) {
@@ -525,8 +531,8 @@ public class Routes {
      * Helper method to validate input email-ids from user.
      * @return true if email input field is valid else false
      */
-    private static boolean validEmail(String emails, EmailService emailService) {
-        return emails == null || emails.isEmpty() || emailService.validateEmail(emails, emailService.getValidDomainsFromSettings());
+    private static boolean validEmail(String emails) {
+        return emails == null || emails.isEmpty() || EmailService.validateEmail(emails, EmailService.getValidDomainsFromSettings());
     }
 
     /**
@@ -547,9 +553,7 @@ public class Routes {
         try {
             // Parse user request and get existing job
             UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
-            // Validate user email
-            EmailService emailService = serviceFactory.newEmailServiceInstance();
-            if (!validEmail(userQuery.getOwnerEmail(), emailService)) {
+            if (!validEmail(userQuery.getOwnerEmail())) {
                 throw new SherlockException("Invalid owner email passed");
             }
             JobMetadata currentJob = jobAccessor.getJobMetadata(jobId.toString());
@@ -563,11 +567,11 @@ public class Routes {
                 query = queryService.build(userQuery.getQuery(), Granularity.getValue(userQuery.getGranularity()), userQuery.getGranularityRange(), null, userQuery.getTimeseriesRange());
             }
             JobMetadata updatedJob = new JobMetadata(userQuery, query);
-            boolean isRerunRequired = (currentJob.userQueryChangeSchedule(userQuery) || query != null) && currentJob.isRunning();
+            boolean isRerunRequired = (currentJob.isScheduleChangeRequire(userQuery) || query != null) && currentJob.isRunning();
             currentJob.update(updatedJob);
             // reschedule if needed and store in the database
             if (isRerunRequired) {
-                log.info("Scheduling the job with new granularity and/or new frequency and/or new query.");
+                log.info("Scheduling the job with new granularity and/or new frequency and/or new query and/or new cluster/schedule-time.");
                 schedulerService.stopJob(currentJob.getJobId());
                 schedulerService.scheduleJob(currentJob);
             }
@@ -602,7 +606,7 @@ public class Routes {
             jobMetadata = jobAccessor.getJobMetadata(jobId.toString());
             DruidCluster cluster = clusterAccessor.getDruidCluster(jobMetadata.getClusterId());
             jobMetadata.setHoursOfLag(cluster.getHoursOfLag());
-            log.info("Scheduling job.");
+            log.info("Scheduling job {}", jobId);
             // schedule the job
             schedulerService.scheduleJob(jobMetadata);
             // change the job status as running
@@ -638,8 +642,7 @@ public class Routes {
             try {
                 // get jobinfo from database
                 jobMetadata = jobAccessor.getJobMetadata(id);
-                if (jobMetadata.getJobStatus().equalsIgnoreCase(JobStatus.RUNNING.getValue()) ||
-                    jobMetadata.getJobStatus().equalsIgnoreCase(JobStatus.NODATA.getValue())) {
+                if (jobMetadata.isRunning()) {
                     continue;
                 }
                 DruidCluster cluster = clusterAccessor.getDruidCluster(jobMetadata.getClusterId());
@@ -1014,19 +1017,49 @@ public class Routes {
             clusterAccessor.putDruidCluster(existingCluster);
             if (requireReschedule) {
                 log.info("Hours of lag has changed, rescheduling jobs for cluster");
-                List<JobMetadata> rescheduleJobs = jobAccessor
-                        .getRunningJobsAssociatedWithCluster(existingCluster.getClusterId());
-                for (JobMetadata job : rescheduleJobs) {
+                List<JobMetadata> jobs = jobAccessor.getJobsAssociatedWithCluster(clusterId.toString());
+                for (JobMetadata job : jobs) {
                     job.setHoursOfLag(existingCluster.getHoursOfLag());
                 }
-                schedulerService.stopAndReschedule(rescheduleJobs);
-                jobAccessor.putJobMetadata(rescheduleJobs);
+                jobs.removeIf(jobMetadata -> !jobMetadata.isRunning());
+                schedulerService.stopAndReschedule(jobs);
+                jobAccessor.putJobMetadata(jobs);
             }
             log.info("Druid cluster updated successfully");
             response.status(200);
             return Constants.SUCCESS;
         } catch (Exception e) {
             log.error("Fatal error while updating Druid cluster!", e);
+            response.status(500);
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Retrieve jobs related to given druid cluster update.
+     *
+     * @param request  HTTP request containing the cluster ID and new cluster parameters
+     * @param response HTTP response
+     * @return 'success' or an error message
+     */
+    public static String affectedJobs(Request request, Response response) {
+        Map<String, Object> params = new HashMap<>(defaultParams);
+        Integer clusterId = NumberUtils.parseInt(request.params(Constants.ID));
+        if (clusterId == null) {
+            response.status(500);
+            return "Invalid Cluster!";
+        }
+        log.info("Retrieving jobs for given cluster id {}", clusterId);
+        try {
+            DruidCluster druidCluster = clusterAccessor.getDruidCluster(clusterId.toString());
+            List<JobMetadata> jobs = jobAccessor.getJobsAssociatedWithCluster(druidCluster.getClusterId().toString());
+            jobs.removeIf(jobMetadata -> !(druidCluster.getHoursOfLag().equals(jobMetadata.getHoursOfLag()) && jobMetadata.isRunning()));
+            params.put("jobs", jobs);
+            String listHtml = thymeleaf.render(new ModelAndView(params, "listTemplate"));
+            response.status(200);
+            return listHtml;
+        } catch (Exception e) {
+            log.error("Fatal error while retrieving affected jobs for cluster SLA update!", e);
             response.status(500);
             return e.getMessage();
         }
@@ -1445,6 +1478,57 @@ public class Routes {
             jsonDumper.writeRawData(BackupUtils.getDataFromJsonFile(filePath));
         } catch (IOException e) {
             log.error("Unable to load data from the file at {} ", filePath, e);
+            response.status(500);
+            return e.getMessage();
+        }
+        response.status(200);
+        return Constants.SUCCESS;
+    }
+
+    /**
+     * Method to build indexes for database.
+     * @param request HTTP request
+     * @param response HTTP response
+     * @return request status 'success' or error
+     */
+    public static String buildIndexes(Request request, Response response) {
+        try {
+            Set<String> jobIds = jobAccessor.getJobIds();
+            Set<String> clusterIds = clusterAccessor.getDruidClusterIds();
+            Set<String> emailIds = emailMetadataAccessor.getAllEmailIds();
+            for (String clusterId : clusterIds) {
+                jsonDumper.clearIndexes(DatabaseConstants.INDEX_JOB_CLUSTER_ID, clusterId);
+            }
+            for (JobStatus jobStatus : JobStatus.values()) {
+                jsonDumper.clearIndexes(DatabaseConstants.INDEX_JOB_STATUS, jobStatus.getValue());
+            }
+            for (String emailId : emailIds) {
+                jsonDumper.clearIndexes(DatabaseConstants.INDEX_EMAILID_JOBID, emailId);
+            }
+            for (String clusterId: clusterIds) {
+                try {
+                    DruidCluster druidCluster = clusterAccessor.getDruidCluster(clusterId);
+                    clusterAccessor.putDruidCluster(druidCluster);
+                } catch (ClusterNotFoundException e) {
+                    log.error("Cluster with Id {} not found! removing from the index", clusterId);
+                    clusterAccessor.removeFromClusterIdIndex(clusterId);
+                } catch (IOException e) {
+                    log.error("Exception while processing jobId {} : {}", clusterId, e.getMessage());
+                }
+            }
+            for (String jobId: jobIds) {
+                try {
+                    JobMetadata jobMetadata = jobAccessor.getJobMetadata(jobId);
+                    jobAccessor.putJobMetadata(jobMetadata);
+                } catch (JobNotFoundException e) {
+                    log.error("Job with Id {} not found! removing from the index", jobId);
+                    jobAccessor.removeFromJobIdIndex(jobId);
+                } catch (IOException e) {
+                    log.error("Exception while processing jobId {} : {}", jobId, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error while rebuilding indexes!", e);
             response.status(500);
             return e.getMessage();
         }

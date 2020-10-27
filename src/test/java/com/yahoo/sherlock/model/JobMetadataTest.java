@@ -6,6 +6,7 @@
 
 package com.yahoo.sherlock.model;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.Set;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class JobMetadataTest {
 
@@ -136,5 +138,47 @@ public class JobMetadataTest {
         assertEquals(mCopy.getSigmaThreshold(), Double.valueOf(3.0));
         assertEquals(mCopy.getTimeseriesModel(), "ts");
         assertEquals(mCopy.getAnomalyDetectionModel(), "ad");
+    }
+
+    @Test
+    public void testUpdate() {
+        JobMetadata j1 = new JobMetadata(utilityMethod());
+        JobMetadata j2 = new JobMetadata(utilityMethod());
+        j2.setHoursOfLag(29);
+        Assert.assertNull(j1.getHoursOfLag());
+        j1.update(j2);
+        Assert.assertEquals(j1.getHoursOfLag(), (Integer) 29);
+    }
+
+    @Test
+    public void testIsScheduleChangeRequire() {
+        JobMetadata j = new JobMetadata(utilityMethod());
+        UserQuery u = UserQueryTest.getUserQuery();
+        j.setHoursOfLag(22);
+        u.setHoursOfLag(22);
+        j.setGranularity("hour");
+        u.setGranularity("hour");
+        j.setFrequency("hour");
+        u.setFrequency("hour");
+        j.setClusterId(1);
+        u.setClusterId(1);
+        assertFalse(j.isScheduleChangeRequire(u));
+        j.setClusterId(1);
+        u.setClusterId(2);
+        assertTrue(j.isScheduleChangeRequire(u));
+        u.setClusterId(1);
+        j.setFrequency("day");
+        u.setFrequency("hour");
+        assertTrue(j.isScheduleChangeRequire(u));
+        j.setFrequency("hour");
+        j.setGranularity("day");
+        u.setGranularity("hour");
+        assertTrue(j.isScheduleChangeRequire(u));
+        j.setGranularity("hour");
+        j.setHoursOfLag(23);
+        u.setHoursOfLag(22);
+        assertTrue(j.isScheduleChangeRequire(u));
+        j.setHoursOfLag(22);
+        assertFalse(j.isScheduleChangeRequire(u));
     }
 }

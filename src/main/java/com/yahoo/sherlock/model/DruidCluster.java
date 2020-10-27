@@ -193,7 +193,7 @@ public class DruidCluster implements Serializable {
     }
 
     /**
-     * Methos to check druid broker uri in allowed brokers list.
+     * Method to check druid broker uri in allowed brokers list.
      * @param host broker host
      * @param port broker port
      * @return true if allowed to access else false

@@ -11,6 +11,7 @@ import com.yahoo.sherlock.model.EmailMetaData;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The {@code EmailMetadataAccessor} defines an interface for
@@ -86,4 +87,17 @@ public interface EmailMetadataAccessor {
      * @param emailMetadata email metadata object to delete
      */
     void deleteEmailMetadata(EmailMetaData emailMetadata) throws IOException;
+
+    /**
+     * Method to remove jobId association with given list of emails.
+     * @param emailIds list of emails
+     * @param jobId jobId
+     */
+    void removeJobIdFromEmailIndex(List<String> emailIds, String jobId) throws IOException;
+
+    /**
+     * Get all email Ids.
+     * @return set of email Ids
+     */
+    Set<String> getAllEmailIds();
 }

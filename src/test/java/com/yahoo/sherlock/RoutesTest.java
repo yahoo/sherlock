@@ -266,9 +266,6 @@ public class RoutesTest {
         when(query.getQueryJsonObject()).thenReturn(jo);
         when(dqs.build(anyString(), any(Granularity.class), anyInt(), anyInt(), anyInt())).thenReturn(query);
         when(sf.newDruidQueryServiceInstance()).thenReturn(dqs);
-        DruidCluster dc = mock(DruidCluster.class);
-        when(dca.getDruidCluster(anyInt())).thenReturn(dc);
-        when(dc.getHoursOfLag()).thenReturn(0);
         doAnswer(iom -> {
                 Object[] args = iom.getArguments();
                 ((JobMetadata) args[0]).setJobId(10);
@@ -389,14 +386,15 @@ public class RoutesTest {
         inject("clusterAccessor", dca);
         when(req.params(Constants.ID)).thenReturn("1");
         JobMetadata jm = mock(JobMetadata.class);
-        DruidCluster dc = mock(DruidCluster.class);
+        DruidCluster dc = DBTestHelper.getNewDruidCluster();
+        dc.setClusterId(2);
         when(jma.getJobMetadata("1")).thenReturn(jm);
         when(jm.getClusterId()).thenReturn(2);
-        when(dca.getDruidCluster(anyInt())).thenReturn(dc);
-        when(dc.getClusterName()).thenReturn("druid");
+        when(dca.getDruidClusterList()).thenReturn(Collections.singletonList(dc));
         ModelAndView mav = Routes.viewJobInfo(req, res);
         assertTrue(params(mav).containsKey(Constants.TITLE));
         assertEquals(params(mav).get("job"), jm);
+        assertEquals(params(mav).get(Constants.DRUID_CLUSTERS), Collections.singletonList(dc));
     }
 
     @Test(expectedExceptions = HaltException.class)
@@ -414,7 +412,8 @@ public class RoutesTest {
     public void testViewDeletedJobInfo() throws IOException, JobNotFoundException, ClusterNotFoundException {
         Routes.initParams();
         mocks();
-        when(dca.getDruidCluster(anyInt())).thenReturn(new DruidCluster());
+        DruidCluster dc = DBTestHelper.getNewDruidCluster();
+        when(dca.getDruidClusterList()).thenReturn(Collections.singletonList(dc));
         inject("clusterAccessor", dca);
         JobMetadata jm = mock(JobMetadata.class);
         when(req.params(Constants.ID)).thenReturn("1");
@@ -424,6 +423,7 @@ public class RoutesTest {
         ModelAndView mav = Routes.viewDeletedJobInfo(req, res);
         assertEquals(params(mav).get(Constants.DELETEDJOBSVIEW), "true");
         assertEquals(params(mav).get("job"), jm);
+        assertEquals(params(mav).get(Constants.DRUID_CLUSTERS), Collections.singletonList(dc));
     }
 
     @Test(expectedExceptions = HaltException.class)
@@ -440,7 +440,7 @@ public class RoutesTest {
 
     @Test
     public void testUpdateJobInfo() throws Exception {
-        String body = "{\"granularity\":\"day\",\"frequency\":\"day\",\"sigmaThreshold\":\"3\",\"ownerEmail\":\"someone@something.com\",\"query\":\"{}\"}";
+        String body = "{\"clusterId\":\"1\",\"hoursOfLag\":\"10\",\"granularity\":\"day\",\"frequency\":\"day\",\"sigmaThreshold\":\"3\",\"ownerEmail\":\"someone@something.com\",\"query\":\"{}\"}";
         mocks();
         when(req.body()).thenReturn(body);
         when(req.params(Constants.ID)).thenReturn("1");
@@ -452,6 +452,8 @@ public class RoutesTest {
         jm.setJobStatus("RUNNING");
         jm.setUserQuery("query");
         jm.setQuery("query");
+        jm.setHoursOfLag(10);
+        jm.setClusterId(1);
         when(jma.getJobMetadata("1")).thenReturn(jm);
         DruidQueryService dqs = mock(DruidQueryService.class);
         Query q = mock(Query.class);
@@ -735,30 +737,38 @@ public class RoutesTest {
     public void testUpdateDruidCluster() throws IOException, ClusterNotFoundException, SchedulerException {
         mocks();
         when(req.params(Constants.ID)).thenReturn("1");
+        inject("jobAccessor", jma);
         JsonObject dcjson = new JsonObject();
         dcjson.addProperty("clusterName", "name");
         dcjson.addProperty("clusterDescription", "descr");
         dcjson.addProperty("brokerHost", "hostname");
         dcjson.addProperty("brokerPort", "431");
         dcjson.addProperty("brokerEndpoint", "druid/v2");
+        dcjson.addProperty("hoursOfLag", "12");
         String body = new Gson().toJson(dcjson);
         when(req.body()).thenReturn(body);
-        when(jma.getRunningJobsAssociatedWithCluster(anyString())).thenReturn(new ArrayList<>());
+        JobMetadata j = DBTestHelper.getNewJob();
+        j.setHoursOfLag(10);
+        j.setJobStatus("RUNNING");
         inject("schedulerService", ss);
         doNothing().when(ss).stopAndReschedule(anyList());
         doNothing().when(jma).putJobMetadata(anyList());
         DruidCluster dc = new DruidCluster();
         dc.setClusterId(1);
         dc.setBrokerHost("localhost");
-        dc.setHoursOfLag(0);
+        dc.setHoursOfLag(10);
         dc.setBrokerEndpoint("druid/v2");
         dc.setBrokerPort(1234);
         dc.setClusterName("name");
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
+        List<JobMetadata> jlist = new ArrayList<>();
+        jlist.add(j);
+        when(jma.getJobsAssociatedWithCluster(anyString())).thenReturn(jlist);
         inject("clusterAccessor", dca);
         assertEquals(Routes.updateDruidCluster(req, res), Constants.SUCCESS);
         assertEquals(dc.getBrokerHost(), "hostname");
         assertEquals(dc.getBrokerPort(), (Integer) 431);
+        assertEquals(j.getHoursOfLag(), (Integer) 12);
         verify(res, times(1)).status(200);
         verify(dca, times(1)).putDruidCluster(dc);
     }
@@ -774,6 +784,29 @@ public class RoutesTest {
         when(req.params(Constants.ID)).thenReturn("!%41");
         assertEquals(Routes.updateDruidCluster(req, res), "Invalid Cluster!");
     }
+
+    @Test
+    public void testAffectedJobs() throws IOException, ClusterNotFoundException, SchedulerException {
+        mocks();
+        when(req.params(Constants.ID)).thenReturn("1");
+        JobMetadata j = DBTestHelper.getNewJob();
+        j.setHoursOfLag(10);
+        List<JobMetadata> jlist = new ArrayList<>();
+        jlist.add(j);
+        when(jma.getJobsAssociatedWithCluster(anyString())).thenReturn(jlist);
+        DruidCluster dc = new DruidCluster();
+        dc.setClusterId(1);
+        dc.setBrokerHost("localhost");
+        dc.setHoursOfLag(10);
+        dc.setBrokerEndpoint("druid/v2");
+        dc.setBrokerPort(1234);
+        dc.setClusterName("name");
+        when(dca.getDruidCluster(anyString())).thenReturn(dc);
+        when(tte.render(anyObject())).thenReturn("msg");
+        inject("clusterAccessor", dca);
+        assertEquals(Routes.affectedJobs(req, res), "msg");
+    }
+
 
     @Test
     public void testGetDatabaseJsonDump() throws IOException {
@@ -1231,5 +1264,44 @@ public class RoutesTest {
         doNothing().when(ss).removeAllJobsFromQueue();
         String response = Routes.restoreRedisDB(req, res);
         assertNotEquals(response, Constants.SUCCESS);
+    }
+
+    @Test
+    public void testBuildIndexes() throws IOException, JobNotFoundException {
+        mocks();
+        Set<String> jobSet = new HashSet<String>() {
+            {
+                add("1");
+                add("2");
+                add("3");
+            }
+        };
+        Set<String> clusterSet = new HashSet<String>() {
+            {
+                add("1");
+                add("2");
+            }
+        };
+        Set<String> emailSet = new HashSet<String>() {
+            {
+                add("email1");
+                add("email2");
+            }
+        };
+        JsonDumper jd = mock(JsonDumper.class);
+        inject("jsonDumper", jd);
+        when(jma.getJobIds()).thenReturn(jobSet);
+        when(dca.getDruidClusterIds()).thenReturn(clusterSet);
+        when(ema.getAllEmailIds()).thenReturn(emailSet);
+        when(jma.getJobMetadata("1")).thenReturn(DBTestHelper.getNewJob());
+        when(jma.getJobMetadata("2")).thenThrow(JobNotFoundException.class);
+        when(jma.getJobMetadata("3")).thenReturn(DBTestHelper.getNewJob());
+        doNothing().when(jd).clearIndexes(anyString(), anyString());
+        when(jma.putJobMetadata(any(JobMetadata.class))).thenReturn("");
+        doNothing().when(jma).removeFromJobIdIndex(anyString());
+        String response = Routes.buildIndexes(req, res);
+        assertEquals(response, Constants.SUCCESS);
+        verify(jma, times(2)).putJobMetadata(any(JobMetadata.class));
+        verify(jma, times(1)).removeFromJobIdIndex(anyString());
     }
 }

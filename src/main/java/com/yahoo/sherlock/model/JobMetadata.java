@@ -11,16 +11,22 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.utils.TimeUtils;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.store.Attribute;
+
+import org.apache.commons.lang.StringUtils;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Data storer for anomaly detection jobs.
@@ -226,7 +232,7 @@ public class JobMetadata implements Serializable, Cloneable {
         setFrequency(userQuery.getFrequency());
         setSigmaThreshold(userQuery.getSigmaThreshold());
         setClusterId(userQuery.getClusterId());
-        setHoursOfLag(0);
+        setHoursOfLag(userQuery.getHoursOfLag());
         setTimeseriesModel(userQuery.getTsModels());
         setAnomalyDetectionModel(userQuery.getAdModels());
     }
@@ -251,7 +257,7 @@ public class JobMetadata implements Serializable, Cloneable {
         try {
             jobMetadata = (JobMetadata) job.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            log.error("Exception while cloning the job {} : {}", job.getJobId(), e.getMessage());
         }
         jobMetadata.setEffectiveRunTime(null);
         jobMetadata.setEffectiveQueryTime(null);
@@ -290,18 +296,22 @@ public class JobMetadata implements Serializable, Cloneable {
         setSigmaThreshold(newJob.getSigmaThreshold());
         setTimeseriesModel(newJob.getTimeseriesModel());
         setAnomalyDetectionModel(newJob.getAnomalyDetectionModel());
+        setClusterId(newJob.getClusterId());
+        setHoursOfLag(newJob.getHoursOfLag());
     }
 
     /**
      * Returns true if a user query has a changed granularity,
-     * frequency, or sigma threshold.
+     * frequency, hours of lag or druid cluster.
      *
      * @param userQuery user update query
      * @return true if a running job should be rescheduled
      */
-    public boolean userQueryChangeSchedule(UserQuery userQuery) {
+    public boolean isScheduleChangeRequire(UserQuery userQuery) {
         return !getGranularity().equals(userQuery.getGranularity()) ||
-               !getFrequency().equals(userQuery.getFrequency());
+               !getFrequency().equals(userQuery.getFrequency()) ||
+               !getClusterId().equals(userQuery.getClusterId()) ||
+               !getHoursOfLag().equals(userQuery.getHoursOfLag());
     }
 
     /**
@@ -336,6 +346,17 @@ public class JobMetadata implements Serializable, Cloneable {
      */
     public Integer getReportNominalTime() {
         return effectiveQueryTime - Granularity.getValue(granularity).getMinutes() * granularityRange;
+    }
+
+    /**
+     * Get email comma separated string as a list.
+     * @return a list
+     */
+    public List<String> getOwnerEmailAsList() {
+        if (StringUtils.isEmpty(this.getOwnerEmail())) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(Arrays.asList(this.getOwnerEmail().split(Constants.COMMA_DELIMITER)));
     }
 
     @Override

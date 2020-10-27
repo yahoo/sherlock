@@ -43,7 +43,7 @@ public class LettuceDruidClusterAccessor
     }
 
     @Override
-    public DruidCluster getDruidCluster(String clusterId) throws IOException, ClusterNotFoundException {
+    public DruidCluster getDruidCluster(String clusterId) throws ClusterNotFoundException {
         log.info("Getting Druid cluster [{}]", clusterId);
         try (RedisConnection<String> conn = connect()) {
             Map<String, String> clusterMap = conn.sync().hgetall(key(clusterId));
@@ -114,6 +114,21 @@ public class LettuceDruidClusterAccessor
             log.error("Error occurred while getting Druid cluster list");
             throw new IOException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public Set<String> getDruidClusterIds() {
+        log.info("Getting druid cluster Ids list");
+        RedisConnection<String> conn = connect();
+        return conn.sync().smembers(index(clusterIdName, "all"));
+    }
+
+    @Override
+    public void removeFromClusterIdIndex(String clusterId) {
+        log.info("Removing cluster Id {} from clusters list index", clusterId);
+        RedisConnection<String> conn = connect();
+        Long redisResponse = conn.sync().srem(index(clusterIdName, "all"), clusterId);
+        log.info("Removed cluster Id {} with redis response {}", clusterId, redisResponse);
     }
 
 }

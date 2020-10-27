@@ -87,6 +87,9 @@ public class UserQuery {
     /** Anomaly detection model. */
     private String adModels;
 
+    /** Hours of lag associated with the job's cluster. */
+    private Integer hoursOfLag;
+
     /**
      * Removing duplicate emails and return set of comma separated emails.
      * @return comma separated set of emails

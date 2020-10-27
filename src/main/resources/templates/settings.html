@@ -39,9 +39,15 @@
                                                 <button type="button" class="btn btn-warning" id="stop" name="stop" data-toggle="modal" data-target="#stopConfirmModal">Stop</button>
                                                 <button type="button" class="btn btn-danger" id="delete" name="delete" data-toggle="modal" data-target="#deleteConfirmModal">Delete</button>
                                                 <button type="button" class="btn btn-info" id="clear" name="clear" data-toggle="modal" data-target="#clearConfirmModal">Clear Reports</button>
-                                                <button type="button" class="loader" hidden="true" id="loader"></button>
                                             </div>
-
+                                            <button type="button" class="loader" hidden="true" id="loader"></button>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label" for="action-group">Rebuild Index:</label><br/>
+                                            <div class="btn-group" role="group" aria-label="" id="build-index-group">
+                                                <button type="button" class="btn btn-success" id="indexBuild" name="indexBuild" data-toggle="modal" data-target="#buildIndexConfirmModal">Build</button>
+                                            </div>
+                                            <button type="button" class="loader" hidden="true" id="indexBuildLoader"></button>
                                         </div>
                                     </div>
                                 </div>
@@ -162,6 +168,21 @@
             </div>
         </div>
     </div>
+    <!-- Build Index confirmation -->
+    <div id="buildIndexConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="buildIndexConfirmModalCode">Do you really want to rebuild indexes?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="buildIndexConfirmModalYes">Yes</button>
+                    <button type="button" data-dismiss="modal" class="btn" id="buildIndexConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <!-- #Wrapper -->
 
@@ -184,20 +205,20 @@
             "order": [[ 0, "asc" ]]
         });
 
-        function disableActions() {
-            $('#start').attr('disabled', true);
-            $('#stop').attr('disabled', true);
-            $('#delete').attr('disabled', true);
-            $('#clear').attr('disabled', true);
-            $('#loader').attr('hidden', false);
+        function disableActions(action) {
+            $('#start').attr('disabled', action);
+            $('#stop').attr('disabled', action);
+            $('#delete').attr('disabled', action);
+            $('#clear').attr('disabled', action);
+            $('#indexBuild').attr('disabled', action);
         }
 
-        function enableActions() {
-            $('#start').attr('disabled', false);
-            $('#stop').attr('disabled', false);
-            $('#delete').attr('disabled', false);
-            $('#clear').attr('disabled', false);
-            $('#loader').attr('hidden', true);
+        function hideLoader(action) {
+            $('#loader').attr('hidden', action);
+        }
+
+        function hideIndexBuildLoader(action) {
+            $('#indexBuildLoader').attr('hidden', action);
         }
 
         function validate() {
@@ -209,7 +230,8 @@
                 showErrorMessage("Please select a job from the list");
                 return;
             }
-            disableActions();
+            disableActions(true);
+            hideLoader(false);
             $.ajax({
                 type: 'POST',
                 url: '/Meta-Manager/Launch/' + $('#jobs').val(),
@@ -218,7 +240,8 @@
                     if (response === 'success') {
                         showInfoMessage("Jobs Launched successfully.");
                         setTimeout(function() {
-                            enableActions();
+                            disableActions(false);
+                            hideLoader(true);
                         }, 1500);
                     } else {
                         showErrorMessage("Something went wrong while launching the jobs! Try again.");
@@ -234,7 +257,8 @@
                 showErrorMessage("Please select a job from the list");
                 return;
             }
-            disableActions();
+            disableActions(true);
+            hideLoader(false);
             $.ajax({
                 type: 'POST',
                 url: '/Meta-Manager/Stop/' + $('#jobs').val(),
@@ -243,7 +267,8 @@
                     if (response === 'success') {
                         showInfoMessage("Jobs Stopped successfully.");
                         setTimeout(function() {
-                            enableActions();
+                            disableActions(false);
+                            hideLoader(true);
                         }, 1500);
                     } else {
                         showErrorMessage("Something went wrong while stopping the jobs! Try again.");
@@ -259,7 +284,8 @@
                 showErrorMessage("Please select a job from the list");
                 return;
             }
-            disableActions();
+            disableActions(true);
+            hideLoader(false);
             $.ajax({
                 type: 'POST',
                 url: '/Meta-Manager/Delete/' + $('#jobs').val(),
@@ -268,7 +294,8 @@
                     if (response === 'success') {
                         showInfoMessage("Jobs Deleted successfully.");
                         setTimeout(function() {
-                            enableActions();
+                            disableActions(false);
+                            hideLoader(true);
                         }, 1500);
                     } else {
                         showErrorMessage("Something went wrong while deleting the jobs! Try again.");
@@ -284,7 +311,8 @@
                 showErrorMessage("Please select a job from the list");
                 return;
             }
-            disableActions();
+            disableActions(true);
+            hideLoader(false);
             $.ajax({
                 type: 'POST',
                 url: '/Meta-Manager/ClearReports/' + $('#jobs').val(),
@@ -293,7 +321,8 @@
                     if (response === 'success') {
                         showInfoMessage("Jobs Reports are cleared successfully.");
                         setTimeout(function() {
-                            enableActions();
+                            disableActions(false);
+                            hideLoader(true);
                         }, 1500);
                     } else {
                         showErrorMessage("Something went wrong while clearing reports of jobs! Try again.");
@@ -303,6 +332,30 @@
             });
             return;
         });
+
+        $("#buildIndexConfirmModalYes").click(function() {
+            disableActions(true);
+            hideIndexBuildLoader(false);
+            $.ajax({
+                type: 'POST',
+                url: '/Meta-Manager/BuildIndex',
+                dataType: 'text',
+                success: function (response) {
+                    if (response === 'success') {
+                        showInfoMessage("Index rebuild successfully.");
+                        setTimeout(function() {
+                            disableActions(false);
+                            hideIndexBuildLoader(true);
+                        }, 1500);
+                    } else {
+                        showErrorMessage("Something went wrong while building the indexes! Try again.");
+                    }
+                },
+                error : ajaxMessage
+            });
+            return;
+        });
+
     /*]]>*/
 </script>
 

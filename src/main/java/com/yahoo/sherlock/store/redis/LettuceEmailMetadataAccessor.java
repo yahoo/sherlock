@@ -92,9 +92,34 @@ public class LettuceEmailMetadataAccessor extends AbstractLettuceAccessor implem
                 log.error("Email ID can not be null!");
             }
         } catch (InterruptedException | ExecutionException e) {
-            log.error("Error occurred while deleting job!", e);
+            log.error("Error occurred while putting email metadata!", e);
             throw new IOException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void removeJobIdFromEmailIndex(List<String> emailIds, String jobId) throws IOException {
+        log.info("Removing job ID [{}] from email index of {}", jobId, emailIds);
+        RedisConnection<String> conn = connect();
+        if (emailIds.size() > 0) {
+            AsyncCommands<String> cmd = conn.async();
+            cmd.setAutoFlushCommands(false);
+            List<RedisFuture<Long>> futureIndex = new ArrayList<>();
+            for (String emailId: emailIds) {
+                futureIndex.add(cmd.srem(index(emailJobIndex, emailId), jobId));
+            }
+            cmd.flushCommands();
+            await(futureIndex);
+        } else {
+            log.info("No emailId in the list!");
+        }
+    }
+
+    @Override
+    public Set<String> getAllEmailIds() {
+        log.info("Getting email id list");
+        RedisConnection<String> conn = connect();
+        return conn.sync().smembers(index(emailIdIndex, DatabaseConstants.EMAILS));
     }
 
     @Override

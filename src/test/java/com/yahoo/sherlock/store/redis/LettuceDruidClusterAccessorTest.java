@@ -141,7 +141,7 @@ public class LettuceDruidClusterAccessorTest {
 
     @Test
     public void testDeleteDruidClusterException()
-            throws IOException, ClusterNotFoundException, ExecutionException, InterruptedException {
+        throws IOException, ClusterNotFoundException, ExecutionException, InterruptedException {
         mocks();
         doCallRealMethod().when(dca).deleteDruidCluster(anyString());
         RedisFuture<Long> lfuture = mock(RedisFuture.class);
@@ -176,4 +176,21 @@ public class LettuceDruidClusterAccessorTest {
         assertEqualsNoOrder(expected, clusters);
     }
 
+    @Test
+    public void testGetDruidClusterIds() {
+        mocks();
+        when(dca.getDruidClusterIds()).thenCallRealMethod();
+        dca.getDruidClusterIds();
+        verify(dca).getDruidClusterIds();
+        verify(sync).smembers("id:all");
+    }
+
+    @Test
+    public void testRemoveFromClusterIdIndex() {
+        mocks();
+        doCallRealMethod().when(dca).removeFromClusterIdIndex(anyString());
+        dca.removeFromClusterIdIndex("2");
+        verify(dca).removeFromClusterIdIndex("2");
+        verify(sync).srem("id:all", "2");
+    }
 }

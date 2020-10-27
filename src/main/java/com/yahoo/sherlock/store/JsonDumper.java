@@ -7,7 +7,6 @@
 package com.yahoo.sherlock.store;
 
 import com.google.gson.JsonObject;
-import com.yahoo.sherlock.settings.DatabaseConstants;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
@@ -19,22 +18,6 @@ import java.util.List;
  * as a JSON dump or by updating a backend with a Json Object.
  */
 public interface JsonDumper {
-
-    String[] INDEX_NAMES = {
-        DatabaseConstants.INDEX_REPORT_JOB_ID,
-        DatabaseConstants.INDEX_TIMESTAMP,
-        DatabaseConstants.INDEX_DELETED_ID,
-        DatabaseConstants.INDEX_CLUSTER_ID,
-        DatabaseConstants.INDEX_QUERY_ID,
-        DatabaseConstants.INDEX_JOB_CLUSTER_ID,
-        DatabaseConstants.INDEX_JOB_ID,
-        DatabaseConstants.INDEX_JOB_STATUS,
-        DatabaseConstants.INDEX_FREQUENCY,
-        DatabaseConstants.INDEX_EMAILID_REPORT,
-        DatabaseConstants.INDEX_EMAIL_ID,
-        DatabaseConstants.INDEX_EMAILID_TRIGGER,
-        DatabaseConstants.INDEX_EMAILID_JOBID
-    };
 
     /**
      * Method to return pending jobs in the queue in redis.
@@ -59,5 +42,12 @@ public interface JsonDumper {
      * @throws IOException if an error writing to the backend occurs
      */
     void writeRawData(JsonObject json) throws IOException;
+
+    /**
+     * Clear the value of given index.
+     * @param index index names
+     * @param id id for the index
+     */
+    void clearIndexes(String index, String id);
 
 }

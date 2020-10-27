@@ -1,0 +1,9 @@
+<div th:switch="${#lists.size(jobs) > 0}">
+    <div th:case="${false}" class="alert alert-info" role="alert">No affected Jobs due to this SLA update!</div>
+    <div th:case="${true}">
+        <div class="alert alert-danger" role="alert">Affected Jobs due to SLA change (will be rescheduled as per the new SLA)</div>
+        <ul>
+            <li th:each="job:${jobs}" th:text="${'Job Id: ' + job.getJobId() + ', Job Name: ' + job.getTestName()}"> </li>
+        </ul>
+    </div>
+</div>
