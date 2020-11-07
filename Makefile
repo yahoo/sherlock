@@ -10,7 +10,7 @@ jar-no-test:
 	mvn -Dmaven.test.skip=true clean checkstyle:check package
 
 code-coverage:
-	mvn clean checkstyle:check cobertura:cobertura
+	mvn clean checkstyle:check jacoco:report test
 
 clean:
 	mvn clean

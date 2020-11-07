@@ -28,9 +28,6 @@ import java.util.List;
 
 import static com.yahoo.sherlock.TestUtilities.inject;
 import static com.yahoo.sherlock.TestUtilities.obtain;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyDouble;
@@ -44,6 +41,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 @SuppressWarnings("unchecked")
 public class LettuceJobSchedulerTest {

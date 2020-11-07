@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 import static com.yahoo.sherlock.TestUtilities.inject;
 import static com.yahoo.sherlock.TestUtilities.obtain;
 import static com.yahoo.sherlock.store.redis.AbstractLettuceAccessorTest.fakeFuture;
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;

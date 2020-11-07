@@ -28,10 +28,6 @@ import java.util.TreeSet;
 import static com.yahoo.sherlock.TestUtilities.inject;
 import static com.yahoo.sherlock.TestUtilities.obtain;
 import static com.yahoo.sherlock.store.redis.AbstractLettuceAccessorTest.fakeFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
@@ -45,6 +41,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEqualsNoOrder;
 import static org.testng.Assert.fail;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertFalse;
 
 @SuppressWarnings("unchecked")
 public class LettuceDeletedJobMetadataAccessorTest {

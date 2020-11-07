@@ -58,7 +58,7 @@ public class LettuceJsonDumper
     /* expiry time for reports in redis */
     private final long expirationTime = Constants.SECONDS_IN_DAY * 100;
 
-    private String[] INDEX_NAMES = {
+    private static final String[] INDEX_NAMES = {
         DatabaseConstants.INDEX_REPORT_JOB_ID,
         DatabaseConstants.INDEX_TIMESTAMP,
         DatabaseConstants.INDEX_DELETED_ID,

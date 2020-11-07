@@ -19,6 +19,7 @@ import com.yahoo.sherlock.store.core.BaseAccessor;
 import com.yahoo.sherlock.store.core.ConnectionProducerClusterImpl;
 import com.yahoo.sherlock.store.core.RedisConnection;
 import com.yahoo.sherlock.store.core.SyncCommands;
+
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -27,11 +28,6 @@ import java.util.concurrent.ExecutionException;
 
 import static com.yahoo.sherlock.TestUtilities.inject;
 import static com.yahoo.sherlock.TestUtilities.obtain;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
@@ -39,6 +35,10 @@ import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @SuppressWarnings("unchecked")
 public class AbstractLettuceAccessorTest {
@@ -169,7 +169,7 @@ public class AbstractLettuceAccessorTest {
         when(async.incr(anyString())).thenAnswer(iom -> fakeFuture(lptr[0]++));
         when(ala.newIds(anyInt())).thenCallRealMethod();
         Integer[] ids = ala.newIds(3);
-        assertArrayEquals(new Integer[]{1, 2, 3}, ids);
+        assertEquals(new Integer[]{1, 2, 3}, ids);
     }
 
     @Test
