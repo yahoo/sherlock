@@ -7,6 +7,7 @@
     <name>sherlock</name>
     <description>Anomaly detection tool for timeseries data in Druid</description>
     <version>1.11-SNAPSHOT</version>
+    <url>https://github.com/yahoo/sherlock</url>
 
     <licenses>
         <license>
@@ -15,6 +16,13 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <developers>
+        <developer>
+            <organization>Yahoo Inc.</organization>
+            <organizationUrl>https://github.com/yahoo</organizationUrl>
+        </developer>
+    </developers>
 
     <properties>
         <target_jdk_version>1.8</target_jdk_version>
