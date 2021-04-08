@@ -13,6 +13,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-lg-12">
+                    <input id="jobId" th:hidden="true"/>
                     <h1 style="margin-bottom: 15px" th:text="${title}"></h1>
                     <div th:if="${error != null}"
                          th:text="${error}"
@@ -30,6 +31,12 @@
                                         th:text="${timeseries.getRight()}"></option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label class="control-label" for="saveAsJob">Save as a scheduled Job:</label><br/>
+                            <div class="btn-toolbar">
+                                <button type="button" class="btn btn-success" id="saveAsJob" name="saveAsJob" data-toggle="modal" data-target="#saveConfirmModal">Create Job</button>
+                            </div>
+                        </div>
                         <div class="row" id="chart-container"></div>
                         <div class="form-group" id="table-container"></div>
                     </div>
@@ -37,8 +44,41 @@
             </div>
         </div>
     </div>
+    <!-- save confirmation -->
+    <div id="saveConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="saveConfirmModalCode">Save the job finally?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="saveConfirmModalYes">Yes
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn" id="saveConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- cron confirmation -->
+    <div id="cronConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="cronConfirmModalCode">Ready to launch the job (YES action won't launch, it just redirects to job launching page)?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="cronConfirmModalYes">Yes
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn" id="cronConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-<script>
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
     /*<![CDATA[*/
     function getIndex(d) {
         if (d.classed) {
@@ -202,6 +242,65 @@
         });
         displayGraph($('#bootstrap-data').data('bootstrap'));
     });
+
+    $("#saveConfirmModalYes").click(function () {
+        var data = {};
+        var d = new Date();
+        data.query = [[${userQuery.getQuery()}]];
+        data.granularity = [[${userQuery.getGranularity()}]];
+        data.granularityRange = [[${userQuery.getGranularityRange()}]];
+        data.timeseriesRange = [[${userQuery.getTimeseriesRange()}]];
+        data.sigmaThreshold = [[${userQuery.getSigmaThreshold()}]];
+        data.clusterId = [[${userQuery.getClusterId()}]];
+        data.hoursOfLag = [[${userQuery.getHoursOfLag()}]];
+        data.tsModels = [[${userQuery.getTsModels()}]];
+        data.adModels = [[${userQuery.getAdModels()}]];
+        data.testName = "Job_" + d.toLocaleDateString() + "_" + d.toLocaleTimeString();
+        data.testDescription = "";
+        data.owner = "";
+        data.ownerEmail = "";
+        data.emailOnNoData = "false";
+        data.queryUrl = "";
+        data.frequency = [[${userQuery.getGranularity()}]];
+        $.ajax({
+            type: 'POST',
+            url: '/SaveJobInfo',
+            data: JSON.stringify(data),
+            contentType: "application/json",
+            dataType: 'text',
+            success: function (response) {
+                if ($.isEmptyObject(response)) {
+                    // Else there was a warning, but not a failure
+                    showWarningMessage("Something went wrong! Try again.");
+                } else {
+                    showInfoMessage("Job saved successfully.");
+                    setTimeout(function () {
+                        $('#jobId').val(response);
+                        $('#cronConfirmModalCode').html();
+                        $('#cronConfirmModal').modal('show');
+                    }, 1000);
+                }
+            },
+            error: ajaxMessage
+        });
+    });
+
+    $("#cronConfirmModalYes").click(function () {
+        setTimeout(function () {
+            window.location.href = '/Jobs/' + $('#jobId').val();
+        }, 700);
+    });
+
+    $("#cronConfirmModalNo").click(function () {
+        setTimeout(function () {
+            window.location.href = '/Jobs/' + $('#jobId').val();
+        }, 700);
+    });
+
+    $("#saveConfirmModalNo").click(function () {
+        showWarningMessage("Job is not saved.");
+    });
+
     /*]]>*/
 </script>
 

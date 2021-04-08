@@ -299,6 +299,7 @@ public class Routes {
             Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
             instantReportParams.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
             instantReportParams.put("timeseriesNames", timeseriesNames);
+            instantReportParams.put("userQuery", userQuery);
         } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
             log.error("Error while processing instant job!", e);
             params.put(Constants.ERROR, e.toString());

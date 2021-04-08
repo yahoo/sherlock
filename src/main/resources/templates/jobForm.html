@@ -14,7 +14,7 @@
                     <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">
                         Error message
                     </div>
-                    <form id="queryForm" method='post'>
+                    <form id="queryForm" method='post' autocomplete="on">
                         <fieldset>
 
                             <div class="form-group" th:if="${instantView == null}">
@@ -77,7 +77,7 @@
                                 </select>
                             </div>
 
-                            <div class="form-group" th:if="${instantView == null}">
+                            <div class="form-group" th:attr="hidden=${instantView != null ? 'true' : 'false'}">
                                 <label class="control-label" for="hoursOfLag">Time SLA (Default to selected druid cluster's SLA):</label>
                                 <p class="bg-info">Put number of hours it takes to ingest data in druid since the actual event timestamp for this job. <code>'0' for realtime data</code></p>
                                 <div>
@@ -220,11 +220,15 @@
                                     <span th:if="${instantView != null}">
                                             <input id="submitInsta" type="submit" class="btn btn-success"
                                                    value="Flash Results"/>
-                                        </span>
+                                    </span>
+                                    <span th:if="${instantView != null}">
+                                            <input id="saveInsta" type="submit" class="btn btn-success"
+                                                   value="Create Job"/>
+                                    </span>
                                     <!--Show save button for new form view-->
                                     <span th:if="${instantView == null}">
                                             <input id="saveJob" type="submit" class="btn btn-success" value="Save"/>
-                                        </span>
+                                    </span>
                                 </div>
                             </div>
                         </fieldset>
@@ -297,15 +301,17 @@
               $(e.relatedTarget).addClass('invalid')
             }
           })
-          .tokenfield({showAutocompleteOnFocus: false});
+          .tokenfield({
+                showAutocompleteOnFocus: false,
+                createTokensOnBlur: true
+          });
 
     $("#popoverInfo").load('/content/kSigmaTable.html #sensitivityTable');
 
     const $druidCluster = $('#druidCluster');
 
-    if ([[${instantView}]] == null) {
-        $('#druidCluster').val($("#druidCluster option:first").val());
-    }
+    $druidCluster.val($("#druidCluster option:first").val());
+    $('#hoursOfLag').val($druidCluster.find('option:selected').data('lag'));
 
     $druidCluster.change(function() {
         var selected = $(this).find('option:selected');
@@ -329,11 +335,13 @@
                 showWarningMessage("The granularity range must be less than or equal to the timeseries range!");
                 return false;
             }
-            if (val === 'Save') {
+            if (val === 'Save' || val === 'Create Job') {
                 e.preventDefault();
-                if ($('#granularity').prop('selectedIndex') > $('#frequency').prop('selectedIndex')) {
-                    showWarningMessage("The granularity must be less than or equal to the frequency!");
-                    return;
+                if (val === 'Save') {
+                    if ($('#granularity').prop('selectedIndex') > $('#frequency').prop('selectedIndex')) {
+                        showWarningMessage("The granularity must be less than or equal to the frequency!");
+                        return;
+                    }
                 }
                 $('#saveConfirmModalCode').html();
                 $('#saveConfirmModal').modal('show');
@@ -348,6 +356,7 @@
                 data.queryEndTimeText = $('#queryEndTimeText').val();
                 data.detectionWindow = $('#detectionWindow').val();
                 data.sigmaThreshold = $('#sdSliderVal').text();
+                data.hoursOfLag = $('#hoursOfLag').val();
                 data.clusterId = $druidCluster.val();
                 data.tsModels = $('#tsModels').val();
                 data.adModels = $('#adModels').val();
@@ -384,22 +393,33 @@
 
     $("#saveConfirmModalYes").click(function () {
         var data = {};
-        data.queryUrl = $('#queryUrl').val();
+        var d = new Date();
         data.query = queryText.getValue();
-        data.testName = $('#test-name').val();
-        data.owner = $('#owner-name').val();
-        data.ownerEmail = $('#owner-email').tokenfield('getTokensList', ',');
-        data.emailOnNoData = $('input[name=emailOnNoData]:checked', '#queryForm').val();
-        data.testDescription = $('#test-description').val();
         data.granularity = $('#granularity').val();
         data.granularityRange = $('#granularityRange').val();
         data.timeseriesRange = $('#timeseriesRange').val();
-        data.frequency = $('#frequency').val();
         data.sigmaThreshold = $('#sdSliderVal').text();
         data.clusterId = $druidCluster.val();
         data.hoursOfLag = $('#hoursOfLag').val();
         data.tsModels = $('#tsModels').val();
         data.adModels = $('#adModels').val();
+        if ([[${instantView}]] != null) {
+            data.testName = "Job_" + d.toLocaleDateString() + "_" + d.toLocaleTimeString();
+            data.testDescription = "";
+            data.owner = "";
+            data.ownerEmail = "";
+            data.emailOnNoData = "false";
+            data.queryUrl = "";
+            data.frequency = $('#granularity').val();
+        } else {
+            data.testName = $('#test-name').val();
+            data.testDescription = $('#test-description').val();
+            data.owner = $('#owner-name').val();
+            data.ownerEmail = $('#owner-email').tokenfield('getTokensList', ',');
+            data.emailOnNoData = $('input[name=emailOnNoData]:checked', '#queryForm').val();
+            data.queryUrl = $('#queryUrl').val();
+            data.frequency = $('#frequency').val();
+        }
         $.ajax({
             type: 'POST',
             url: '/SaveJobInfo',

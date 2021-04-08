@@ -22,7 +22,10 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Publish to GitHub Packages Apache Maven
-      run: mvn release:perform -s $GITHUB_WORKSPACE/settings.xml
+      run: ./.github/scripts/publish.sh
       env:
-        GITHUB_ACTOR: ${{ github.actor }}
-        GITHUB_TOKEN: ${{ github.token }}
+        GPG_ENCPASS : ${{ secrets.GPG_ENCPASS }}
+        GPG_KEYNAME: ${{ secrets.GPG_KEYNAME }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+        OSSRH_USER: ${{ secrets.OSSRH_USER }}

@@ -33,17 +33,27 @@
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label class="control-label" for="action-group">Actions:</label><br/>
-                                            <div class="btn-group" role="group" aria-label="" id="action-group">
-                                                <button type="button" class="btn btn-success" id="start" name="start" data-toggle="modal" data-target="#startConfirmModal">Start</button>
-                                                <button type="button" class="btn btn-warning" id="stop" name="stop" data-toggle="modal" data-target="#stopConfirmModal">Stop</button>
-                                                <button type="button" class="btn btn-danger" id="delete" name="delete" data-toggle="modal" data-target="#deleteConfirmModal">Delete</button>
-                                                <button type="button" class="btn btn-info" id="clear" name="clear" data-toggle="modal" data-target="#clearConfirmModal">Clear Reports</button>
+                                            <label class="control-label" for="action-group1">Actions:</label><br/>
+                                            <div class="btn-toolbar">
+                                                <div class="btn-group" role="group" aria-label="" id="action-group1">
+                                                    <button type="button" class="btn btn-success" id="start" name="start" data-toggle="modal" data-target="#startConfirmModal">Start</button>
+                                                </div>
+                                                <div class="btn-group" role="group" aria-label="" id="action-group2">
+                                                    <button type="button" class="btn btn-warning" id="stop" name="stop" data-toggle="modal" data-target="#stopConfirmModal">Stop</button>
+                                                </div>
+                                                <div class="btn-group" role="group" aria-label="" id="action-group3">
+                                                    <button type="button" class="btn btn-danger" id="delete" name="delete" data-toggle="modal" data-target="#deleteConfirmModal">Delete</button>
+                                                </div>
+                                                <div class="btn-group" role="group" aria-label="" id="action-group4">
+                                                    <button type="button" class="btn btn-info" id="clear" name="clear" data-toggle="modal" data-target="#clearConfirmModal">Clear Reports</button>
+                                                </div>
+                                                <div class="btn-group" role="group" aria-label="" id="action-group5">
+                                                    <button type="button" class="loader" hidden="true" id="loader"></button>
+                                                </div>
                                             </div>
-                                            <button type="button" class="loader" hidden="true" id="loader"></button>
                                         </div>
                                         <div class="form-group">
-                                            <label class="control-label" for="action-group">Rebuild Index:</label><br/>
+                                            <label class="control-label" for="action-group1">Rebuild Index:</label><br/>
                                             <div class="btn-group" role="group" aria-label="" id="build-index-group">
                                                 <button type="button" class="btn btn-success" id="indexBuild" name="indexBuild" data-toggle="modal" data-target="#buildIndexConfirmModal">Build</button>
                                             </div>

@@ -593,7 +593,10 @@
             return;
         });
 
-        var emailTokens = $('#ownerEmail').tokenfield();
+        var emailTokens = $('#ownerEmail').tokenfield({
+                                                showAutocompleteOnFocus: false,
+                                                createTokensOnBlur: true
+                                           });
 
         emailTokens.on('tokenfield:createdtoken', function (e) {
                         var re = /\S+@\S+\.\S+/
@@ -614,6 +617,10 @@
         $("#launchConfirmModalYes").click(function() {
             if ($druidCluster.val() === null) {
                 showWarningMessage("Please select the druid cluster!");
+                return;
+            }
+            if ([[${job.getOwnerEmail() == null || job.getOwnerEmail().isEmpty()}]]) {
+                showWarningMessage("Please put at least one owner email!");
                 return;
             }
             $.ajax({
