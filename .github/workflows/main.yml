@@ -19,6 +19,11 @@ jobs:
         server-id: github
         settings-path: ${{ github.workspace }}
 
-    - name: Build with Maven
-      run: |
-        mvn install
+    - name: Publish to GitHub Packages Apache Maven
+      run: ./.github/scripts/publish.sh
+      env:
+        GPG_ENCPASS: ${{ secrets.GPG_ENCPASS }}
+        GPG_KEYNAME: ${{ secrets.GPG_KEYNAME }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+        OSSRH_USER: ${{ secrets.OSSRH_USER }}
