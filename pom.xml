@@ -168,11 +168,6 @@
             <artifactId>spark-pac4j</artifactId>
             <version>3.0.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>6.17</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -282,14 +277,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.16</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.puppycrawl.tools</groupId>
-                        <artifactId>checkstyle</artifactId>
-                        <version>6.17</version>
-                    </dependency>
-                </dependencies>
+                <version>3.1.1</version>
                 <configuration>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <configLocation>src/main/resources/checkstyle.xml</configLocation>

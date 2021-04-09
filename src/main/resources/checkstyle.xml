@@ -155,20 +155,11 @@
             <property name="severity" value="error"/>
             <property name="allowMissingParamTags" value="true"/>
             <property name="allowMissingReturnTag" value="true"/>
-            <property name="allowMissingThrowsTags" value="true"/>
-            <property name="allowThrowsTagsForSubclasses" value="true"/>
-            <property name="allowUndeclaredRTE" value="true"/>
         </module>
 
         <!-- Checks that variables have Javadoc comments. -->
         <module name="JavadocVariable">
             <property name="scope" value="protected"/>
-            <property name="severity" value="ignore"/>
-        </module>
-
-        <!-- Checks if a line it too long. -->
-        <module name="LineLength">
-            <property name="max" value="120"/>
             <property name="severity" value="ignore"/>
         </module>
 
