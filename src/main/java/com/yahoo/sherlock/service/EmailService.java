@@ -140,6 +140,7 @@ public class EmailService {
      * Sends the consolidated alerts over the specified trigger period.
      * @param zonedDateTime current date as ZonedDateTime object
      * @param trigger trigger name value
+     * @throws IOException io exception
      */
     public void sendConsolidatedEmail(ZonedDateTime zonedDateTime, String trigger) throws IOException {
         List<EmailMetaData> emails = emailMetadataAccessor.getAllEmailMetadataByTrigger(trigger);

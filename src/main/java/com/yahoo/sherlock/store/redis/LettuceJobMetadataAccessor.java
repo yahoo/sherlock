@@ -160,6 +160,7 @@ public class LettuceJobMetadataAccessor
      * Delete a set of jobs where the jobs are given.
      *
      * @param jobs jobs to delete
+     * @throws IOException io exception
      */
     public void deleteGivenJobs(Set<JobMetadata> jobs) throws IOException {
         log.info("Deleting [{}] given jobs", jobs.size());

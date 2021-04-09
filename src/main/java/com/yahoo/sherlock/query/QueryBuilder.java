@@ -258,6 +258,7 @@ public class QueryBuilder {
     }
 
     /**
+     * @param isBackFillQuery true if backfill query
      * @return query builder instance
      */
     public QueryBuilder setIsBackFillQuery(boolean isBackFillQuery) {
@@ -412,6 +413,7 @@ public class QueryBuilder {
      * @param period granularity to set
      * @param granularityRange granularity range to aggregate on
      * @param startTime start time of query
+     * @param isBackFillQuery true if backfill query
      */
     protected static void setObjectGranularity(JsonObject object, String period, Integer granularityRange, ZonedDateTime startTime, Boolean isBackFillQuery) {
         period = isBackFillQuery ? period : period.replace("1", granularityRange.toString());

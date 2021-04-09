@@ -173,6 +173,7 @@ public interface JobMetadataAccessor {
     /**
      * Method to save redis snapshot.
      * @return OK
+     * @throws IOException io exception
      */
     String saveRedisJobsMetadata() throws IOException;
 }

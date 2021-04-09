@@ -46,6 +46,8 @@ public class SHttpClient {
      *
      * @param timeout the connection timeout
      * @param retries the number of times the client should reattempt connections
+     * @param sslAuth enable/disable ssl auth
+     * @param principal ssl auth principal string value
      * @return HttpClient object
      */
     public HttpClient newHttpClient(int timeout, int retries, boolean sslAuth, String principal) {
@@ -79,6 +81,8 @@ public class SHttpClient {
     /**
      * Get a new {@code HttpClient} with a ssl Auth param.
      *
+     * @param sslAuth enable/disable ssl auth
+     * @param principal ssl auth principal string value
      * @return HttpClient
      */
     public HttpClient newHttpClient(boolean sslAuth, String principal) {

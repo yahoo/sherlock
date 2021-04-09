@@ -81,6 +81,8 @@ public class DruidCluster implements Serializable {
      * @param brokerPort the cluster broker port
      * @param brokerEndpoint the cluster broker endpoint
      * @param hoursOfLag the cluster sla in hours
+     * @param isSSLAuth enable/disable ssl authentication
+     * @param principalName ssl principal name
      */
     public DruidCluster(
         Integer clusterId,

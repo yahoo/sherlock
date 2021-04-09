@@ -25,6 +25,7 @@ public @interface Attribute {
 
     /**
      * The attribute type.
+     * @return type
      */
     Type type() default Type.UNSPECIFIED;
 

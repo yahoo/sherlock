@@ -54,12 +54,21 @@ public class SSslUtils {
     /** Map to cache existing ssl context. **/
     private static final Map<String, SSLContext> SSL_CONTEXT_MAP = new ConcurrentHashMap<>();
 
-    /** principal presence check. **/
+    /**
+     * Principal presence check.
+     * @param principal principal string value
+     * @param type type of principal ("key" or "cert")
+     * @return predicate
+     **/
     public Predicate<String> isPrincipalAndTypePresent(String principal, String type) {
         return s -> s.contains(principal) && s.contains(type);
     }
 
-    /** Method to get SSLConnectionSocketFactory with validation. **/
+    /**
+     * Method to get SSLConnectionSocketFactory with validation.
+     * @param sSslConfigs ssl configs object
+     * @return SSLConnectionSocketFactory
+     **/
     public SSLConnectionSocketFactory createConnectionSocketFactoryWithValidation(@NonNull SSslConfigs sSslConfigs) {
         log.info("Initializing SSLConnectionSocketFactory creation with validation");
         SSslConfigs.SSslConfigsBuilder sSslConfigsBuilder = SSslConfigs.SSslConfigsBuilder.getSSslConfigsBuilder()
@@ -76,7 +85,11 @@ public class SSslUtils {
         return createSslfWithValidation(sSslConfigsBuilder.build());
     }
 
-    /** Method to get SSLConnectionSocketFactory with validation. **/
+    /**
+     * Method to get SSLConnectionSocketFactory with validation.
+     * @param sSslConfigs ssl configs object
+     * @return SSLConnectionSocketFactory
+     **/
     public SSLConnectionSocketFactory createSslfWithValidation(@NonNull SSslConfigs sSslConfigs) {
         if (!StringUtils.isNotEmpty(sSslConfigs.getTrustStorePath()) || !StringUtils.isNotEmpty(sSslConfigs.getKeyStorePath())) {
             log.error("Missing values for trustStorePath, keyStorePath parameters");
@@ -110,7 +123,11 @@ public class SSslUtils {
         return new SSLConnectionSocketFactory(Objects.requireNonNull(sslContext), getHostNameVerifier(sSslConfigs));
     }
 
-    /** Method to load keystore. **/
+    /**
+     * Method to load keystore.
+     * @param builder ssl context builder
+     * @param sSslConfigs ssl configs object
+     **/
     public void setKeyStoreContext(SSLContextBuilder builder, @NonNull SSslConfigs sSslConfigs) {
         if (StringUtils.isNotEmpty(sSslConfigs.getKeyStorePath()) && StringUtils.isNotEmpty(sSslConfigs.getKeyStorePass())) {
             log.info("Initializing sslContext with keyStorePath={}", sSslConfigs.getKeyStorePath());
@@ -129,7 +146,11 @@ public class SSslUtils {
         }
     }
 
-    /** Method to load truststore. **/
+    /**
+     * Method to load truststore.
+     * @param builder ssl context builder
+     * @param sSslConfigs ssl configs object
+     **/
     public void setTrustStoreContext(SSLContextBuilder builder, @NonNull SSslConfigs sSslConfigs) {
         if (StringUtils.isNotEmpty(sSslConfigs.getTrustStorePath())) {
             log.info("Initializing sslContext with trustStorePath={}", sSslConfigs.getTrustStorePath());
@@ -148,7 +169,11 @@ public class SSslUtils {
         }
     }
 
-    /** Method to get hostname verifier instance based on {@link SSslConfigs#getStrict()}. **/
+    /**
+     * Method to get hostname verifier instance.
+     * @param sSslConfigs ssl configs object
+     * @return HostnameVerifier
+     **/
     public HostnameVerifier getHostNameVerifier(@NonNull SSslConfigs sSslConfigs) {
         HostnameVerifier hostnameVerifier;
         if (sSslConfigs.getStrict()) {
@@ -161,17 +186,27 @@ public class SSslUtils {
         return hostnameVerifier;
     }
 
-    /** Method to get key for caching SSLContext into {@link com.yahoo.sherlock.utils.SSslUtils#SSL_CONTEXT_MAP}. **/
+    /**
+     * Method to get key for caching SSLContext into {@link com.yahoo.sherlock.utils.SSslUtils#SSL_CONTEXT_MAP}.
+     * @param sSslConfigs ssl configs object
+     * @return key value
+     **/
     public String getKey(@NonNull SSslConfigs sSslConfigs) {
         return sSslConfigs.getTrustStorePath() + sSslConfigs.getKeyStorePath();
     }
 
-    /** Method to get SSLConnectionSocketFactory without validation. **/
+    /**
+     * Method to get SSLConnectionSocketFactory without validation.
+     * @return SSLConnectionSocketFactory
+     **/
     public SSLConnectionSocketFactory createConnectionSocketFactoryWithoutValidation() {
         return createSslfWithoutValidation();
     }
 
-    /** Method to get SSLConnectionSocketFactory without validation. **/
+    /**
+     * Method to get SSLConnectionSocketFactory without validation.
+     * @return SSLConnectionSocketFactory
+     **/
     public SSLConnectionSocketFactory createSslfWithoutValidation() {
         log.info("Initializing SSLConnectionSocketFactory creation without validation");
         try {
@@ -185,7 +220,12 @@ public class SSslUtils {
         }
     }
 
-    /** Method to get SSLConnectionSocketFactory based on custom class specified by {@link com.yahoo.sherlock.settings.CLISettings#CUSTOM_SSL_CONTEXT_PROVIDER_CLASS}. **/
+    /**
+     * Method to get SSLConnectionSocketFactory based on custom class specified by {@link com.yahoo.sherlock.settings.CLISettings#CUSTOM_SSL_CONTEXT_PROVIDER_CLASS}.
+     * @param sSslConfigs ssl configs object
+     * @param className class name of custom ssl context provider
+     * @return SSLConnectionSocketFactory
+     **/
     public SSLConnectionSocketFactory createConnectionSocketFactoryWithCustomImpl(@NonNull SSslConfigs sSslConfigs, String className) {
         log.info("Initializing custom SSLConnectionSocketFactory creation for class {}", className);
         try {
@@ -211,7 +251,13 @@ public class SSslUtils {
         }
     }
 
-    /** Method to get filename based on principal and type ("key" or "cert") if exist at given dir location. **/
+    /**
+     * Method to get filename based on principal and type ("key" or "cert") if exist at given dir location.
+     * @param principal principal name (should be unique part of filename)
+     * @param dir path to directory containing principal files
+     * @param type type of principal ("key" or "cert")
+     * @return Optional
+     * **/
     public Optional<String> getFilePath(String principal, String dir, String type) {
         try (Stream<Path> paths = Files.walk(Paths.get(dir))) {
             return paths.filter(Files::isRegularFile)
@@ -224,7 +270,11 @@ public class SSslUtils {
         return Optional.empty();
     }
 
-    /** Method to build ssl configs from provided principal name. **/
+    /**
+     * Method to build ssl configs from provided principal name.
+     * @param principal principal name (should be unique part of filename)
+     * @return SSslConfigs
+     **/
     public SSslConfigs buildSSLConfigs(String principal) {
         if (principal != null && !principal.isEmpty()) {
             Optional<String> hasKeyFile = getFilePath(principal, CLISettings.KEY_DIR, Constants.KEY);

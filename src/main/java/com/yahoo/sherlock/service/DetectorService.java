@@ -192,6 +192,7 @@ public class DetectorService {
      * @param egadsConfig      the EGADS configuration
      * @param endTimeMinutes   the expected last data point time in minutes
      * @param frequency        frequency of the job
+     * @param granularity      granularity of druid query
      * @param granularityRange granularity range to aggregate on
      * @return list of anomalies from the detection job
      * @throws SherlockException if an error occurs during analysis

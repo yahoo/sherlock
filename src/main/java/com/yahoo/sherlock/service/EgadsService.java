@@ -205,6 +205,7 @@ public class EgadsService {
      *
      * @param timeseries input timeseries
      * @return ProcessableObject instance
+     * @throws SherlockException exception
      */
     protected ProcessableObject getEgadsProcessableObject(TimeSeries timeseries) throws SherlockException {
         return ProcessableObjectFactory.create(EgadsUtils.fillMissingData(timeseries, p), p);

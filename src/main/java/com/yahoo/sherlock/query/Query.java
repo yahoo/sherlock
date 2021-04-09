@@ -145,19 +145,19 @@ public class Query {
         if (this.queryObj.has(QueryConstants.DIMENSIONS) && this.queryObj.get(QueryConstants.DIMENSIONS).isJsonArray()) {
             JsonArray dimensionsArray = this.queryObj.getAsJsonArray(QueryConstants.DIMENSIONS);              // get dimensions as an array
             dimensionsArray.forEach(jsonElement -> {
-                    if (jsonElement.isJsonObject()) {
-                        JsonObject jsonObject = jsonElement.getAsJsonObject();
-                        String dimName = QueryConstants.UNKNOWN;
-                        if (jsonObject.has(QueryConstants.OUTPUT_NAME)) {
-                            dimName = jsonObject.getAsJsonPrimitive(QueryConstants.OUTPUT_NAME).getAsString();
-                        } else if (jsonObject.has(QueryConstants.DIMENSION)) {
-                            dimName = jsonObject.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString();
-                        }
-                        dimensions.add(dimName);
-                    } else {
-                        dimensions.add(jsonElement.getAsString());
+                if (jsonElement.isJsonObject()) {
+                    JsonObject jsonObject = jsonElement.getAsJsonObject();
+                    String dimName = QueryConstants.UNKNOWN;
+                    if (jsonObject.has(QueryConstants.OUTPUT_NAME)) {
+                        dimName = jsonObject.getAsJsonPrimitive(QueryConstants.OUTPUT_NAME).getAsString();
+                    } else if (jsonObject.has(QueryConstants.DIMENSION)) {
+                        dimName = jsonObject.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString();
                     }
-                });                                                                                               // make a set of dimensions
+                    dimensions.add(dimName);
+                } else {
+                    dimensions.add(jsonElement.getAsString());
+                }
+            });                                                                                               // make a set of dimensions
         } else if (this.queryObj.has(QueryConstants.DIMENSION)) {                                             // check for single dimension
             dimensions.add(this.queryObj.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString());
         }

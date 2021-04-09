@@ -28,7 +28,10 @@ public class SSslConfigs {
     @Retention(RetentionPolicy.RUNTIME)
     public @interface SSLProperty {
 
-        /** Parameter Name. **/
+        /**
+         * Parameter Name.
+         * @return name of the param
+         **/
         String name();
     }
 
@@ -81,66 +84,108 @@ public class SSslConfigs {
             sSslConfigs = new SSslConfigs();
         }
 
-        /** Method to get new builder. **/
+        /**
+         * Method to get new builder.
+         * @return SSslConfigsBuilder
+         * **/
         public static SSslConfigsBuilder getSSslConfigsBuilder() {
             return new SSslConfigsBuilder();
         }
 
-        /** Set truststore path. **/
+        /**
+         * Set truststore path.
+         * @param trustStorePath truststore path
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder trustStorePath(String trustStorePath) {
             this.sSslConfigs.trustStorePath = trustStorePath;
             return this;
         }
 
-        /** Set truststore type. **/
+        /**
+         * Set truststore type.
+         * @param trustStoreType type of the truststore
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder trustStoreType(String trustStoreType) {
             this.sSslConfigs.trustStoreType = trustStoreType;
             return this;
         }
 
-        /** Set truststore pass. **/
+        /**
+         * Set truststore pass.
+         * @param trustStorePass truststore password
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder trustStorePass(String trustStorePass) {
             this.sSslConfigs.trustStorePass = trustStorePass;
             return this;
         }
 
-        /** Set keystore path. **/
+        /**
+         * Set keystore path.
+         * @param keyStorePath keystore path
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder keyStorePath(String keyStorePath) {
             this.sSslConfigs.keyStorePath = keyStorePath;
             return this;
         }
 
-        /** Set keystore type. **/
+        /**
+         * Set keystore type.
+         * @param keyStoreType type of the keystore
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder keyStoreType(String keyStoreType) {
             this.sSslConfigs.keyStoreType = keyStoreType;
             return this;
         }
 
-        /** Set keystore pass. **/
+        /**
+         * Set keystore pass.
+         * @param keyStorePass keystore password
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder keyStorePass(String keyStorePass) {
             this.sSslConfigs.keyStorePass = keyStorePass;
             return this;
         }
 
-        /** Set private key path. **/
+        /**
+         * Set private key path.
+         * @param keyPath path to key file
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder keyPath(String keyPath) {
             this.sSslConfigs.keyPath = keyPath;
             return this;
         }
 
-        /** Set public cert path. **/
+        /**
+         * Set public cert path.
+         * @param certPath path to cert file
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder certPath(String certPath) {
             this.sSslConfigs.certPath = certPath;
             return this;
         }
 
-        /** Set/unset strict hostname verification. **/
+        /**
+         * Set/unset strict hostname verification.
+         * @param isStrict enable/disable strict hostname verification
+         * @return SSslConfigsBuilder
+         **/
         public SSslConfigsBuilder isStrict(boolean isStrict) {
             this.sSslConfigs.strict = isStrict;
             return this;
         }
 
-        /** Build SSslConfigs. **/
+        /**
+         * Build SSslConfigs.
+         * @return SSslConfigs
+         **/
         public SSslConfigs build() {
             return sSslConfigs;
         }

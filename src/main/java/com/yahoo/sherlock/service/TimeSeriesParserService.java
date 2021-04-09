@@ -56,12 +56,12 @@ public class TimeSeriesParserService {
             jsonTimeSeries.getJsonDataSequence().stream()
                 .filter(JsonTimeSeries.combinedFilters())                                    // filter invalid datapoints
                 .forEach(jsonDataPoint -> {
-                        try {
-                            jsonTimeSeries.processJsonDataPoint(jsonDataPoint);
-                        } catch (Exception e) {
-                            log.error("Error while processing data point!", e);
-                        }
-                    });
+                    try {
+                        jsonTimeSeries.processJsonDataPoint(jsonDataPoint);
+                    } catch (Exception e) {
+                        log.error("Error while processing data point!", e);
+                    }
+                });
             jsonTimeSeries.getUniqueTimeSeriesMap()
                 .values()
                 .stream()
@@ -130,6 +130,7 @@ public class TimeSeriesParserService {
      * @param granularityRange granularity range to aggregate on
      * @param intervals        intervals to lookback
      * @return an array of time series lists
+     * @throws SherlockException exception
      */
     public List<TimeSeries>[] subseries(List<TimeSeries> sources, long start, long end, Granularity granularity, Integer granularityRange, int intervals)
         throws SherlockException {
@@ -151,23 +152,23 @@ public class TimeSeriesParserService {
             final long localEnd = (i + singleInterval) * 60;
             List<TimeSeries> subTimeseriesList;
             subTimeseriesList = sources.stream().map(source -> {
-                    TimeSeries subTimeseries = new TimeSeries();
-                    // copy meta info
-                    subTimeseries.meta = copyMetricMeta(source.meta);
-                    // copy datapoints for sub timeseries
-                    source.data.stream()
-                        .filter(datapoint -> datapoint.time > localStart && datapoint.time <= localEnd)
-                        .forEach(datapoint -> {
-                                try {
-                                    subTimeseries.append(datapoint.time, datapoint.value);
-                                } catch (Exception e) {
-                                    log.error("Error while appending data to sub timeseries!");
-                                }
-                            });
-                    return subTimeseries;
-                })
-                .map(LambdaException.functionalExceptionHandler(timeSeries -> EgadsUtils.fillMissingData(timeSeries, granularityRange, 1)))
-                .collect(Collectors.toList());
+                TimeSeries subTimeseries = new TimeSeries();
+                // copy meta info
+                subTimeseries.meta = copyMetricMeta(source.meta);
+                // copy datapoints for sub timeseries
+                source.data.stream()
+                    .filter(datapoint -> datapoint.time > localStart && datapoint.time <= localEnd)
+                    .forEach(datapoint -> {
+                        try {
+                            subTimeseries.append(datapoint.time, datapoint.value);
+                        } catch (Exception e) {
+                            log.error("Error while appending data to sub timeseries!");
+                        }
+                    });
+                return subTimeseries;
+            })
+            .map(LambdaException.functionalExceptionHandler(timeSeries -> EgadsUtils.fillMissingData(timeSeries, granularityRange, 1)))
+            .collect(Collectors.toList());
             result[intervalIndex] = subTimeseriesList;
             intervalIndex += 1;
         }

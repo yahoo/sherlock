@@ -85,6 +85,7 @@ public interface EmailMetadataAccessor {
     /**
      * Method to delete the email metadata object from all index and database.
      * @param emailMetadata email metadata object to delete
+     * @throws IOException io exception
      */
     void deleteEmailMetadata(EmailMetaData emailMetadata) throws IOException;
 
@@ -92,6 +93,7 @@ public interface EmailMetadataAccessor {
      * Method to remove jobId association with given list of emails.
      * @param emailIds list of emails
      * @param jobId jobId
+     * @throws IOException io exception
      */
     void removeJobIdFromEmailIndex(List<String> emailIds, String jobId) throws IOException;
 

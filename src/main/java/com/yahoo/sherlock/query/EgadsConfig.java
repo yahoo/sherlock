@@ -36,11 +36,13 @@ public class EgadsConfig {
     public @interface EgadsParam {
         /**
          * The name of the EGADS parameter.
+         * @return name of the param
          */
         String name();
 
         /**
          * The default value of the parameter.
+         * @return default value
          */
         String def();
     }

@@ -38,6 +38,7 @@ public class EgadsUtils {
      * @param aggr        the level of aggregation
      * @param fillMissing whether the method should fill in missing data
      * @return processed time series
+     * @throws SherlockException exception
      */
     public static TimeSeries fillMissingData(TimeSeries timeseries, int aggr, int fillMissing) throws SherlockException {
         TimeSeries output = new TimeSeries();
@@ -113,6 +114,7 @@ public class EgadsUtils {
      * @param timeseries input timeseries
      * @param p          properties of egads
      * @return complete timeseries
+     * @throws SherlockException exception
      */
     public static TimeSeries fillMissingData(TimeSeries timeseries, Properties p) throws SherlockException {
         int aggr;
