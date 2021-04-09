@@ -15,6 +15,7 @@ import com.yahoo.sherlock.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -347,8 +348,18 @@ public class CLISettings {
         log.info("Attempting to read config file at: {}", CONFIG_FILE);
         Field[] configFields = Utils.findFields(getClass(), Parameter.class);
         Properties props = new Properties();
-        InputStream is = new FileInputStream(CONFIG_FILE);
-        props.load(is);
+        InputStream is = null;
+        try {
+            is = new FileInputStream(CONFIG_FILE);
+            props.load(is);
+        } catch (FileNotFoundException e) {
+            log.error("File not found!", e);
+        } catch (IOException io) {
+            log.error("Exception while reading file!", io);
+        } finally {
+            assert is != null;
+            is.close();
+        }
         for (Field configField : configFields) {
             String configName = configField.getName();
             Class<?> type = configField.getType();
