@@ -31,7 +31,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
         <enforcer.skip>true</enforcer.skip>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
         <maven-surefire-report-plugin.version>${maven-surefire-plugin.version}</maven-surefire-report-plugin.version>
     </properties>
 
