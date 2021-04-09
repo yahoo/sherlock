@@ -6,7 +6,7 @@
     <packaging>jar</packaging>
     <name>sherlock</name>
     <description>Anomaly detection tool for timeseries data in Druid</description>
-    <version>1.11-SNAPSHOT</version>
+    <version>1.11</version>
     <url>https://github.com/yahoo/sherlock</url>
 
     <licenses>
@@ -38,7 +38,7 @@
         <connection>scm:git:git@github.com:yahoo/sherlock.git</connection>
         <developerConnection>scm:git:git@github.com:yahoo/sherlock.git</developerConnection>
         <url>https://github.com/yahoo/sherlock</url>
-        <tag>HEAD</tag>
+        <tag>sherlock-1.11</tag>
     </scm>
 
     <issueManagement>
