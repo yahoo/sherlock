@@ -19,7 +19,10 @@ jobs:
         server-id: github
         settings-path: ${{ github.workspace }}
 
-    - name: Publish to GitHub Packages Apache Maven
+    - name: Build with Maven
+      run: mvn install
+
+    - name: Publish Snapshots to Maven Central
       run: ./.github/scripts/publish.sh
       env:
         GPG_ENCPASS: ${{ secrets.GPG_ENCPASS }}
