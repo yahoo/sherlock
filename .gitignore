@@ -8,3 +8,4 @@ dependency-reduced-pom.xml
 *.db
 pom.xml.releaseBackup
 release.properties
+.DS_Store
