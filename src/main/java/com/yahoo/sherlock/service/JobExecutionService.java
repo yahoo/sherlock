@@ -353,7 +353,7 @@ public class JobExecutionService {
     public void unscheduleErroredJob(JobMetadata job) {
         try {
             serviceFactory.newSchedulerServiceInstance().stopJob(job.getJobId());
-            job.setJobStatus(JobStatus.ERROR.getValue());
+            job.setJobStatus(JobStatus.NODATA.getValue());
             jobMetadataAccessor.putJobMetadata(job);
         } catch (SchedulerException | IOException e) {
             log.error("Error while unscheduling failed job!", e);
