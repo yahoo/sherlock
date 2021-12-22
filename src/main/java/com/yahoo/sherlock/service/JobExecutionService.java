@@ -6,6 +6,8 @@
 
 package com.yahoo.sherlock.service;
 
+import static com.yahoo.sherlock.settings.CLISettings.NODATA_ON_FAILURE;
+
 import com.beust.jcommander.internal.Lists;
 import com.google.gson.JsonArray;
 import com.yahoo.egads.data.Anomaly;
@@ -105,7 +107,7 @@ public class JobExecutionService {
                 reports = getReports(anomalies, job);
             } catch (SherlockException | ClusterNotFoundException e) {
                 log.error("Error while executing job: [{}]", job.getJobId(), e);
-                unscheduleErroredJob(job);
+                handleFailedQuery(job);
             }
             EmailService emailService = serviceFactory.newEmailServiceInstance();
             if (reports.isEmpty()) {
@@ -350,10 +352,14 @@ public class JobExecutionService {
      *
      * @param job the errored job
      */
-    public void unscheduleErroredJob(JobMetadata job) {
+    public void handleFailedQuery(JobMetadata job) {
         try {
             serviceFactory.newSchedulerServiceInstance().stopJob(job.getJobId());
-            job.setJobStatus(JobStatus.NODATA.getValue());
+            if (NODATA_ON_FAILURE) {
+                job.setJobStatus(JobStatus.NODATA.getValue());
+            } else {
+                job.setJobStatus(JobStatus.ERROR.getValue());
+            }
             jobMetadataAccessor.putJobMetadata(job);
         } catch (SchedulerException | IOException e) {
             log.error("Error while unscheduling failed job!", e);

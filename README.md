@@ -202,6 +202,7 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 | --debug-mode                          |    -                | `false`           | [debug-mode](#debug-mode)                           |
 | --timeseries-completeness             |    -                | `60`              | [timeseries-completeness](#timeseries-completeness) |
 | --http-client-timeout                 |    -                | `20000`           | [http-client-timeout](#http-client-timeout)         |
+| --nodata-on-failure                   |    -                | `false`           | [nodata-on-failure](#nodata-on-failure)         |
 | --backup-redis-db-path                |    -                |  `null`           | [backup-redis-db-path](#backup-redis-db-path)       |
 | --druid-brokers-list-file             |    -                |  `null`           | [druid-brokers-list-file](#druid-brokers-list-file) |
 | --truststore-path                     |    -                |  `null`           | [truststore-path](#truststore-path)                 |
@@ -278,6 +279,8 @@ Debug mode enables debug routes. Ex. '/DatabaseJson' (shows redis data as json d
 This defines minimum fraction of datapoints needed in the timeseries to consider it as a valid timeseries o/w sherlock ignores such timeseries. (default value 60 i.e. 0.6 in fraction)
 #### http-client-timeout
 HttpClient timeout can be configured using this(in millis). (default value 20000)
+#### nodata-on-failure
+Specify if a job should be set to NODATA rather than ERROR following a druid query failure. (default value false)
 #### backup-redis-db-path
 Backup redis DB at given file path as json dump of indices and objects. Backup is done per day at midnight. Default this parameter is null i.e. no buckup. However, BGSAVE command is run at midnight to save redis local dump.
 #### druid-brokers-list-file

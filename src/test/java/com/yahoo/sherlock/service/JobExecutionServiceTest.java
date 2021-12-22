@@ -159,7 +159,7 @@ public class JobExecutionServiceTest {
         job.setEffectiveQueryTime(123456);
         jes.execute(job);
         verify(jes, times(1)).execute(any(JobMetadata.class));
-        verify(jes, times(1)).unscheduleErroredJob(any());
+        verify(jes, times(1)).handleFailedQuery(any());
     }
 
     @Test
@@ -167,8 +167,8 @@ public class JobExecutionServiceTest {
         initMocks();
         JobMetadata job = new JobMetadata();
         job.setJobId(1);
-        doCallRealMethod().when(jes).unscheduleErroredJob(any());
-        jes.unscheduleErroredJob(job);
+        doCallRealMethod().when(jes).handleFailedQuery(any());
+        jes.handleFailedQuery(job);
         verify(jma, times(1)).putJobMetadata(job);
     }
 

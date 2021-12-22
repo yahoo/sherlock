@@ -221,6 +221,12 @@ public class CLISettings {
     public static int HTTP_CLIENT_TIMEOUT = 20000;
 
     /**
+     * What to do in event of query failure.
+     */
+    @Parameter(names = "--nodata-on-failure", description = "If true then Sherlock will report NODATA in the event of a Druid query failure")
+    public static boolean NODATA_ON_FAILURE = false;
+
+    /**
      * Backup redis DB local json dump file path.
      */
     @Parameter(names = "--backup-redis-db-path", description = "Backup redis DB local json dump file path. (default null i.e no backup)")
@@ -308,7 +314,7 @@ public class CLISettings {
     /**
      * Parameters to ignore when printing fields.
      */
-    private static String[] PRINT_IGNORED = {"log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED", "TRUSTSTORE_PASSWORD", "KEYSTORE_PASSWORD"};
+    private static String[] PRINT_IGNORED = { "log", "HELP", "REDIS_PASSWORD", "PRINT_IGNORED", "TRUSTSTORE_PASSWORD", "KEYSTORE_PASSWORD"};
 
     /**
      * Print all the settings.
@@ -375,7 +381,7 @@ public class CLISettings {
                         configField.set(null, configValue);
                     }
                 } catch (IllegalAccessException | IllegalArgumentException e) {
-                    log.error("Could not set {} to {}: {}", configName, configValue, e.toString());
+                    log.error("Could not set {} to {}: {}", configName, configValue, e);
                     throw new IOException(String.format(
                             "Failed to set %s to value %s",
                             configName,
