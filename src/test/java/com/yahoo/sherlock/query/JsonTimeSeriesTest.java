@@ -44,7 +44,7 @@ public class JsonTimeSeriesTest {
         // setting druid response with 'result' as a json array
         String druidResponse = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_valid_response_2.json")));
         jsonArray = gson.fromJson(druidResponse, JsonArray.class);
-        // setting query object with json query object
+        // setting query object with json query object and dimension primitive
         String queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_2.json")));
         JsonObject queryJsonObject = gson.fromJson(queryString, JsonObject.class);
         query = new Query(queryJsonObject, 123, 1234, Granularity.HOUR, 1);
@@ -67,6 +67,15 @@ public class JsonTimeSeriesTest {
         queryJsonObject = gson.fromJson(queryString, JsonObject.class);
         query = new Query(queryJsonObject, 123, 1234, Granularity.HOUR, 1);
         jsonTimeSeriesWithResultJsonObject = new JsonTimeSeries(jsonArray, query);
+
+        // setting druid response with 'result' as a json array
+        druidResponse = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_valid_response_2.json")));
+        jsonArray = gson.fromJson(druidResponse, JsonArray.class);
+        // setting query object with json query object and dimension object
+        queryString = new String(Files.readAllBytes(Paths.get("src/test/resources/druid_query_5.json")));
+        queryJsonObject = gson.fromJson(queryString, JsonObject.class);
+        query = new Query(queryJsonObject, 123, 1234, Granularity.HOUR, 1);
+        jsonTimeSeriesWithResultJsonArray = new JsonTimeSeries(jsonArray, query);
     }
 
     /**

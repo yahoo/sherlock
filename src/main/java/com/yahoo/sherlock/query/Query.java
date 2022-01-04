@@ -159,7 +159,18 @@ public class Query {
                 }
             });                                                                                               // make a set of dimensions
         } else if (this.queryObj.has(QueryConstants.DIMENSION)) {                                             // check for single dimension
-            dimensions.add(this.queryObj.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString());
+            if (this.queryObj.get(QueryConstants.DIMENSION).isJsonObject()) {
+                JsonObject jsonObject = this.queryObj.getAsJsonObject(QueryConstants.DIMENSION);
+                String dimName = QueryConstants.UNKNOWN;
+                if (jsonObject.has(QueryConstants.OUTPUT_NAME)) {
+                    dimName = jsonObject.getAsJsonPrimitive(QueryConstants.OUTPUT_NAME).getAsString();
+                } else if (jsonObject.has(QueryConstants.DIMENSION)) {
+                    dimName = jsonObject.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString();
+                }
+                dimensions.add(dimName);
+            } else {
+                dimensions.add(this.queryObj.getAsJsonPrimitive(QueryConstants.DIMENSION).getAsString());
+            }
         }
         return dimensions;
     }
