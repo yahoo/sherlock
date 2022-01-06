@@ -22,7 +22,7 @@ function calendarHeatmap() {
     // defaults
     var LAG_IN_HOUR = 0;
     var frequency = 'day';
-    var width = 1150;
+    var width = 1190;
     var height = 140;
     var selector = 'body';
     var SQUARE_LENGTH = 16;
