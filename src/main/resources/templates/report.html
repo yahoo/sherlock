@@ -70,13 +70,9 @@
     }
 
     function getReport(timestamp, type) {
-            $("#rerunButtonContainer").attr("hidden", true);
+            $("#rerunButtonContainer").attr("hidden", false);
+            $("#selectedTimestamp").val(timestamp);
             $("#tableContainer").html("");
-            if (type === "nodata") {
-                $("#rerunButtonContainer").attr("hidden", false);
-                $("#selectedTimestamp").val(timestamp);
-                return;
-            }
             var data = {};
             data.selectedDate = timestamp;
             data.frequency = [[${frequency}]];
