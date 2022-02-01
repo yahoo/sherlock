@@ -9,3 +9,5 @@ dependency-reduced-pom.xml
 pom.xml.releaseBackup
 release.properties
 .DS_Store
+docker/
+Dockerfile
