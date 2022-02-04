@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+<div id="wrapper">
+    <div id="sidebar-wrapper" th:replace="fragments/nav :: nav"></div>
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 th:text="${title}">Instant Job Query</h1>
+                    <div th:if="${error != null}" th:text="${error}" class="alert alert-danger" role="alert">
+                        Error message
+                    </div>
+                    <form id="queryForm" method='post' autocomplete="on">
+                        <fieldset>
+                            <input id="jobId" type="hidden" th:value="${job.getJobId()}"/>
+
+                            <div class="form-group">
+                                <label class="control-label" for="druidCluster">Druid Cluster:</label>
+                                <select id="druidCluster" class="form-control" name="clusterId"
+                                        th:field="${druidCluster}" th:required="true">
+                                    <option th:each="druidCluster : ${druidClusters}"
+                                            th:value="${druidCluster.getClusterId()}"
+                                            th:selected="${druidCluster.getClusterId().equals(job.getClusterId())}"
+                                            th:attr="data-url=${druidCluster.getBrokerUrl()},data-lag=${druidCluster.getHoursOfLag()}"
+                                            th:text="${druidCluster.getClusterName()}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="hoursOfLag">Time SLA</label>
+                                <div>
+                                    <input id="hoursOfLag" name="hoursOfLag" type="number"
+                                           class="form-control input-md" size="25" th:value="${job.getHoursOfLag()}"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="testName">Anomaly Test-Name:</label>
+                                <div>
+                                    <input id="testName" name="testName" type="text" class="form-control input-md"
+                                           size="25" th:value="${job.getTestName()}" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="testDescription">Description:</label>
+                                <div>
+                                    <textarea id="testDescription" name="testDescription" type="text"
+                                              class="form-control input-md" placeholder="Enter the description(optional)"
+                                              th:text="${job.getTestDescription()}" rows="2" cols="200"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="queryText">Druid Query:</label><br/>
+                                <button id="removeGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
+                                    <span class="glyphicon glyphicon-remove"></span> Remove
+                                </button>
+                                <button id="copyGlyphicon" type="button" class="btn btn-default btn-sm custom-btn">
+                                    <span class="glyphicon glyphicon-copy"></span> Copy
+                                </button>
+                                <br/>
+                                <textarea id="queryText" name="queryText" type="text" class="form-control input-md" rows="20" cols="200" th:text="${job.getUserQuery()}"></textarea>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView != null}">
+                                <label class="control-label" for="queryEndTimeText">Query End Time:</label>
+                                <p id="queryEndTimeMsg" class="bg-info">Use this for custom query time-range.
+                                    <code>Default: 'Date.now()' i.e. current date</code></p>
+                                <input type="text" id="queryEndTimeText" name="queryEndTimeText" class="form-control input-md" th:required="true" autocomplete="false"/>
+                            </div>
+
+                            <div class="form-group" id="granularitySection">
+                                <label class="control-label" for="granularity">Granularity: </label>
+                                <input id="granularityRange" name="granularityRange" type="number"
+                                       class="form-control input-md" size="25" min="1" th:value="${job.getGranularityRange()}"/>
+                                <select id="granularity" class="form-control"  th:field="*{granularity}" th:required="true" onchange="selectMax()">
+                                    <option th:each="granularity : ${granularities}"
+                                            th:value="${granularity}"
+                                            th:selected="${granularity} == ${job.getGranularity()} ? true : false"
+                                            th:text="${granularity}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="timeseriesRange">Timeseries Range:</label>
+                                <div>
+                                    <input id="timeseriesRange" name="timeseriesRange" type="number"
+                                           class="form-control input-md" size="25" th:value="${day}" th:required="true" onchange="changeDetectionWindowMax()"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" th:if="${instantView != null}">
+                                <label class="control-label" for="detectionWindow">Detection Window:</label>
+                                <p id="textForDetectionWindowHelp" class="bg-info"></p>
+                                <div>
+                                    <input id="detectionWindow" name="detectionWindow" type="number"
+                                           class="form-control input-md" size="25" min="1" value="1" th:max="${day}" th:required="true"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="timeseriesModelSection">
+                                <label class="control-label" for="tsModels">Timeseries Model:</label>
+                                <select id="tsModels" name="tsModels" class="form-control"
+                                        th:field="*{timeseriesModel}">
+                                    <option th:each="timeseriesModel : ${timeseriesModels}"
+                                            th:value="${timeseriesModel}"
+                                            th:selected="${timeseriesModel} == ${job.getTimeseriesModel()} ? true : false"
+                                            th:text="${timeseriesModel}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="anomalyDetectionModelSection">
+                                <label class="control-label" for="adModels">Anomaly Detection Model:</label>
+                                <select id="adModels" name="adModels" class="form-control"
+                                        th:field="*{anomalyDetectionModel}">
+                                    <option th:each="anomalyDetectionModel : ${anomalyDetectionModels}"
+                                            th:value="${anomalyDetectionModel}"
+                                            th:selected="${anomalyDetectionModel} == ${job.getAnomalyDetectionModel()} ? true : false"
+                                            th:text="${anomalyDetectionModel}"></option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="sdSlider">KSigma Sensitivity:
+                                    <a data-toggle="popover" data-trigger="hover">
+                                        help <span class="glyphicon glyphicon-info-sign"></span>
+                                    </a>
+                                </label>
+                                <p id="defaultSliderMsg" class="bg-info">Select '&sigma;' threshold for normal distribution,
+                                    bigger '&sigma;' values capture less anomalies than smaller '&sigma;' values.
+                                    <code>Recommended: '3&sigma;'</code></p>
+                                <div class="well">
+                                    <input id="sdSlider" data-slider-id='sdControl' type="text" data-slider-min="1"
+                                           data-slider-max="6" data-slider-step="0.5"/>
+                                    <span id="sdSliderValContainer" style="padding-left:4em">Current '&sigma;' Value:
+                                        <span id="sdSliderVal" th:text="${job.getSigmaThreshold()}"></span>&sigma;</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="submitInsta">Actions:</label>
+                                <div>
+                                    <!--Show insta result button for flash query view-->
+                                    <span>
+                                            <input id="submitInsta" type="submit" class="btn btn-success"
+                                                   value="Flash Results"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                    <div id="table-container" class="form-group"></div>
+                    <div id="chart-container" class="row"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id='popoverInfo' th:hidden="true">popover msg.</div>
+
+    <!-- save confirmation -->
+    <div id="saveConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="saveConfirmModalCode">Save the job finally?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="saveConfirmModalYes">Yes
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn" id="saveConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- cron confirmation -->
+    <div id="cronConfirmModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="cronConfirmModalCode">Ready to launch the job (YES action won't launch, it just redirects to job launching page)?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-primary" id="cronConfirmModalYes">Yes
+                    </button>
+                    <button type="button" data-dismiss="modal" class="btn" id="cronConfirmModalNo">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #Wrapper -->
+
+<script language="javascript" type="text/javascript" th:inline="javascript">
+    /*<![CDATA[*/
+
+    var firstLoad = 0;
+    selectPeriod();
+    selectGranularityMsg();
+    var nowDate = moment.utc(moment());
+    $(function () {
+        $('#queryEndTimeText').datetimepicker({
+            maxDate: nowDate,
+            defaultDate: nowDate,
+            format: "YYYY-MM-DDTHH:mm"
+        });
+    });
+
+    $('#owner-email')
+          .on('tokenfield:createdtoken', function (e) {
+            // Über-simplistic e-mail validation
+            var re = /\S+@\S+\.\S+/
+            var valid = re.test(e.attrs.value)
+            if (!valid) {
+              $(e.relatedTarget).addClass('invalid')
+            }
+          })
+          .tokenfield({
+                showAutocompleteOnFocus: false,
+                createTokensOnBlur: true
+          });
+
+    $("#popoverInfo").load('/content/kSigmaTable.html #sensitivityTable');
+
+    const $druidCluster = $('#druidCluster');
+
+    $druidCluster.val($("#druidCluster option:first").val());
+    $('#hoursOfLag').val($druidCluster.find('option:selected').data('lag'));
+
+    $druidCluster.change(function() {
+        var selected = $(this).find('option:selected');
+        $('#hoursOfLag').val(selected.data('lag'));
+    });
+
+    $(document).ready(function () {
+        $("#queryForm").submit(function (e) {
+            var val = $("input[type=submit][clicked=true]").val();
+            if (parseInt($('#timeseriesRange').val()) < parseInt($('#granularityRange').val())) {
+                e.preventDefault();
+                showWarningMessage("The granularity range must be less than or equal to the timeseries range!");
+                return false;
+            }
+            e.preventDefault();
+            var data = {};
+            data.query = queryText.getValue();
+            data.granularity = $('#granularity').val();
+            data.granularityRange = $('#granularityRange').val();
+            data.timeseriesRange = $('#timeseriesRange').val();
+            data.frequency = $('#frequency').val();
+            data.queryEndTimeText = $('#queryEndTimeText').val();
+            data.detectionWindow = $('#detectionWindow').val();
+            data.sigmaThreshold = $('#sdSliderVal').text();
+            data.hoursOfLag = $('#hoursOfLag').val();
+            data.clusterId = $druidCluster.val();
+            data.tsModels = $('#tsModels').val();
+            data.adModels = $('#adModels').val();
+            $.ajax({
+                type: 'POST',
+                url: '/Flash-Query/ProcessAnomalyReport',
+                data: JSON.stringify(data),
+                contentType: "application/json",
+                dataType: 'text',
+                success: function (response) {
+                    if (response == 'success') {
+                        window.location.href = '/Flash-Query/ProcessAnomalyReport'
+                    } else {
+                        showWarningMessage(response);
+                    }
+                },
+                error: ajaxMessage
+            });
+        });
+    });
+
+    $("#sdSlider").on("slideStop", function(slideEvent) {
+        updateMode();
+        $("#sdSliderVal").text(slideEvent.value);
+    });
+
+    $('#testName').on('input', function() {
+        updateMode();
+    });
+
+    $('#testDescription').on('input', function() {
+        updateMode();
+    });
+
+    $('#ownerName').on('input', function() {
+        updateMode();
+    });
+
+    $('#queryUrl').on('input', function() {
+        updateMode();
+    });
+
+    $('#granularity').change(function() {
+        updateMode();
+        updateTimeseriesRange();
+    });
+
+    $('#timeseriesRange').on('input', function() {
+        updateMode();
+    });
+
+    $('#granularityRange').on('input', function() {
+        updateMode();
+    });
+
+    $('#frequency').change(function() {
+        updateMode();
+    });
+
+    $('#tsModels').change(function() {
+        updateMode();
+    });
+
+    $('#adModels').change(function() {
+        updateMode();
+    });
+
+    $('input[type=radio][name=emailOnNoData]').change(function() {
+        updateMode();
+    });
+
+    $druidCluster.change(function() {
+        var selected = $(this).find('option:selected');
+        $('#hoursOfLag').val(selected.data('lag'));
+        updateMode();
+    });
+
+    $('#hoursOfLag').on('input', function() {
+        updateMode();
+    });
+
+    function updateMode() {
+        /*[+
+        // Ignore for delete mode.
+        // Show update button for other modes.
+        if ([[${deletedJobsView == null}]]) {
+            $('#updateTitle').attr("hidden", false);
+            $('#title').attr("hidden", true);
+            $('#jobActions').attr("hidden", true);
+            $('#updateActions').attr("hidden", false);
+        }
+        +]*/
+    }
+
+    $("form input[type=submit]").click(function () {
+        $("input[type=submit]", $(this).parents("form")).removeAttr("clicked");
+        $(this).attr("clicked", "true");
+    });
+
+    $("#saveConfirmModalNo").click(function () {
+        showWarningMessage("Job is not saved.");
+    });
+
+    const $sdSlider = $('#sdSlider');
+    $sdSlider.slider();
+    $sdSlider.on("slideStop", function (slideEvent) {
+        $("#sdSliderVal").text(slideEvent.value);
+    });
+
+    var queryText = CodeMirror.fromTextArea($('#queryText')[0], {
+        matchBrackets: true,
+        mode: "application/ld+json",
+        lineWrapping: true,
+        lineNumbers: true,
+        scrollbarStyle: "simple",
+        highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true}
+    });
+
+    cmResize(queryText);
+
+    $('#removeGlyphicon').click(function () {
+        queryText.setValue("");
+        queryText.clearHistory();
+    });
+
+    $('#copyGlyphicon').click(function () {
+        var $temp = $("<textarea></textarea>");
+        $("body").append($temp);
+        $temp.val(queryText.getValue()).select();
+        document.execCommand("copy");
+        $temp.remove();
+    });
+
+    function selectGranularityMsg() {
+        firstLoad++;
+        if(firstLoad > 1) {
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " " + $('#granularity').val() + "(s)")
+        }
+    }
+
+    function selectPeriod() {
+        $('#textForDetectionWindowHelp').html("Enter number of past <code>" + $('#granularity').val() + "s</code> in timeseries for detection");
+        $('#textForTimeseriesRangeHelp').html("Enter number of <code>" + $('#granularity').val() + "s</code> to lookback(train) for anomaly detection.");
+        if($('#granularity').val() === "minute") {
+            $('#detectionWindow').attr("max", [[${minute}]]);
+            $('#timeseriesRange').val([[${minute}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${minute}]]);
+            $('#granularityRange').attr("max", [[${MINUTE}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " minute(s)")
+        } else if($('#granularity').val() === "hour") {
+            $('#detectionWindow').attr("max", [[${hour}]]);
+            $('#timeseriesRange').val([[${hour}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${hour}]]);
+            $('#granularityRange').attr("max", [[${HOUR}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " hour(s)")
+        } else if($('#granularity').val() === "day") {
+            $('#detectionWindow').attr("max", [[${day}]]);
+            $('#timeseriesRange').val([[${day}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${day}]]);
+            $('#granularityRange').attr("max", [[${DAY}]]);
+            if(firstLoad > 1) {
+                $('#defaultGranularityMsg').html($('#granularityRange').val() + " day(s)")
+            }
+        } else if($('#granularity').val() === "week") {
+            $('#detectionWindow').attr("max", [[${week}]]);
+            $('#timeseriesRange').val([[${week}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${week}]]);
+            $('#granularityRange').attr("max", [[${WEEK}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " week(s)")
+        } else if($('#granularity').val() === "month") {
+            $('#detectionWindow').attr("max", [[${month}]]);
+            $('#timeseriesRange').val([[${month}]]);
+            $('#detectionWindow').attr("placeholder", "max " + [[${month}]]);
+            $('#granularityRange').attr("max", [[${MONTH}]]);
+            $('#defaultGranularityMsg').html($('#granularityRange').val() + " month(s)")
+        }
+    }
+
+    function changeDetectionWindowMax() {
+        $('#detectionWindow').attr("max", $('#timeseriesRange').val());
+        $('#detectionWindow').attr("placeholder", "max " + $('#timeseriesRange').val());
+    }
+
+    function showFrequency() {
+        $('#defaultFrequencyMsg').html("Every " + $('#frequency').val())
+    }
+
+    function showTSModel() {
+        $('#defaultTSMsg').attr("hidden", true);
+    }
+
+    function showADModel() {
+        $('#defaultADMsg').attr("hidden", true)
+    }
+
+    /*]]>*/
+</script>
+
+</body>
+
+</html>

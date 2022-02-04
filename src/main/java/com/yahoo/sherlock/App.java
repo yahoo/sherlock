@@ -153,6 +153,9 @@ class App {
         // Route for instant anomaly-detection on user input query
         post("/Flash-Query/ProcessAnomalyReport", Routes::processInstantAnomalyJob);
 
+        // Route for instant anomaly-detection on user input query
+        post("/Flash-Query/AnomalyReport", Routes::processAnomalyReport);
+
         // Route to get instant anomaly-detection report
         get("/Flash-Query/ProcessAnomalyReport", Routes::getInstantAnomalyJob, thymeleafTemplateEngine);
 
@@ -249,6 +252,8 @@ class App {
             get("/DatabaseJson", Routes::getDatabaseJsonDump);
             // Debug job form route
             get("/Debug/InstantReport", Routes::debugInstantReport, thymeleafTemplateEngine);
+            // Instant job form route
+            get("/Debug/InstantJobReport/:id", Routes::debugInstantJobReport, thymeleafTemplateEngine);
             // Debug job post route
             get("/Debug/ProcessInstantReport", Routes::debugPowerQuery, thymeleafTemplateEngine);
             // Debug back fill jobs

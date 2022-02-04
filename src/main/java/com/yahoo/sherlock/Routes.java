@@ -199,6 +199,51 @@ public class Routes {
     }
 
     /**
+     * Method called upon flash query request from user.
+     *
+     * @param request  User request
+     * @param response Anomaly detector response
+     * @return template view route
+     */
+    public static ModelAndView debugInstantJobReport(Request request, Response response) throws IOException {
+        Map<String, Object> params = new HashMap<>(defaultParams);
+        // set instant form view
+        params.put(Constants.INSTANTVIEW, "false");
+        try {
+            log.info("Getting instant job from database.");
+            JobMetadata job = jobAccessor.getJobMetadata(request.params(Constants.ID));
+            List<DruidCluster> druidClusters = clusterAccessor.getDruidClusterList();
+            params.put("job", job);
+            params.put(Constants.DRUID_CLUSTERS, druidClusters);
+            params.put(Constants.TITLE, "Instant Job Details");
+            params.put(Triggers.MINUTE.toString(), CLISettings.INTERVAL_MINUTES);
+            params.put(Triggers.HOUR.toString(), CLISettings.INTERVAL_HOURS);
+            params.put(Triggers.DAY.toString(), CLISettings.INTERVAL_DAYS);
+            params.put(Triggers.WEEK.toString(), CLISettings.INTERVAL_WEEKS);
+            params.put(Triggers.MONTH.toString(), CLISettings.INTERVAL_MONTHS);
+            params.put(Constants.MINUTE, Constants.MAX_MINUTE);
+            params.put(Constants.HOUR, Constants.MAX_HOUR);
+            params.put(Constants.DAY, Constants.MAX_DAY);
+            params.put(Constants.WEEK, Constants.MAX_WEEK);
+            params.put(Constants.MONTH, Constants.MAX_MONTH);
+            params.put(Constants.TIMESERIES_MODELS, EgadsConfig.TimeSeriesModel.getAllValues());
+            params.put(Constants.ANOMALY_DETECTION_MODELS, EgadsConfig.AnomalyDetectionModel.getAllValues());
+            boolean isClusterPresent = druidClusters.stream().anyMatch(c -> c.getClusterId().equals(job.getClusterId()));
+            params.put(Constants.IS_CLUSTER_PRESENT, isClusterPresent);
+            log.debug("job: {}", job);
+            log.debug("params: {}", params);
+            if (!isClusterPresent) {
+                log.warn("Cluster ID {} not present for job ID {}", job.getClusterId(), job.getJobId());
+                params.put(Constants.ERROR, "No associated druid cluster for this Job! Please select one below");
+            }
+        } catch (Exception e) {
+            log.error("Failed to retrieve list of existing Druid clusters!", e);
+            params.put(Constants.DRUID_CLUSTERS, new ArrayList<>());
+        }
+        return new ModelAndView(params, "instantJobReport");
+    }
+
+    /**
      * Method to display status.
      *
      * @param request  User request
@@ -242,6 +287,7 @@ public class Routes {
         return new ModelAndView(params, "jobForm");
     }
 
+
     /**
      * Get the user query and generate anomaly report.
      *
@@ -256,6 +302,7 @@ public class Routes {
         params.put(Constants.TITLE, "Anomaly Report");
         try {
             UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
+            log.debug("userQuery: {}", userQuery);
             // regenerate user query
             Granularity granularity = Granularity.getValue(userQuery.getGranularity());
             Integer granularityRange = userQuery.getGranularityRange();
@@ -323,6 +370,7 @@ public class Routes {
         Map<String, Object> params = new HashMap<>(defaultParams);
         if (instantReportParams.containsKey("data")) {
             params.putAll(instantReportParams);
+            log.debug("params: {}", params);
             return new ModelAndView(params, "reportInstant");
         } else {
             params.put(Constants.ERROR, "Not Found!");
@@ -330,6 +378,84 @@ public class Routes {
         }
         return null;
     }
+
+    /**
+     * Get the user query and generate anomaly report.
+     *
+     * @param request  User request
+     * @param response Anomaly detector response
+     * @return Nothing on success (200 status), or error message (500 status)
+     */
+    public static String processAnomalyReport(Request request, Response response) {
+        Map<String, String> params = new Gson().fromJson(
+                request.body(),
+                new TypeToken<Map<String, String>>() { }.getType()
+        );
+        Map<String, Object> tableParams = new HashMap<>(defaultParams);
+        params.put(Constants.TITLE, "Generating anomaly graph data");
+        try {
+            UserQuery userQuery = new Gson().fromJson(request.body(), UserQuery.class);
+            Integer jobId = NumberUtils.parseInt(params.get("jobId"));
+            Integer start = NumberUtils.parseInt(params.get("timestamp"));
+            if (jobId == null || start == null) {
+                response.status(500);
+                return "Invalid Job!";
+            }
+            JobMetadata job = jobAccessor.getJobMetadata(jobId.toString());
+            Integer end = start + Granularity.getValue(job.getGranularity()).getMinutes();
+
+            log.info("Getting job {} from database.", jobId);
+            List<DruidCluster> druidClusters = clusterAccessor.getDruidClusterList();
+            params.put("job", job.toString());
+
+            Granularity granularity = Granularity.getValue(job.getGranularity());
+            Integer granularityRange = job.getGranularityRange();
+            Query query = serviceFactory.newDruidQueryServiceInstance().build(job.getQuery(), granularity, granularityRange, end, job.getTimeseriesRange());
+            job.setFrequency(granularity.toString());
+            job.setEffectiveQueryTime(end);
+            // set egads config
+            EgadsConfig config;
+            config = EgadsConfig.fromProperties(EgadsConfig.fromFile());
+            config.setTsModel(job.getTimeseriesModel());
+            config.setAdModel(job.getAnomalyDetectionModel());
+            Integer detectionWindow = 3;
+            // detect anomalies
+            List<EgadsResult> egadsResult = serviceFactory.newDetectorServiceInstance().detectWithResults(
+                    query,
+                    job.getSigmaThreshold(),
+                    clusterAccessor.getDruidCluster(job.getClusterId()),
+                    detectionWindow,
+                    config
+            );
+            // results
+            List<Anomaly> anomalies = new ArrayList<>();
+            List<ImmutablePair<Integer, String>> timeseriesNames = new ArrayList<>();
+            int i = 0;
+            for (EgadsResult result : egadsResult) {
+                anomalies.addAll(result.getAnomalies());
+                timeseriesNames.add(new ImmutablePair<>(i++, result.getBaseName()));
+            }
+            List<AnomalyReport> reports = serviceFactory.newJobExecutionService().getReports(anomalies, job);
+            tableParams.put(Constants.INSTANTVIEW, "true");
+            tableParams.put(DatabaseConstants.ANOMALIES, reports);
+            tableParams.put(Constants.SELECTED_DATE, end);
+            instantReportParams.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
+            Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
+            instantReportParams.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
+            instantReportParams.put("timeseriesNames", timeseriesNames);
+            instantReportParams.put("userQuery", userQuery);
+        } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
+            log.error("Error while processing instant job!", e);
+            params.put(Constants.ERROR, e.toString());
+            return e.getMessage();
+        } catch (Exception e) {
+            log.error("Unexpected error!", e);
+            params.put(Constants.ERROR, e.toString());
+            return e.getMessage();
+        }
+        return Constants.SUCCESS;
+    }
+
 
     /**
      * Method for saving user anomaly job into database.
@@ -868,6 +994,7 @@ public class Routes {
                 }
             }
             params.put(DatabaseConstants.ANOMALIES, anomalousReports);
+            params.put(Constants.SELECTED_DATE, selectedDate);
             // render the table HTML of the report
             String tableHtml = thymeleaf.render(new ModelAndView(params, "table"));
             response.status(200);

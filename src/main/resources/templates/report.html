@@ -138,6 +138,27 @@
         });
     }
 
+    function instantAnomalyReport() {
+        var data = {};
+        data.jobId = $("#jobId").val();
+        data.timestamp = $("#selectedTimestamp").val();
+        $.ajax({
+            type: 'POST',
+            url: '/Flash-Query/AnomalyReport',
+            data: JSON.stringify(data),
+            contentType: "application/json",
+            dataType: 'text',
+            success: function(response) {
+                if (response === 'success') {
+                    window.location.href = '/Flash-Query/ProcessAnomalyReport';
+                } else {
+                    showWarningMessage("Something went wrong graphing the report! Please try again.");
+                }
+            },
+            error : ajaxMessage
+        });
+    }
+
 /*]]>*/
 </script>
 

@@ -46,6 +46,9 @@
                     </div>
                     <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Model Info</th>
                     <div th:if="${instantView == null}">
+                        <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Anomaly Graph</th>
+                    </div>
+                    <div th:if="${instantView == null}">
                         <th th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px;' : ''}">Visualization Link</th>
                     </div>
                 </tr>
@@ -60,6 +63,13 @@
                         <td th:text="${anomaly.getStatus()}" th:styleappend="${anomaly.getStatus() == 'success' ? 'color: rgba(100,200,0,1.0)' : 'color: rgba(255,0,0,1.0)'}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Job status</td>
                     </div>
                     <td th:text="${anomaly.getModelInfo()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Model Info</td>
+                    <div th:if="${instantView == null}">
+                        <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
+                            <input id="graph" type="button" class="btn custom-report-btn" value="Anomaly Graph" onclick="instantAnomalyReport()"/>
+                            <input id="jobId" type="hidden" th:value="${anomaly.getJobId()}"/>
+                            <input id="selectedTimestamp" type="hidden" th:value="${selectedDate}"/>
+                        </td>
+                    </div>
                     <div th:if="${instantView == null}">
                         <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
                             <a th:if="${anomaly.getQueryURL() != null and not #strings.isEmpty(anomaly.getQueryURL())}"
