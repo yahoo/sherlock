@@ -347,6 +347,7 @@ public class Routes {
             instantReportParams.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
             instantReportParams.put("timeseriesNames", timeseriesNames);
             instantReportParams.put("userQuery", userQuery);
+            instantReportParams.put(Constants.JOB_ID, null);
         } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
             log.error("Error while processing instant job!", e);
             params.put(Constants.ERROR, e.toString());
@@ -444,6 +445,7 @@ public class Routes {
             instantReportParams.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
             instantReportParams.put("timeseriesNames", timeseriesNames);
             instantReportParams.put("userQuery", userQuery);
+            instantReportParams.put(Constants.JOB_ID, jobId);
         } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
             log.error("Error while processing instant job!", e);
             params.put(Constants.ERROR, e.toString());
