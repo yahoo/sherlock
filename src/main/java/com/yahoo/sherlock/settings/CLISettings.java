@@ -51,6 +51,12 @@ public class CLISettings {
     public static String VERSION = "v0.0.0";
 
     /**
+     * HTTP Base URL for injection into links.
+     */
+    @Parameter(names = "--http-base-uri", description = "HTTP Base URI for injection into links.")
+    public static String HTTP_BASE_URI = "http://localhost:8080";
+
+    /**
      * Egads config file path.
      */
     @Parameter(names = "--egads-config-filename", description = "EGADS config file. (it uses default if not provided)")

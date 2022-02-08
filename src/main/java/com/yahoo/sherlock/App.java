@@ -153,9 +153,6 @@ class App {
         // Route for instant anomaly-detection on user input query
         post("/Flash-Query/ProcessAnomalyReport", Routes::processInstantAnomalyJob);
 
-        // Route for instant anomaly-detection on user input query
-        post("/Flash-Query/AnomalyReport", Routes::processAnomalyReport);
-
         // Route to get instant anomaly-detection report
         get("/Flash-Query/ProcessAnomalyReport", Routes::getInstantAnomalyJob, thymeleafTemplateEngine);
 
@@ -164,6 +161,9 @@ class App {
 
         // Route for viewing currently active jobs
         get("/Jobs", Routes::viewJobsList, thymeleafTemplateEngine);
+
+        // Route for viewing anomaly chart of selected job and date
+        get("/Chart/:id/:startDate", Routes::getChart, thymeleafTemplateEngine);
 
         // Route for viewing selected job detail-page
         get("/Jobs/:id", Routes::viewJobInfo, thymeleafTemplateEngine);

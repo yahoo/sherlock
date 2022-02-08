@@ -65,9 +65,10 @@
                     <td th:text="${anomaly.getModelInfo()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Model Info</td>
                     <div th:if="${instantView == null}">
                         <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
-                            <input id="graph" type="button" class="btn custom-report-btn" value="Anomaly Graph" onclick="instantAnomalyReport()"/>
-                            <input id="jobId" type="hidden" th:value="${anomaly.getJobId()}"/>
-                            <input id="selectedTimestamp" type="hidden" th:value="${selectedDate}"/>
+                            <a target="_blank" class="btn custom-report-btn"
+                               th:href="@{__${httpBaseUri}__/Chart/__${anomaly.getJobId()}__/__${selectedDate}__}">
+                                <span class="glyphicon glyphicon-signal"></span> Anomaly Chart
+                            </a>
                         </td>
                     </div>
                     <div th:if="${instantView == null}">

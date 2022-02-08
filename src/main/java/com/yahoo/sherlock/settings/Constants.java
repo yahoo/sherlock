@@ -125,6 +125,11 @@ public final class Constants {
     public static final String VERSION = "version";
 
     /**
+     * HTTP Base URL for injection into links.
+     */
+    public static final String HTTP_BASE_URI = "httpBaseUri";
+
+    /**
      * Constant for 'title' key in UI params.
      */
     public static final String TITLE = "title";
@@ -168,6 +173,11 @@ public final class Constants {
      * Constant for 'selectedDate'.
      */
     public static final String SELECTED_DATE = "selectedDate";
+
+    /**
+     * Constant for 'startDate'.
+     */
+    public static final String START_DATE = ":startDate";
 
     /**
      * Constant for 'timelineDots'.
