@@ -231,6 +231,7 @@ public class EmailService {
                 Map<String, Object> params = new HashMap<>();
                 params.put(DatabaseConstants.ANOMALIES, anomalyReports);
                 params.put(Constants.EMAIL_HTML, "true");
+                params.put(Constants.HTTP_BASE_URI, CLISettings.HTTP_BASE_URI);
                 ThymeleafTemplateEngine thymeleafTemplateEngine = new ThymeleafTemplateEngine();
                 if (anomalyReports.size() > 0) {
                     if (!(isNoDataCase(anomalyReports) || isErrorCase(anomalyReports))) {
