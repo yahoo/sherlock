@@ -393,14 +393,14 @@ public class Routes {
             Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
             Integer start = NumberUtils.parseInt(request.params(Constants.START_DATE));
             JobMetadata job = jobAccessor.getJobMetadata(jobId.toString());
-            Integer end = start + (Granularity.getValue(job.getGranularity()).getMinutes() * 3);
+            Integer end = start + (Granularity.getValue(job.getGranularity()).getMinutes() * 2);
+            Integer detectionWindow = 5;
             params.put("job", job.toString());
             Granularity granularity = Granularity.getValue(job.getGranularity());
             Integer granularityRange = job.getGranularityRange();
             Query query = serviceFactory.newDruidQueryServiceInstance().build(job.getQuery(), granularity, granularityRange, end, job.getTimeseriesRange());
             job.setFrequency(granularity.toString());
             job.setEffectiveQueryTime(end);
-            Integer detectionWindow = 6;
             // set egads config
             EgadsConfig config;
             config = EgadsConfig.fromProperties(EgadsConfig.fromFile());
@@ -429,6 +429,7 @@ public class Routes {
             tableParams.put(Constants.HTTP_BASE_URI, CLISettings.HTTP_BASE_URI);
             params.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
             Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
+            params.put(DatabaseConstants.ANOMALIES, reports);
             params.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
             params.put("timeseriesNames", timeseriesNames);
             params.put("userQuery", userQuery);
