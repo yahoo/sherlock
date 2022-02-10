@@ -234,10 +234,11 @@ public class EmailService {
                 params.put(Constants.HTTP_BASE_URI, CLISettings.HTTP_BASE_URI);
                 ThymeleafTemplateEngine thymeleafTemplateEngine = new ThymeleafTemplateEngine();
                 if (anomalyReports.size() > 0) {
+                    params.put(Constants.SELECTED_DATE, anomalyReports.get(0).getReportQueryEndTime());
                     if (!(isNoDataCase(anomalyReports) || isErrorCase(anomalyReports))) {
                         // render the email HTML
                         String messageHtml = thymeleafTemplateEngine.render(new ModelAndView(params, "table"));
-                        log.info("Thymeleaf rendered sunccessfully.");
+                        log.info("Thymeleaf rendered successfully.");
                         emailHandle.setSubject("Sherlock: Anomaly report");
                         emailHandle.setTextHTML(messageHtml);
                         emailHandle.addHeader("X-Priority", 5);
