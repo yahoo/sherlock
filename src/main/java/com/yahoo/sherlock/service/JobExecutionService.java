@@ -125,7 +125,7 @@ public class JobExecutionService {
             List<String> finalEmailList = new ArrayList<>();
 
             if (!CLISettings.SLACK_WEBHOOK.isEmpty()) {
-                sendSlackMessage(reports);
+                sendSlackMessage(job, reports);
             }
 
             if (reports.get(0).getStatus().equalsIgnoreCase(Constants.ERROR)) {
@@ -143,12 +143,12 @@ public class JobExecutionService {
         }
     }
 
-    private void sendSlackMessage(List<AnomalyReport> reports) {
+    private void sendSlackMessage(JobMetadata job, List<AnomalyReport> reports) {
         Slack slack = Slack.getInstance();
         for (AnomalyReport report : reports) {
             if (report.isHasAnomaly()) {
                 try {
-                    log.info("Sending {} to slack webhook {}", report.toString(), CLISettings.SLACK_WEBHOOK);
+                    log.info("Anomaly found - building Slack payload");
                     String chartLink = String.format("%s/Chart/%s/%s",
                                                      CLISettings.HTTP_BASE_URI,
                                                      report.getJobId(),
@@ -200,8 +200,10 @@ public class JobExecutionService {
                     attachment.put("fields", fields);
                     attachments.put(attachment);
 
+                    payload.put("channel", job.getSlackChannel());
                     payload.put("attachments", attachments);
 
+                    log.info("Sending {} to slack webhook {}", payload, CLISettings.SLACK_WEBHOOK);
                     WebhookResponse response = slack.send(CLISettings.SLACK_WEBHOOK, payload.toString());
                     log.info("Slack response: {}", response);
                 } catch (IOException e) {
