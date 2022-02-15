@@ -168,6 +168,11 @@
             <artifactId>spark-pac4j</artifactId>
             <version>3.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.slack.api</groupId>
+            <artifactId>slack-api-client</artifactId>
+            <version>1.18.0</version>
+        </dependency>
     </dependencies>
 
     <build>

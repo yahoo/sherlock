@@ -117,6 +117,12 @@ public class CLISettings {
     public static String REPLY_TO;
 
     /**
+     * SLACK_WEBHOOK for alerting.
+     */
+    @Parameter(names = "--slack-webhook", description = "Slack Webhook for anomaly alerts.")
+    public static String SLACK_WEBHOOK;
+
+    /**
      * SMTP host setting.
      */
     @Parameter(names = "--smtp-host", description = "SMTP HOST setting for email service.")

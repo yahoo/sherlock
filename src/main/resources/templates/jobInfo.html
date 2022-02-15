@@ -75,7 +75,15 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="control-label" for="emailOnNoData">Get email if new datapoint is not available:</label>
+                                <label class="control-label" for="slackChannel">Slack Channel (for anomaly alerts):</label>
+                                <div>
+                                    <input id="slackChannel" name="slackChannel" type="text" class="form-control input-md"
+                                           size="25" th:value="${job.getSlackChannel()}"/>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label" for="emailOnNoData">Get alert if new datapoint is not available:</label>
                                 <div id="emailOnNoData">
                                     <input type="radio" id="emailOnNoDataYes" name="emailOnNoData" value="true"/>
                                     <label class="control-label" for="emailOnNoDataYes">YES</label>
@@ -410,6 +418,7 @@
             $('#testDescription').attr("disabled", true);
             $('#ownerName').attr("disabled", true);
             $('#ownerEmail').attr("disabled", true);
+            $('#slackChannel').attr("disabled", true);
             $('#queryUrl').attr("disabled", true);
             $('#granularityRange').attr("disabled", true);
             $('#timeseriesRange').attr("disabled", true);
@@ -436,6 +445,10 @@
         });
 
         $('#ownerName').on('input', function() {
+            updateMode();
+        });
+
+        $('#slackChannel').on('input', function() {
             updateMode();
         });
 
@@ -559,6 +572,7 @@
                 data.testName = $('#testName').val();
                 data.owner = $('#ownerName').val();
                 data.ownerEmail = $('#ownerEmail').tokenfield('getTokensList', ',');
+                data.slackChannel = $('#slackChannel').val();
                 data.emailOnNoData = $('input[name=emailOnNoData]:checked', '#jobInfoForm').val();
                 data.testDescription = $('#testDescription').val();
                 data.granularity = $('#granularity').val();

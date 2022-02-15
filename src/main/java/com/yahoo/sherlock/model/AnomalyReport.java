@@ -363,6 +363,26 @@ public class AnomalyReport implements Serializable {
         return joiner.toString();
     }
 
+    /**
+     * Method to display deviation values in Slack.
+     * @return string with deviation values
+     */
+    public String getSlackFormattedDeviation() {
+        if (anomalyTimestamps == null) {
+            return "";
+        }
+        String[] anomalyTimes = anomalyTimestamps.split(Constants.COMMA_DELIMITER);
+        StringJoiner joiner = new StringJoiner("\n");
+        for (String anomalyTime : anomalyTimes) {
+            String[] timeAndValueSplit = anomalyTime.split(Constants.AT_DELIMITER);
+            if (timeAndValueSplit.length < 2 || !NumberUtils.isInteger(timeAndValueSplit[1])) {
+                continue;
+            }
+            joiner.add(timeAndValueSplit[1]);
+        }
+        return joiner.toString();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

@@ -51,6 +51,9 @@ public class UserQuery {
     /** Email id of the owner. */
     private String ownerEmail;
 
+    /** Slack Channel for alerts. */
+    private String slackChannel;
+
     /** Email on no data case. */
     private Boolean emailOnNoData;
 

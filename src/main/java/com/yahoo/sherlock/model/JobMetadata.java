@@ -65,6 +65,12 @@ public class JobMetadata implements Serializable, Cloneable {
     private Boolean emailOnNoData = false;
 
     /**
+     * Slack channel for anomaly alerts.
+     */
+    @Attribute
+    private String slackChannel;
+
+    /**
      * User query to be stored.
      */
     @Attribute
@@ -189,6 +195,7 @@ public class JobMetadata implements Serializable, Cloneable {
         this.owner = jobMetadata.getOwner();
         this.ownerEmail = jobMetadata.getOwnerEmail();
         this.emailOnNoData = jobMetadata.getEmailOnNoData();
+        this.slackChannel = jobMetadata.getSlackChannel();
         this.userQuery = jobMetadata.getUserQuery();
         this.query = jobMetadata.getQuery();
         this.testName = jobMetadata.getTestName();
@@ -218,6 +225,7 @@ public class JobMetadata implements Serializable, Cloneable {
      */
     public JobMetadata(UserQuery userQuery, @Nullable Query query) {
         setOwner(userQuery.getOwner());
+        setSlackChannel(userQuery.getSlackChannel());
         setOwnerEmail(userQuery.getOwnerEmail());
         setEmailOnNoData(userQuery.getEmailOnNoData());
         setUserQuery(userQuery.getQuery());
@@ -283,6 +291,7 @@ public class JobMetadata implements Serializable, Cloneable {
             setQuery(newJob.getQuery());
         }
         setOwner(newJob.getOwner());
+        setSlackChannel(newJob.getSlackChannel());
         setOwnerEmail(newJob.getOwnerEmail());
         setEmailOnNoData(newJob.getEmailOnNoData());
         setUserQuery(newJob.getUserQuery());

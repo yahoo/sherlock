@@ -278,6 +278,6 @@ class App {
 
         // Routes configured
         log.info("Routes ready");
-        log.info("Site online: http://localhost:{}", CLISettings.PORT);
+        log.info("Site online: {}", CLISettings.HTTP_BASE_URI);
     }
 }

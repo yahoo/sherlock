@@ -10,6 +10,8 @@ import static com.yahoo.sherlock.settings.CLISettings.NODATA_ON_FAILURE;
 
 import com.beust.jcommander.internal.Lists;
 import com.google.gson.JsonArray;
+import com.slack.api.Slack;
+import com.slack.api.webhook.WebhookResponse;
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
 import com.yahoo.sherlock.enums.Granularity;
@@ -25,18 +27,20 @@ import com.yahoo.sherlock.query.EgadsConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.query.QueryBuilder;
 import com.yahoo.sherlock.scheduler.EgadsTask;
+import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;
 import com.yahoo.sherlock.store.EmailMetadataAccessor;
 import com.yahoo.sherlock.store.JobMetadataAccessor;
 import com.yahoo.sherlock.store.Store;
+import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -45,6 +49,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 /**
  * Service class for job execution.
@@ -117,6 +123,11 @@ public class JobExecutionService {
             List<String> originalEmailList = job.getOwnerEmail() == null || job.getOwnerEmail().isEmpty() ? new ArrayList<>() :
                                              Arrays.stream(job.getOwnerEmail().split(Constants.COMMA_DELIMITER)).collect(Collectors.toList());
             List<String> finalEmailList = new ArrayList<>();
+
+            if (!CLISettings.SLACK_WEBHOOK.isEmpty()) {
+                sendSlackMessage(reports);
+            }
+
             if (reports.get(0).getStatus().equalsIgnoreCase(Constants.ERROR)) {
                 emailService.processEmailReports(job, originalEmailList, reports);
                 anomalyReportAccessor.putAnomalyReports(reports, finalEmailList);
@@ -129,6 +140,74 @@ public class JobExecutionService {
             }
         } catch (IOException e) {
             log.error("Error while putting anomaly reports to database!", e);
+        }
+    }
+
+    private void sendSlackMessage(List<AnomalyReport> reports) {
+        Slack slack = Slack.getInstance();
+        for (AnomalyReport report : reports) {
+            if (report.isHasAnomaly()) {
+                try {
+                    log.info("Sending {} to slack webhook {}", report.toString(), CLISettings.SLACK_WEBHOOK);
+                    String chartLink = String.format("%s/Chart/%s/%s",
+                                                     CLISettings.HTTP_BASE_URI,
+                                                     report.getJobId(),
+                                                     report.getReportQueryEndTime()
+                    );
+
+                    String deviation = report.getSlackFormattedDeviation();
+                    String attachmentColour = (NumberUtils.parseLong(deviation) < 0) ? "danger" : "good";
+
+                    JSONObject payload = new JSONObject();
+                    JSONArray attachments = new JSONArray();
+
+                    JSONObject attachment = new JSONObject();
+                    JSONArray text = new JSONArray();
+                    text.put("text");
+                    attachment.put("mrkdwn_in", text);
+                    attachment.put("color", attachmentColour);
+                    attachment.put("author_name", "Sherlock Anomaly Detector");
+                    attachment.put("title", report.getMetricInfo());
+                    attachment.put("title_link", chartLink);
+
+                    JSONArray fields = new JSONArray();
+                    JSONObject dimension = new JSONObject();
+                    dimension.put("title", "Dimensions");
+                    dimension.put("value", report.getGroupByFilters());
+                    dimension.put("short", new Boolean(false));
+                    fields.put(dimension);
+                    JSONObject modelField = new JSONObject();
+                    modelField.put("title", "Model Info");
+                    modelField.put("value", report.getModelInfo());
+                    modelField.put("short", new Boolean(true));
+                    fields.put(modelField);
+                    JSONObject statusField = new JSONObject();
+                    statusField.put("title", "Status");
+                    statusField.put("value", report.getStatus());
+                    statusField.put("short", new Boolean(true));
+                    fields.put(statusField);
+                    JSONObject dateField = new JSONObject();
+                    dateField.put("title", "Date");
+                    dateField.put("value", report.getFormattedAnomalyTimestamps());
+                    dateField.put("short", new Boolean(true));
+                    fields.put(dateField);
+                    JSONObject deviationField = new JSONObject();
+                    deviationField.put("title", "Deviation");
+                    deviationField.put("value", "*" + deviation + "%*");
+                    deviationField.put("short", new Boolean(true));
+                    fields.put(deviationField);
+
+                    attachment.put("fields", fields);
+                    attachments.put(attachment);
+
+                    payload.put("attachments", attachments);
+
+                    WebhookResponse response = slack.send(CLISettings.SLACK_WEBHOOK, payload.toString());
+                    log.info("Slack response: {}", response);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
