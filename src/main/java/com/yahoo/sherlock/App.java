@@ -165,6 +165,12 @@ class App {
         // Route for viewing anomaly chart of selected job and date
         get("/Chart/:id/:startDate", Routes::getChart, thymeleafTemplateEngine);
 
+        // Route for viewing anomaly chart of selected job and date
+        get("/Chart/:id/:startDate/:detectionWindow", Routes::getChart, thymeleafTemplateEngine);
+
+        // Route for viewing anomaly chart of selected job and date
+        get("/Chart/:id/:startDate/:detectionWindow/:selectedSeries", Routes::getChart, thymeleafTemplateEngine);
+
         // Route for viewing selected job detail-page
         get("/Jobs/:id", Routes::viewJobInfo, thymeleafTemplateEngine);
 

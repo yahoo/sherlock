@@ -392,10 +392,17 @@ public class Routes {
             UserQuery userQuery = new Gson().fromJson("{}", UserQuery.class);
             Integer jobId = NumberUtils.parseInt(request.params(Constants.ID));
             Integer start = NumberUtils.parseInt(request.params(Constants.START_DATE));
+            String selectedSeries = request.params(Constants.SELECTED_SERIES);
             JobMetadata job = jobAccessor.getJobMetadata(jobId.toString());
             Integer end = start + (Granularity.getValue(job.getGranularity()).getMinutes() * 2);
             Integer detectionWindow = 5;
+            if (request.params(Constants.DETECTION_WINDOW) != null) {
+                detectionWindow = NumberUtils.parseInt(request.params(Constants.DETECTION_WINDOW));
+            }
+            log.info("detection window set to {}", detectionWindow);
             params.put("job", job.toString());
+            params.put("selectedSeries", selectedSeries);
+            params.put("detectionWindow", detectionWindow);
             Granularity granularity = Granularity.getValue(job.getGranularity());
             Integer granularityRange = job.getGranularityRange();
             Query query = serviceFactory.newDruidQueryServiceInstance().build(job.getQuery(), granularity, granularityRange, end, job.getTimeseriesRange());
@@ -426,6 +433,7 @@ public class Routes {
             tableParams.put(Constants.INSTANTVIEW, "true");
             tableParams.put(DatabaseConstants.ANOMALIES, reports);
             tableParams.put(Constants.SELECTED_DATE, end);
+            tableParams.put(Constants.DETECTION_WINDOW, detectionWindow.toString());
             tableParams.put(Constants.HTTP_BASE_URI, CLISettings.HTTP_BASE_URI);
             params.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
             Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
@@ -940,6 +948,7 @@ public class Routes {
             params.put(Constants.TIMELINE_POINTS, jsonTimelinePoints);
             params.put(Constants.TITLE, jobMetadata.getTestName());
             params.put(Constants.HTTP_BASE_URI, CLISettings.HTTP_BASE_URI);
+            params.put(Constants.DETECTION_WINDOW, "5");
         } catch (Exception e) {
             log.error("Error while viewing job report!", e);
             params.put(Constants.ERROR, e.getMessage());

@@ -27,7 +27,7 @@
                                     th:field="*{timeseries}" th:required="true">
                                 <option th:each="timeseries : ${timeseriesNames}"
                                         th:value="${timeseries.getLeft()}"
-                                        th:selected="true"
+                                        th:selected="${timeseries.getRight() == selectedSeries or selectedSeries == null} ? true : false"
                                         th:text="${timeseries.getRight()}"></option>
                             </select>
                         </div>
@@ -240,7 +240,27 @@
             "pageLength": 100,
             "order": [[ 3, "desc" ]]
         });
-        displayGraph($('#bootstrap-data').data('bootstrap'));
+        // Initialize chart with value(s) selected in dropdown
+        var graphData = $('#bootstrap-data').data('bootstrap');
+        var selected = $('#timeseriesNames').val();
+        var result = [];
+        var i;
+        if (selected.length > 0) {
+            result = new Array(selected.length * 3);
+            for(i = 0; i < selected.length; i = i + 1) {
+                result[i * 2] = graphData[selected[i] * 2];
+                result[i * 2 + 1] = graphData[selected[i] * 2 + 1];
+            }
+            for(i = 0; i < selected.length; i = i + 1) {
+                var x = selected.length * 2 + i;
+                var y = (graphData.length * 2) / 3 + parseInt(selected[i]);
+                result[x] = graphData[y];
+            }
+            for(i = 0; i < result.length; i = i + 1) {
+                result[i].classed = "series-" + i;
+            }
+        }
+        displayGraph(result);
     });
 
     $("#saveConfirmModalYes").click(function () {

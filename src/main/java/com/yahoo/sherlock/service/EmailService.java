@@ -232,6 +232,7 @@ public class EmailService {
                 params.put(DatabaseConstants.ANOMALIES, anomalyReports);
                 params.put(Constants.EMAIL_HTML, "true");
                 params.put(Constants.HTTP_BASE_URI, CLISettings.HTTP_BASE_URI);
+                params.put("detectionWindow", "5");
                 ThymeleafTemplateEngine thymeleafTemplateEngine = new ThymeleafTemplateEngine();
                 if (anomalyReports.size() > 0) {
                     params.put(Constants.SELECTED_DATE, anomalyReports.get(0).getReportQueryEndTime());

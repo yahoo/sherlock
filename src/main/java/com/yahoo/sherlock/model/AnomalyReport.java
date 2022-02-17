@@ -49,7 +49,8 @@ public class AnomalyReport implements Serializable {
             Constants.WARNING,
             anomaly.modelName,
             String.valueOf(job.getSigmaThreshold()),
-            job.getTestName()
+            job.getTestName(),
+            null
         );
         report.setHasAnomaly(anomaly.intervals.size() > 0 || JobStatus.NODATA.getValue().equals(anomaly.metricMetaData.name));
         report.setAnomalyTimestampsFromInterval(anomaly.intervals);
@@ -113,6 +114,10 @@ public class AnomalyReport implements Serializable {
     @Attribute
     private String testName;
 
+    /** Anomaly series name name associated with this report. **/
+    @Attribute
+    private String seriesName;
+
     /** Whether this anomaly report contains an anomaly. */
     private boolean hasAnomaly;
 
@@ -137,6 +142,7 @@ public class AnomalyReport implements Serializable {
      * @param modelName Name of the Model used for anomaly detection
      * @param modelParam Parameter values of the model
      * @param testName Anomaly test name associated with this report
+     * @param seriesName Anomaly test name associated with this report
      */
     public AnomalyReport(
         String uniqueId,
@@ -150,7 +156,8 @@ public class AnomalyReport implements Serializable {
         String status,
         String modelName,
         String modelParam,
-        String testName
+        String testName,
+        String seriesName
     ) {
         this.uniqueId = uniqueId;
         this.metricName = metricName;
@@ -164,6 +171,7 @@ public class AnomalyReport implements Serializable {
         this.modelName = modelName;
         this.modelParam = modelParam;
         this.testName = testName;
+        this.seriesName = seriesName;
     }
 
     /**
@@ -210,6 +218,16 @@ public class AnomalyReport implements Serializable {
      */
     public String getFormattedReportGenerationTime() {
         return TimeUtils.getFormattedTimeMinutes(reportQueryEndTime);
+    }
+
+    /**
+     * The report generation time as a readable,
+     * formatted string for use on the front end.
+     * @return formatted date of the report generation time
+     */
+    public String getSeriesName() {
+        String seriesName = metricName + "%3B%20" + groupByFilters;
+        return seriesName;
     }
 
     /**

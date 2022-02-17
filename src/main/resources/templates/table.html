@@ -63,12 +63,20 @@
                         <td th:text="${anomaly.getStatus()}" th:styleappend="${anomaly.getStatus() == 'success' ? 'color: rgba(100,200,0,1.0)' : 'color: rgba(255,0,0,1.0)'}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">Job status</td>
                     </div>
                     <td th:text="${anomaly.getModelInfo()}" th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top; white-space:pre-wrap;' : 'white-space:pre-wrap;'}">Model Info</td>
-                    <div th:if="${instantView == null}">
+                    <div th:if="${instantView == null}" th:with="window=${detectionWindow == null ? 6 : detectionWindow}">
                         <td th:attr="style=${emailHtml != null ? 'border: 1px solid #ddd; text-align: left; padding: 8px; vertical-align: top;' : ''}">
-                            <a target="_blank" class="btn custom-report-btn"
-                               th:href="@{__${httpBaseUri}__/Chart/__${anomaly.getJobId()}__/__${selectedDate}__}">
-                                <span class="glyphicon glyphicon-signal"></span> Anomaly Chart
-                            </a>
+                            <div th:if="${anomaly.getGroupByFilters() == ''}">
+                                <a target="_blank" class="btn custom-report-btn"
+                                   th:href="@{__${httpBaseUri}__/Chart/__${anomaly.getJobId()}__/__${selectedDate}__/__${window}__}">
+                                    <span class="glyphicon glyphicon-signal"></span> Anomaly Chart
+                                </a>
+                            </div>
+                            <div th:if="${anomaly.getGroupByFilters() != ''}">
+                                <a target="_blank" class="btn custom-report-btn"
+                                   th:href="@{__${httpBaseUri}__/Chart/__${anomaly.getJobId()}__/__${selectedDate}__/__${window}__/__${anomaly.getSeriesName()}__}">
+                                    <span class="glyphicon glyphicon-signal"></span> Anomaly Chart
+                                </a>
+                            </div>
                         </td>
                     </div>
                     <div th:if="${instantView == null}">

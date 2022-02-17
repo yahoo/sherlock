@@ -148,12 +148,18 @@ public class JobExecutionService {
         for (AnomalyReport report : reports) {
             if (report.isHasAnomaly()) {
                 try {
+                    String detectionWindow = "5";
                     log.info("Anomaly found - building Slack payload");
-                    String chartLink = String.format("%s/Chart/%s/%s",
+                    String chartLink = String.format("%s/Chart/%s/%s/%s",
                                                      CLISettings.HTTP_BASE_URI,
                                                      report.getJobId(),
-                                                     report.getReportQueryEndTime()
+                                                     report.getReportQueryEndTime(),
+                                                     detectionWindow
                     );
+
+                    if (!report.getGroupByFilters().isEmpty()) {
+                        chartLink += "/" + report.getSeriesName();
+                    }
 
                     String deviation = report.getSlackFormattedDeviation();
                     String attachmentColour = (NumberUtils.parseLong(deviation) < 0) ? "danger" : "good";

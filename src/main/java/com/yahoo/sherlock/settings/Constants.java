@@ -180,6 +180,16 @@ public final class Constants {
     public static final String START_DATE = ":startDate";
 
     /**
+     * Constant for 'selectedSeries'.
+     */
+    public static final String SELECTED_SERIES = ":selectedSeries";
+
+    /**
+     * Constant for 'window'.
+     */
+    public static final String DETECTION_WINDOW = ":detectionWindow";
+
+    /**
      * Constant for 'timelineDots'.
      */
     public static final String TIMELINE_POINTS = "timelinePoints";
