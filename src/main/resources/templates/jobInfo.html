@@ -210,6 +210,11 @@
                                         th:attr="disabled=${job.getJobStatus() != 'CREATED' ? 'false' : 'true'}">
                                     <span class="glyphicon glyphicon-list-alt"></span> Report
                                 </button>
+                                <button id="reportGlyphicon" type="button" class="btn btn-info btn-lg custom-btn-color"
+                                        onclick="chartJob()"
+                                        th:attr="disabled=${job.getJobStatus() != 'CREATED' ? 'false' : 'true'}">
+                                    <span class="glyphicon glyphicon-list-alt"></span> Instant Chart
+                                </button>
                             </div>
 
                             <div id="jobActions" class="form-group" th:if="${deletedJobsView == null}">
@@ -689,6 +694,11 @@
 
         function viewReports() {
             window.location.href = '/Reports/' + $('#jobId').val() + '/' + $('#frequency').val();
+        }
+
+        function chartJob() {
+            const now = Math.round(new Date().getTime() / 60000);
+            window.location.href = '/Chart/' + $('#jobId').val() + '/' + now + '/24';
         }
 
         $('#removeGlyphicon').click(function() {
