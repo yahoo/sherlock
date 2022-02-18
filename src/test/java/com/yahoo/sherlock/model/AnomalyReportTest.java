@@ -148,7 +148,8 @@ public class AnomalyReportTest {
                 "status",
                 "model",
                 "3.0",
-                "xyz"
+                "xyz",
+                "series"
         );
         assertEquals(rep.getUniqueId(), "uniqueId");
         assertEquals(rep.getMetricName(), "metricName");

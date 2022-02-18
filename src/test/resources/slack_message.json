@@ -1,0 +1,40 @@
+{
+  "attachments": [
+    {
+      "color": "good",
+      "authorName": "Sherlock Anomaly Detector",
+      "title": "Metric: metricName",
+      "titleLink": "http://localhost:8080/Chart/12/55512/5/metricName%3B%20abc",
+      "fields": [
+        {
+          "title": "Dimensions",
+          "value": "abc",
+          "short": false
+        },
+        {
+          "title": "Model Info",
+          "value": "Model: modelName\nParams: modelParam",
+          "short": true
+        },
+        {
+          "title": "Status",
+          "value": "goodo",
+          "short": true
+        },
+        {
+          "title": "Date",
+          "value": "Thu 15 Jan 1970 01:00:00 UTC\nSat 24 Jan 1970 02:00:00 UTC\nSat 24 Jan 1970 05:00:00 UTC to Sat 24 Jan 1970 08:00:00 UTC",
+          "short": true
+        },
+        {
+          "title": "Deviation",
+          "value": "*554%*",
+          "short": true
+        }
+      ],
+      "mrkdwnIn": [
+        "text"
+      ]
+    }
+  ]
+}
