@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Service class to parse the druid response as a list of timeseries.
@@ -136,7 +137,8 @@ public class TimeSeriesParserService {
         throws SherlockException {
         long singleInterval = (long) (intervals - (intervals % granularityRange)) * granularity.getMinutes();
         int fillIntervals = (int) ((end - start) / granularity.getMinutes());
-        @SuppressWarnings("unchecked") List<TimeSeries>[] result = (List<TimeSeries>[]) new List[fillIntervals];
+        // create an array of lists
+        @SuppressWarnings("unchecked") List<TimeSeries>[] result = Stream.generate(ArrayList::new).limit(fillIntervals).toArray(List[]::new);
         if (sources.isEmpty()) {
             return result;
         }

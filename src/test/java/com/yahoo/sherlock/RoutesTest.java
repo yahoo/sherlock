@@ -3,6 +3,7 @@
  * Copyrights licensed under the GPL License.
  * See the accompanying LICENSE file for terms.
  */
+
 package com.yahoo.sherlock;
 
 import com.beust.jcommander.internal.Lists;
@@ -18,11 +19,11 @@ import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
-import com.yahoo.sherlock.model.EgadsResult;
+import com.yahoo.sherlock.model.DetectorResult;
 import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.model.JobTimeline;
-import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.service.JobExecutionService;
 import com.yahoo.sherlock.service.SchedulerService;
@@ -834,9 +835,61 @@ public class RoutesTest {
         verify(res, times(1)).status(500);
     }
 
-
+    /**
+     * Tests method processInstantAnomalyJob() runs when user req includes Egads as tsFramework.
+     */
     @Test
-    public void testProcessInstantAnomalyJob() throws Exception {
+    public void testProcessInstantAnomalyJobEgads() throws Exception {
+        Routes.initParams();
+        mocks();
+        Query query = mock(Query.class);
+        when(query.getQueryJsonObject()).thenReturn(new JsonObject());
+        when(qs.build(anyString(), any(), anyInt(), anyInt(), anyInt())).thenReturn(query);
+        when(req.body()).thenReturn(
+                "{" +
+                        "\"clusterId\":\"1\"," +
+                        "\"granularity\":\"hour\"," +
+                        "\"sigmaThreshold\":\"3.5\"," +
+                        "\"frequency\":\"hour\"," +
+                        "\"queryEndTimeText\":\"2017-06-02T12:00\"," +
+                        "\"granularityRange\":\"1\"," +
+                        "\"timeseriesRange\":\"24\"," +
+                        "\"detectionWindow\":\"24\"," +
+                        "\"tsFramework\":\"Egads\"," +
+                        "\"tsModels\":\"OlympicModel\"," +
+                        "\"adModels\":\"KSigmaModel\"" +
+                        "}"
+        );
+        DruidCluster dc = mock(DruidCluster.class);
+        when(dca.getDruidCluster(anyString())).thenReturn(dc);
+        when(dc.getHoursOfLag()).thenReturn(0);
+        inject("clusterAccessor", dca);
+        DetectorResult eres = mock(DetectorResult.class);
+        DetectorResult.Series[] series = {
+            new DetectorResult.Series(),
+            new DetectorResult.Series(),
+            new DetectorResult.Series()
+        };
+        when(eres.getData()).thenReturn(series);
+        when(eres.getAnomalies()).thenReturn(Lists.newArrayList(new Anomaly()));
+        List<DetectorResult> reslist = Lists.newArrayList(eres);
+        when(ds.detectWithResults(any(), anyDouble(), any(), any(), any()))
+                .thenReturn(reslist);
+        when(tte.render(any(ModelAndView.class))).thenReturn("<div></div>");
+        String a = Routes.processInstantAnomalyJob(req, res);
+        verify(tte, times(1)).render(any(ModelAndView.class));
+        verify(jes, times(1)).getReports(any(), any());
+        when(qs.build(any(), any(), anyInt(), anyInt(), anyInt())).thenThrow(new SherlockException("error"));
+        assertEquals(a, Constants.SUCCESS);
+        String error = Routes.processInstantAnomalyJob(req, res);
+        assertEquals(error, Constants.ERROR);
+    }
+
+    /**
+     * Tests method processInstantAnomalyJob() runs when user req includes Prophet as tsFramework.
+     */
+    @Test
+    public void testProcessInstantAnomalyJobProphet() throws Exception {
         Routes.initParams();
         mocks();
         Query query = mock(Query.class);
@@ -852,6 +905,7 @@ public class RoutesTest {
             "\"granularityRange\":\"1\"," +
             "\"timeseriesRange\":\"24\"," +
             "\"detectionWindow\":\"24\"," +
+            "\"tsFramework\":\"Prophet\"," +
             "\"tsModels\":\"OlympicModel\"," +
             "\"adModels\":\"KSigmaModel\"" +
             "}"
@@ -860,15 +914,15 @@ public class RoutesTest {
         when(dca.getDruidCluster(anyString())).thenReturn(dc);
         when(dc.getHoursOfLag()).thenReturn(0);
         inject("clusterAccessor", dca);
-        EgadsResult eres = mock(EgadsResult.class);
-        EgadsResult.Series[] series = {
-            new EgadsResult.Series(),
-            new EgadsResult.Series(),
-            new EgadsResult.Series()
+        DetectorResult eres = mock(DetectorResult.class);
+        DetectorResult.Series[] series = {
+            new DetectorResult.Series(),
+            new DetectorResult.Series(),
+            new DetectorResult.Series()
         };
         when(eres.getData()).thenReturn(series);
         when(eres.getAnomalies()).thenReturn(Lists.newArrayList(new Anomaly()));
-        List<EgadsResult> reslist = Lists.newArrayList(eres);
+        List<DetectorResult> reslist = Lists.newArrayList(eres);
         when(ds.detectWithResults(any(), anyDouble(), any(), any(), any()))
                 .thenReturn(reslist);
         when(tte.render(any(ModelAndView.class))).thenReturn("<div></div>");
@@ -1021,7 +1075,7 @@ public class RoutesTest {
         ModelAndView mav = Routes.debugShowEgadsConfigurableQuery(req, res);
         assertEquals(params(mav).get(Constants.DRUID_CLUSTERS), dclist);
         verify(dca, times(1)).getDruidClusterList();
-        Assert.assertEquals(params(mav).get("filteringMethods"), EgadsConfig.FilteringMethod.values());
+        Assert.assertEquals(params(mav).get("filteringMethods"), DetectorConfig.FilteringMethod.values());
     }
 
     @Test
@@ -1040,13 +1094,13 @@ public class RoutesTest {
         when(req.queryMap()).thenReturn(map);
         smap.put("query", new String[]{new Gson().toJson(jo)});
         smap.put("ownerEmail", new String[]{"jigar@mail.com,me@mail.com"});
-        EgadsResult er = mock(EgadsResult.class);
-        EgadsResult.Series series = mock(EgadsResult.Series.class);
-        EgadsResult.Series[] data = {series, series, series};
+        DetectorResult er = mock(DetectorResult.class);
+        DetectorResult.Series series = mock(DetectorResult.Series.class);
+        DetectorResult.Series[] data = {series, series, series};
         when(er.getData()).thenReturn(data);
         List<Anomaly> anomalies = Lists.newArrayList(new Anomaly());
         when(er.getAnomalies()).thenReturn(anomalies);
-        List<EgadsResult> erlist = Lists.newArrayList(er);
+        List<DetectorResult> erlist = Lists.newArrayList(er);
         when(tte.render(any(ModelAndView.class))).thenReturn("html");
         when(ds.detectWithResults(any(), anyDouble(), any(), anyInt(), any())).thenReturn(erlist);
         ModelAndView mav = Routes.debugPerformEgadsQuery(req, res);

@@ -329,7 +329,7 @@ public class LettuceJsonDumper
     }
 
     /**
-     * Method to write objects ({@link com.yahoo.sherlock.model.JobMetadata}, {@link com.yahoo.sherlock.model.EmailMetaData etc.}) to redis.
+     * Method to write objects ({@link JobMetadata}, {@link EmailMetaData etc.}) to redis.
      * @param objects map : key - object key, value - object fields as a map of strings
      */
     public void writeObjectsToRedis(Map<String, Map<String, String>> objects) {
@@ -350,8 +350,8 @@ public class LettuceJsonDumper
     }
 
     /**
-     * Method to write anomaly timestamps from ({@link com.yahoo.sherlock.model.AnomalyReport}) to redis.
-     * @param anomalyTimestamps map : key - redis key, value - list of timestamps as {@link io.lettuce.core.ScoredValue}
+     * Method to write anomaly timestamps from ({@link AnomalyReport}) to redis.
+     * @param anomalyTimestamps map : key - redis key, value - list of timestamps as {@link ScoredValue}
      */
     public void writeAnomalyTimestampsToRedis(Map<String, List<ScoredValue<byte[]>>> anomalyTimestamps) {
         RedisConnection<byte[]> conn = binary();

@@ -156,16 +156,21 @@
                                 </select>
                             </div>
 
-                            <div class="form-group" id="timeseriesModelSection">
-                                <label class="control-label" for="tsModels">Timeseries Model:</label>
-                                <select id="tsModels" name="tsModels" class="form-control"
-                                        th:field="*{timeseriesModel}">
-                                    <option th:each="timeseriesModel : ${timeseriesModels}"
-                                            th:value="${timeseriesModel}"
-                                            th:selected="${timeseriesModel} == ${job.getTimeseriesModel()} ? true : false"
-                                            th:text="${timeseriesModel}"></option>
+                            <div class="form-group" id="forecastFrameworkSection">
+                                <label class="control-label" for="tsFramework">Forecasting Framework:</label>
+                                <select id="tsFramework" name="tsFramework" class="form-control"
+                                        th:field="*{framework}" onchange="selectTSFramework()">
+                                    <option th:each="framework : ${frameworks}"
+                                            th:value="${framework}"
+                                            th:selected="${framework} == ${job.getTimeseriesFramework()}"
+                                            th:text="${framework}"></option>
                                 </select>
                             </div>
+
+                            <!-- Egads Parameter Modal -->
+                            <div th:replace="fragments/egads_update_modal :: egads-param-modal"></div>
+                            <!-- Prophet Parameter Modal -->
+                            <div th:replace="fragments/prophet_update_modal :: prophet-param-modal"></div>
 
                             <div class="form-group" id="anomalyDetectionModelSection">
                                 <label class="control-label" for="adModels">Anomaly Detection Model:</label>
@@ -460,11 +465,31 @@
             updateMode();
         });
 
+        $('#tsFramework').change(function() {
+            updateMode();
+        });
+
         $('#tsModels').change(function() {
             updateMode();
         });
 
         $('#adModels').change(function() {
+            updateMode();
+        });
+
+        $('#growth-models').change(function() {
+            updateMode();
+        });
+
+        $('#yearly-seasonalities').change(function() {
+            updateMode();
+        });
+
+        $('#weeklySeasonality').change(function() {
+            updateMode();
+        });
+
+        $('#daily-seasonalities').change(function() {
             updateMode();
         });
 
@@ -568,8 +593,17 @@
                 data.sigmaThreshold = $('#sdSliderVal').text();
                 data.clusterId = $druidCluster.val();
                 data.hoursOfLag = $('#hoursOfLag').val();
-                data.tsModels = $('#tsModels').val();
+                data.tsFramework = $('#tsFramework').val();
                 data.adModels = $('#adModels').val();
+                if ($('#tsFramework').val() === 'Prophet') {
+                    data.tsModels = $('#tsFramework').val(); // stores 'Prophet' in both tsFramework & tsModels
+                    data.growthModel = $('#growth-models').val();
+                    data.yearlySeasonality = $('#yearly-seasonalities').val();
+                    data.weeklySeasonality = $('#weekly-seasonalities').val();
+                    data.dailySeasonality = $('#daily-seasonalities').val();
+                } else {  // if Egads framework is chosen
+                    data.tsModels = $('#tsModels').val();
+                }
                 $.ajax({
                     type: 'POST',
                     url: '/UpdateJobInfo/' + $('#jobId').val(),
@@ -727,6 +761,19 @@
                 $('#timeseriesRange').val([[${job.getTimeseriesRange()}]]);
             }
         }
+
+        selectTSFramework();
+
+        function selectTSFramework() {
+            if ($('#tsFramework').val() === 'Prophet') {
+                $('#egads-param-modal').attr("hidden", true)
+                $('#prophet-param-modal').attr("hidden", false)
+            } else {
+                $('#egads-param-modal').attr("hidden", false)
+                $('#prophet-param-modal').attr("hidden", true)
+            }
+        }
+
 /*]]>*/
 </script>
 

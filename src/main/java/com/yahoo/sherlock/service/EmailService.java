@@ -274,7 +274,7 @@ public class EmailService {
         try {
             new Mailer(
                 new ServerConfig(CLISettings.SMTP_HOST, CLISettings.SMTP_PORT, CLISettings.SMTP_USER, CLISettings.SMTP_PASSWORD),
-                TransportStrategy.SMTP_TLS
+                TransportStrategy.SMTP_PLAIN
             ).sendMail(emailHandle);
             log.info("Email sent successfully!");
         } catch (Exception e) {

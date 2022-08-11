@@ -31,7 +31,7 @@ public class SSslConfigs {
         /**
          * Parameter Name.
          * @return name of the param
-         **/
+         */
         String name();
     }
 
@@ -72,7 +72,7 @@ public class SSslConfigs {
     private Boolean strict = true;
 
     /**
-     * Builder for {@link com.yahoo.sherlock.utils.SSslConfigs}.
+     * Builder for {@link SSslConfigs}.
      */
     public static final class SSslConfigsBuilder {
 
@@ -192,7 +192,7 @@ public class SSslConfigs {
     }
 
     /**
-     * Method to return SSL configs as {@link java.util.Properties}.
+     * Method to return SSL configs as {@link Properties}.
      * @return ssl properties
      */
     public Properties asProperties() {

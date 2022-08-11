@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
 
+import com.yahoo.sherlock.query.DetectorConfig;
+
 /**
  * DTO for anomaly report class.
  */
@@ -30,13 +32,21 @@ import java.util.StringJoiner;
 public class AnomalyReport implements Serializable {
 
     /**
-     * Create an anomaly report from an EGADs anomaly and the
+     * Create an anomaly report from an Egads anomaly and the
      * corresponding job.
-     * @param anomaly EGADs anomaly
+     * @param anomaly  anomaly that follows Egads standard
      * @param job job metadata
      * @return an anomaly report
      */
     public static AnomalyReport createReport(Anomaly anomaly, JobMetadata job) {
+        String tsModelName;
+        if (job.getTimeseriesModel().equals(Constants.PROPHET)) {
+            tsModelName = Constants.PROPHET;
+        } else if (DetectorConfig.TimeSeriesModel.getAllEgadsValues().contains(job.getTimeseriesModel())) {
+            tsModelName = String.format("%s - %s", Constants.EGADS, job.getTimeseriesModel());
+        } else {
+            tsModelName = Constants.UNKNOWN_TS_MODEL;
+        }
         AnomalyReport report = new AnomalyReport(
             anomaly.metricMetaData.id,
             anomaly.metricMetaData.name,
@@ -47,6 +57,7 @@ public class AnomalyReport implements Serializable {
             job.getJobId(),
             job.getFrequency(),
             Constants.WARNING,
+            tsModelName,
             anomaly.modelName,
             String.valueOf(job.getSigmaThreshold()),
             job.getTestName()
@@ -97,7 +108,11 @@ public class AnomalyReport implements Serializable {
     @Attribute
     private String status;
 
-    /** Name of the Model used for anomaly detection. */
+    /** Name of the TimeSeries Model / Framework. */
+    @Attribute
+    private String tsModelName;
+
+    /** Name of the Anomaly Detection Model. */
     @Attribute
     private String modelName;
 
@@ -134,6 +149,7 @@ public class AnomalyReport implements Serializable {
      * @param jobId the associated job ID
      * @param jobFrequency frequency of the job
      * @param status the anomaly status
+     * @param tsModelName Name of the time series framework + forecasting model
      * @param modelName Name of the Model used for anomaly detection
      * @param modelParam Parameter values of the model
      * @param testName Anomaly test name associated with this report
@@ -148,6 +164,7 @@ public class AnomalyReport implements Serializable {
         Integer jobId,
         String jobFrequency,
         String status,
+        String tsModelName,
         String modelName,
         String modelParam,
         String testName
@@ -161,6 +178,7 @@ public class AnomalyReport implements Serializable {
         this.jobId = jobId;
         this.jobFrequency = jobFrequency;
         this.status = status;
+        this.tsModelName = tsModelName;
         this.modelName = modelName;
         this.modelParam = modelParam;
         this.testName = testName;
@@ -333,7 +351,13 @@ public class AnomalyReport implements Serializable {
      */
     public String getModelInfo() {
         StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
-        joiner.add("Model: " + modelName);
+        // Older reports do not have the tsModelName field. We display Egads instead of null for backward compatibility
+        if (tsModelName == null) {
+            joiner.add("TimeSeries Model: " + DetectorConfig.Framework.Egads.toString() + " - Forecasting Model");
+        } else {
+            joiner.add("TimeSeries Model: " + tsModelName);
+        }
+        joiner.add("Anomaly Detection Model: " + modelName);
         joiner.add("Params: " + modelParam);
         return joiner.toString();
     }

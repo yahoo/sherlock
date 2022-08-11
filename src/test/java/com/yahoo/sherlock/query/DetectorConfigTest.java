@@ -9,9 +9,11 @@ package com.yahoo.sherlock.query;
 import com.yahoo.sherlock.settings.CLISettingsTest;
 import com.yahoo.sherlock.utils.Utils;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 
@@ -19,33 +21,36 @@ import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertNull;
 
-public class EgadsConfigTest {
+public class DetectorConfigTest {
 
     @Test
     public void testFilteringMethod() {
         String[] exParams = {"0.01", "0.1", "10", "8", "0.99", "0.97"};
-        EgadsConfig.FilteringMethod[] fms = EgadsConfig.FilteringMethod.values();
+        DetectorConfig.FilteringMethod[] fms = DetectorConfig.FilteringMethod.values();
         for (int i = 0; i < fms.length; i++) {
             assertEquals(QueryBuilderTest.getValue("param", fms[i]), exParams[i]);
         }
     }
 
+    /**
+     * Test Detector parameters are unchanged after being built to config and converted as property.
+     */
     @Test
-    public void testEgadsConfigValueSetters() {
-        EgadsConfig c = new EgadsConfig();
-        Field[] fields = Utils.findFields(EgadsConfig.class, EgadsConfig.EgadsParam.class);
+    public void testDetectorConfigValueSetters() {
+        DetectorConfig c = new DetectorConfig();
+        Field[] fields = Utils.findFields(DetectorConfig.class, DetectorConfig.DetectorParam.class);
         for (Field f : fields) {
             assertNull(QueryBuilderTest.getValue(f, c));
         }
-        c = EgadsConfig.create().buildDefault();
+        c = DetectorConfig.create().buildDefault();
         for (Field f : fields) {
             assertNotNull(QueryBuilderTest.getValue(f, c));
         }
-        EgadsConfig.Builder b = EgadsConfig.create();
-        c = (EgadsConfig) QueryBuilderTest.getValue("config", b);
+        DetectorConfig.Builder b = DetectorConfig.create();
+        c = (DetectorConfig) QueryBuilderTest.getValue("config", b);
         @SuppressWarnings("unchecked")
         Map<String, Field> fmap = (Map<String, Field>) QueryBuilderTest.getValue(
-            CLISettingsTest.getField("fieldMap", EgadsConfig.Builder.class), null);
+            CLISettingsTest.getField("fieldMap", DetectorConfig.Builder.class), null);
         assertEquals(fields.length, fmap.size());
         b.setParam("invalidParam", "value");
         b.setParam("MAX_ANOMALY_TIME_AGO", "10");
@@ -146,7 +151,7 @@ public class EgadsConfigTest {
         b.windowSize("abc");
         assertEquals("10", c.getWindowSize());
         b.filteringMethod("invalid");
-        b.filteringMethod(EgadsConfig.FilteringMethod.GAP_RATIO);
+        b.filteringMethod(DetectorConfig.FilteringMethod.GAP_RATIO);
         b.recommendedFilteringParam();
         assertEquals("GAP_RATIO", c.getFilteringMethod());
         assertEquals("0.01", c.getFilteringParam());
@@ -155,12 +160,108 @@ public class EgadsConfigTest {
         b.filteringParam("sdfa");
         b.filteringParam("10");
         assertEquals("10.0", c.getFilteringParam());
+        b.growthModel("linear");
+        b.growthModel("flat");
+        assertEquals("flat", c.getProphetGrowthModel());
+        b.yearlySeasonality("auto");
+        b.yearlySeasonality("True");
+        assertEquals("True", c.getProphetYearlySeasonality());
+        b.weeklySeasonality("auto");
+        b.weeklySeasonality("False");
+        assertEquals("False", c.getProphetWeeklySeasonality());
+        b.dailySeasonality("auto");
+        b.dailySeasonality("False");
+        assertEquals("False", c.getProphetDailySeasonality());
         b.build();
-        b = EgadsConfig.create().filteringMethod("GAP_RATIO");
-        c = b.build();
+        b = DetectorConfig.create().filteringMethod("GAP_RATIO");
+        c = b.build();  // build to default params
         assertEquals(c.getFilteringParam(), "0.01");
+        assertEquals(c.getProphetGrowthModel(), "linear");
+        assertEquals(c.getProphetYearlySeasonality(), "auto");
+        assertEquals(c.getProphetWeeklySeasonality(), "auto");
+        assertEquals(c.getProphetDailySeasonality(), "auto");
         Properties p = c.asProperties();
         assertEquals(p.get("FILTERING_METHOD"), "GAP_RATIO");
+        assertEquals(p.get("PROPHET_GROWTH_MODEL"), "linear");
+        assertEquals(p.get("PROPHET_YEARLY_SEASONALITY"), "auto");
+        assertEquals(p.get("PROPHET_WEEKLY_SEASONALITY"), "auto");
+        assertEquals(p.get("PROPHET_DAILY_SEASONALITY"), "auto");
     }
 
+    /**
+     * Test Prophet parameters are unchanged after being built to config and converted as property.
+     */
+    @Test
+    public void testSherlockProphetConfigValueSetters() {
+        DetectorConfig c;
+        DetectorConfig.Builder b = DetectorConfig.create();
+        b.growthModel("flat");
+        b.yearlySeasonality("True");
+        b.weeklySeasonality("True");
+        b.dailySeasonality("True");
+        c = b.build();
+        assertEquals(c.getProphetGrowthModel(), "flat");
+        assertEquals(c.getProphetYearlySeasonality(), "True");
+        assertEquals(c.getProphetWeeklySeasonality(), "True");
+        assertEquals(c.getProphetDailySeasonality(), "True");
+        Properties p = c.asProperties();
+        assertEquals(p.get("PROPHET_GROWTH_MODEL"), "flat");
+        assertEquals(p.get("PROPHET_YEARLY_SEASONALITY"), "True");
+        assertEquals(p.get("PROPHET_WEEKLY_SEASONALITY"), "True");
+        assertEquals(p.get("PROPHET_DAILY_SEASONALITY"), "True");
+    }
+
+    /**
+     * Tests Framework enum's getAllValues() method.
+     */
+    @Test
+    public void testGetAllFrameworks() {
+        // Compare all values with expected list of values
+        Assert.assertEquals(DetectorConfig.Framework.getAllValues(),
+                Arrays.asList("Egads", "Prophet"));
+    }
+
+    /**
+     * Tests TimeSeriesModel enum's getAllEgadsValues() method.
+     */
+    @Test
+    public void testGetAllEgadsValues() {
+        // Compare all values with expected list of values
+        Assert.assertEquals(DetectorConfig.TimeSeriesModel.getAllEgadsValues(),
+                Arrays.asList("AutoForecastModel", "DoubleExponentialSmoothingModel", "MovingAverageModel", "MultipleLinearRegressionModel", "NaiveForecastingModel",
+                        "OlympicModel", "PolynomialRegressionModel", "RegressionModel", "SimpleExponentialSmoothingModel", "TripleExponentialSmoothingModel",
+                        "WeightedMovingAverageModel", "SpectralSmoother"));
+    }
+
+    /**
+     * Tests TimeSeriesModel enum's getAllValues() method.
+     */
+    @Test
+    public void testGetAllValues() {
+        // Compare all values with expected list of values
+        Assert.assertEquals(DetectorConfig.TimeSeriesModel.getAllValues(),
+                Arrays.asList("AutoForecastModel", "DoubleExponentialSmoothingModel", "MovingAverageModel", "MultipleLinearRegressionModel", "NaiveForecastingModel",
+                        "OlympicModel", "PolynomialRegressionModel", "Prophet", "RegressionModel", "SimpleExponentialSmoothingModel", "TripleExponentialSmoothingModel",
+                        "WeightedMovingAverageModel", "SpectralSmoother"));
+    }
+
+    /**
+     * Tests GrowthModel enum's getAllValues() method.
+     */
+    @Test
+    public void testGetAllGrowthModels() {
+        // Compare all values with expected list of values
+        Assert.assertEquals(DetectorConfig.GrowthModel.getAllValues(),
+                Arrays.asList("linear", "flat"));
+    }
+
+    /**
+     * Tests ProphetSeasonality enum's getAllValues() method.
+     */
+    @Test
+    public void testGetAllSeasonalities() {
+        // Compare all values with expected list of values
+        Assert.assertEquals(DetectorConfig.ProphetSeasonality.getAllValues(),
+                Arrays.asList("auto", "True", "False"));
+    }
 }

@@ -8,21 +8,19 @@ package com.yahoo.sherlock.service;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.exception.DruidException;
 import com.yahoo.sherlock.exception.SherlockException;
-import com.yahoo.sherlock.model.EgadsResult;
+import com.yahoo.sherlock.model.DetectorResult;
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.JobMetadata;
-import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.egads.data.Anomaly;
 import com.yahoo.egads.data.TimeSeries;
 import com.yahoo.sherlock.utils.TimeUtils;
-
 import lombok.extern.slf4j.Slf4j;
-
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,14 +47,14 @@ public class DetectorService {
     private TimeSeriesParserService parserService = new TimeSeriesParserService();
 
     /**
-     * Class EGADs service instance.
+     * Egads Detector API Service instance.
      */
-    private EgadsService egads = new EgadsService();
+    private EgadsAPIService egadsAPIService = new EgadsAPIService();
 
     /**
-     * Constant for AD_MODEL egads property.
+     * Prophet Detector API Service instance.
      */
-    private static final String AD_MODEL = "AD_MODEL";
+    private ProphetAPIService prophetAPIService = new ProphetAPIService();
 
     /**
      * Empty constructor.
@@ -66,9 +64,9 @@ public class DetectorService {
 
     /**
      * Method to detect anomalies.
-     * This method handles the control/data flow between the components of detection system.
+     * This method handles the control/data flow between components of detection system.
      *
-     * @param cluster           the Druid query to issue the query
+     * @param cluster           the Druid cluster to issue the query
      * @param jobMetadata       job metadata
      * @return list of anomalies
      * @throws SherlockException exeption thrown while runnig the anomaly detector components
@@ -81,7 +79,22 @@ public class DetectorService {
         Granularity granularity = Granularity.getValue(jobMetadata.getGranularity());
         Query query = queryService.build(jobMetadata.getQuery(), granularity, jobMetadata.getGranularityRange(), jobMetadata.getEffectiveQueryTime(), jobMetadata.getTimeseriesRange());
         log.info("Query generation successful.");
-        return detect(query, jobMetadata.getSigmaThreshold(), cluster, jobMetadata.getFrequency(), jobMetadata.getGranularityRange());
+        // reconstruct DetectorConfig
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsModel(jobMetadata.getTimeseriesModel());
+        config.setAdModel(jobMetadata.getAnomalyDetectionModel());
+        if (jobMetadata.getTimeseriesModel().equals(DetectorConfig.Framework.Prophet.toString())) {
+            config.setTsFramework(DetectorConfig.Framework.Prophet.toString());
+            config.setProphetGrowthModel(jobMetadata.getProphetGrowthModel());
+            config.setProphetYearlySeasonality(jobMetadata.getProphetYearlySeasonality());
+            config.setProphetWeeklySeasonality(jobMetadata.getProphetWeeklySeasonality());
+            config.setProphetDailySeasonality(jobMetadata.getProphetDailySeasonality());
+            log.info("DetectorConfig reconstructed with Prophet parameters.");
+        } else {
+            config.setTsFramework(DetectorConfig.Framework.Egads.toString());
+            log.info("DetectorConfig reconstructed with Egads parameters.");
+        }
+        return detect(query, jobMetadata.getSigmaThreshold(), cluster, config, jobMetadata.getFrequency(), jobMetadata.getGranularityRange());
     }
 
     /**
@@ -155,13 +168,13 @@ public class DetectorService {
     }
 
     /**
-     * Run detection with a provided EGADS configuration and
+     * Run detection with a provided Detector configuration and
      * Druid query.
      *
      * @param druidResponse    response from Druid
      * @param query            the Druid query
      * @param sigmaThreshold   job sigma threshold
-     * @param config           EGADS configuration
+     * @param config           Detector configuration
      * @param frequency        frequency of the job
      * @param granularityRange granularity range to aggregate on
      * @return anomalies from detection
@@ -171,7 +184,7 @@ public class DetectorService {
             JsonArray druidResponse,
             Query query,
             Double sigmaThreshold,
-            EgadsConfig config,
+            DetectorConfig config,
             String frequency,
             Integer granularityRange
     ) throws SherlockException {
@@ -185,11 +198,11 @@ public class DetectorService {
     }
 
     /**
-     * Run detection on a list of time series.
+     * Run detection on a list of time series (used by each DetectionTask).
      *
      * @param timeSeriesList   time series to analyze
      * @param sigmaThreshold   job sigma threshold
-     * @param egadsConfig      the EGADS configuration
+     * @param detectorConfig   the Detector configuration
      * @param endTimeMinutes   the expected last data point time in minutes
      * @param frequency        frequency of the job
      * @param granularity      granularity of druid query
@@ -200,70 +213,43 @@ public class DetectorService {
     public synchronized List<Anomaly> runDetection(
             List<TimeSeries> timeSeriesList,
             Double sigmaThreshold,
-            EgadsConfig egadsConfig,
+            DetectorConfig detectorConfig,
             Integer endTimeMinutes,
             String frequency,
             Granularity granularity,
             Integer granularityRange
     ) throws SherlockException {
-        if (egadsConfig != null) {
-            egads.configureWith(egadsConfig);
-        } else {
-            egads.preRunConfigure(sigmaThreshold, granularity, granularityRange);
-        }
-        // Configure the detection window for anomaly detection
-        egads.configureDetectionWindow(endTimeMinutes, frequency, granularityRange);
-        List<Anomaly> anomalies = new ArrayList<>(timeSeriesList.size());
-        if (timeSeriesList.isEmpty()) {
-            anomalies.add(getNoDataAnomaly(new TimeSeries()));
-        }
-        for (TimeSeries timeSeries : timeSeriesList) {
-            if (timeSeries.data.isEmpty() ||
-                    timeSeries.data.get(timeSeries.data.size() - 1).time != endTimeMinutes * 60L) {
-                anomalies.add(getNoDataAnomaly(timeSeries));
+        DetectorAPIService detectorAPIService;
+        List<Anomaly> anomalies = new ArrayList<>();
+        // if detectorConfig is null, use egads for anomaly detection
+        if (detectorConfig == null) {
+            detectorAPIService = egadsAPIService;
+        } else if (detectorConfig.getTsFramework().equals(DetectorConfig.Framework.Prophet.toString())) {
+            detectorAPIService = prophetAPIService;
+            detectorAPIService.configureWith(detectorConfig);
+        } else if (detectorConfig.getTsFramework().equals(DetectorConfig.Framework.Egads.toString())) {
+            if (DetectorConfig.TimeSeriesModel.getAllEgadsValues().contains(detectorConfig.getTsModel())) {
+                detectorAPIService = egadsAPIService;
+                detectorAPIService.configureWith(detectorConfig);
             } else {
-                anomalies.addAll(egads.runEGADS(timeSeries, sigmaThreshold));
+                throw new IllegalArgumentException("Egads Time Series Forecasting Model not identified.");
             }
+        } else {
+            throw new IllegalArgumentException("Time Series Framework not identified.");
         }
+        // Edge case: if time series list is empty, mark anomalies as NODATA
+        if (timeSeriesList.isEmpty()) {
+            anomalies.add(detectorAPIService.getNoDataAnomaly(new TimeSeries()));
+            return anomalies;
+        }
+        // Set Standard deviation and Olympic Model's Base Window
+        detectorAPIService.preRunConfigure(sigmaThreshold, granularity, granularityRange);
+        // Set the detection window for anomaly detection models
+        detectorAPIService.configureDetectionWindow(endTimeMinutes, frequency, granularityRange);
+        // Anomaly detection
+        anomalies.addAll(detectorAPIService.detectAnomalies(timeSeriesList, endTimeMinutes));
+        log.info("Anomaly points added to result.");
         return anomalies;
-    }
-
-    /**
-     * @param timeSeries time series for which to generate empty anomaly
-     * @return an anomaly that represents no data
-     */
-    private Anomaly getNoDataAnomaly(TimeSeries timeSeries) {
-        Anomaly anomaly = new Anomaly();
-        anomaly.metricMetaData.name = JobStatus.NODATA.getValue();
-        anomaly.metricMetaData.source = timeSeries.meta.source;
-        anomaly.metricMetaData.id = timeSeries.meta.id;
-        anomaly.id = timeSeries.meta.id;
-        anomaly.intervals = new Anomaly.IntervalSequence();
-        anomaly.modelName = (egads.getP() != null) ? egads.getP().getProperty(AD_MODEL) : "";
-        return anomaly;
-    }
-
-    /**
-     * Perform a detection job with a specified query
-     * on a cluster.
-     *
-     * @param query            the query to use
-     * @param sigmaThreshold   the sigma threshold for the detection
-     * @param cluster          the cluster to query
-     * @param frequency        frequency of the job
-     * @param granularityRange granularity range to aggregate on
-     * @return a list of anomalies
-     * @throws SherlockException if an error occurs during detection
-     * @throws DruidException    if an error occurs while contacting Druid
-     */
-    public List<Anomaly> detect(
-            Query query,
-            Double sigmaThreshold,
-            DruidCluster cluster,
-            String frequency,
-            Integer granularityRange
-    ) throws SherlockException, DruidException {
-        return detect(query, sigmaThreshold, cluster, null, frequency, granularityRange);
     }
 
     /**
@@ -272,7 +258,7 @@ public class DetectorService {
      * @param query            Druid query to use
      * @param sigmaThreshold   Job sigma threshold
      * @param cluster          Druid cluster to query
-     * @param config           EGADS configuration
+     * @param config           Detector's configuration
      * @param frequency        Frequency of the job
      * @param granularityRange granularity range to aggregate on
      * @return list of anomalies from the detection
@@ -283,7 +269,7 @@ public class DetectorService {
             Query query,
             Double sigmaThreshold,
             DruidCluster cluster,
-            EgadsConfig config,
+            DetectorConfig config,
             String frequency,
             Integer granularityRange
     ) throws SherlockException, DruidException {
@@ -293,39 +279,48 @@ public class DetectorService {
     }
 
     /**
-     * Perform an egads detection and return the results
-     * as an {@code EgadsResult}.
+     * Perform a Detector detection and return the results
+     * as an {@code DetectorResult}.
      *
      * @param query           druid query
      * @param sigmaThreshold  sigma threshold to use
      * @param cluster         the druid cluster to query
      * @param detectionWindow detection window for anomalies
-     * @param config          the egads configuration
-     * @return a list of egads results
+     * @param config          detectorConfig
+     * @return a list of DetectorResult objects
      * @throws SherlockException if an error during processing occurs
      * @throws DruidException    if an error during querying occurs
+     * @throws Exception if an error during toJSON occurs
      */
-    public List<EgadsResult> detectWithResults(
+    public List<DetectorResult> detectWithResults(
             Query query,
             Double sigmaThreshold,
             DruidCluster cluster,
             @Nullable Integer detectionWindow,
-            @Nullable EgadsConfig config
-    ) throws SherlockException, DruidException {
+            @Nonnull DetectorConfig config
+    ) throws SherlockException, DruidException, Exception {
+        DetectorAPIService detectorAPIService;
         checkDatasource(query, cluster);
         JsonArray druidResponse = queryDruid(query, cluster);
         List<TimeSeries> timeSeriesList = parserService.parseTimeSeries(druidResponse, query);
-        List<EgadsResult> results = new ArrayList<>(timeSeriesList.size());
-        if (config != null) {
-            egads.configureWith(config);
+        List<DetectorResult> results = new ArrayList<>(timeSeriesList.size());
+        if (config.getTsFramework().equals(DetectorConfig.Framework.Prophet.toString())) {
+            detectorAPIService = prophetAPIService;
+        } else if (config.getTsFramework().equals(DetectorConfig.Framework.Egads.toString())) {
+            if (DetectorConfig.TimeSeriesModel.getAllEgadsValues().contains(config.getTsModel())) {
+                detectorAPIService = egadsAPIService;
+            } else {
+                throw new IllegalArgumentException("Egads Time Series Forecasting Model not identified.");
+            }
+        } else {
+            throw new IllegalArgumentException("Time Series Framework not identified.");
         }
-        egads.preRunConfigure(sigmaThreshold, query.getGranularity(), query.getGranularityRange());
+        detectorAPIService.configureWith(config);
+        detectorAPIService.preRunConfigure(sigmaThreshold, query.getGranularity(), query.getGranularityRange());
         if (detectionWindow != null) {
-            egads.configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), detectionWindow + 1);
+            detectorAPIService.configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), detectionWindow + 1);
         }
-        for (TimeSeries timeSeries : timeSeriesList) {
-            results.add(egads.detectAnomaliesResult(timeSeries));
-        }
+        results.addAll(detectorAPIService.detectAnomaliesAndForecast(timeSeriesList));
         return results;
     }
 }

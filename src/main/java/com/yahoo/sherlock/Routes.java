@@ -21,13 +21,13 @@ import com.yahoo.sherlock.exception.SchedulerException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
-import com.yahoo.sherlock.model.EgadsResult;
+import com.yahoo.sherlock.model.DetectorResult;
 import com.yahoo.sherlock.model.EmailMetaData;
 import com.yahoo.sherlock.model.JobMetadata;
 import com.yahoo.sherlock.model.JobTimeline;
 import com.yahoo.sherlock.model.JsonTimeline;
 import com.yahoo.sherlock.model.UserQuery;
-import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.query.QueryBuilder;
 import com.yahoo.sherlock.service.JobExecutionService;
@@ -65,10 +65,10 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -187,8 +187,14 @@ public class Routes {
         params.put(Constants.DAY, Constants.MAX_DAY);
         params.put(Constants.WEEK, Constants.MAX_WEEK);
         params.put(Constants.MONTH, Constants.MAX_MONTH);
-        params.put(Constants.TIMESERIES_MODELS, EgadsConfig.TimeSeriesModel.getAllValues());
-        params.put(Constants.ANOMALY_DETECTION_MODELS, EgadsConfig.AnomalyDetectionModel.getAllValues());
+        params.put(Constants.FRAMEWORKS, DetectorConfig.Framework.getAllValues());
+        params.put(Constants.TIMESERIES_MODELS, DetectorConfig.TimeSeriesModel.getAllEgadsValues());
+        params.put(Constants.ANOMALY_DETECTION_MODELS, DetectorConfig.AnomalyDetectionModel.getAllValues());
+        params.put(Constants.PROPHET_GROWTH_MODELS, DetectorConfig.GrowthModel.getAllValues());
+        List<String> prophetSeasonalities = DetectorConfig.ProphetSeasonality.getAllValues();
+        params.put(Constants.PROPHET_YEARLY_SEASONALITY, prophetSeasonalities);
+        params.put(Constants.PROPHET_WEEKLY_SEASONALITY, prophetSeasonalities);
+        params.put(Constants.PROPHET_DAILY_SEASONALITY, prophetSeasonalities);
         try {
             params.put(Constants.DRUID_CLUSTERS, clusterAccessor.getDruidClusterList());
         } catch (IOException e) {
@@ -233,8 +239,14 @@ public class Routes {
             params.put(Constants.WEEK, Constants.MAX_WEEK);
             params.put(Constants.MONTH, Constants.MAX_MONTH);
             params.put(Constants.DRUID_CLUSTERS, clusterAccessor.getDruidClusterList());
-            params.put(Constants.TIMESERIES_MODELS, EgadsConfig.TimeSeriesModel.getAllValues());
-            params.put(Constants.ANOMALY_DETECTION_MODELS, EgadsConfig.AnomalyDetectionModel.getAllValues());
+            params.put(Constants.FRAMEWORKS, DetectorConfig.Framework.getAllValues());
+            params.put(Constants.TIMESERIES_MODELS, DetectorConfig.TimeSeriesModel.getAllEgadsValues());
+            params.put(Constants.ANOMALY_DETECTION_MODELS, DetectorConfig.AnomalyDetectionModel.getAllValues());
+            params.put(Constants.PROPHET_GROWTH_MODELS, DetectorConfig.GrowthModel.getAllValues());
+            List<String> prophetSeasonalities = DetectorConfig.ProphetSeasonality.getAllValues();
+            params.put(Constants.PROPHET_YEARLY_SEASONALITY, prophetSeasonalities);
+            params.put(Constants.PROPHET_WEEKLY_SEASONALITY, prophetSeasonalities);
+            params.put(Constants.PROPHET_DAILY_SEASONALITY, prophetSeasonalities);
         } catch (IOException e) {
             log.error("Failed to retrieve list of existing Druid clusters!", e);
             params.put(Constants.ERROR, e.getMessage());
@@ -271,13 +283,22 @@ public class Routes {
             JobMetadata job = new JobMetadata(userQuery, query);
             job.setFrequency(granularity.toString());
             job.setEffectiveQueryTime(intervalEndTime);
-            // set egads config
-            EgadsConfig config;
-            config = EgadsConfig.fromProperties(EgadsConfig.fromFile());
+            DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
             config.setTsModel(userQuery.getTsModels());
             config.setAdModel(userQuery.getAdModels());
+            if (userQuery.getTsFramework().equals(DetectorConfig.Framework.Prophet.toString())) {
+                config.setTsFramework(DetectorConfig.Framework.Prophet.toString());
+                config.setProphetGrowthModel(userQuery.getGrowthModel());
+                config.setProphetYearlySeasonality(userQuery.getYearlySeasonality());
+                config.setProphetWeeklySeasonality(userQuery.getWeeklySeasonality());
+                config.setProphetDailySeasonality(userQuery.getDailySeasonality());
+                log.info("DetectorConfig reconstructed with Prophet parameters.");
+            } else {
+                config.setTsFramework(DetectorConfig.Framework.Egads.toString());
+                log.info("DetectorConfig reconstructed with Egads parameters.");
+            }
             // detect anomalies
-            List<EgadsResult> egadsResult = serviceFactory.newDetectorServiceInstance().detectWithResults(
+            List<DetectorResult> detectorResult = serviceFactory.newDetectorServiceInstance().detectWithResults(
                     query,
                     job.getSigmaThreshold(),
                     clusterAccessor.getDruidCluster(job.getClusterId()),
@@ -288,7 +309,7 @@ public class Routes {
             List<Anomaly> anomalies = new ArrayList<>();
             List<ImmutablePair<Integer, String>> timeseriesNames = new ArrayList<>();
             int i = 0;
-            for (EgadsResult result : egadsResult) {
+            for (DetectorResult result : detectorResult) {
                 anomalies.addAll(result.getAnomalies());
                 timeseriesNames.add(new ImmutablePair<>(i++, result.getBaseName()));
             }
@@ -296,8 +317,8 @@ public class Routes {
             tableParams.put(Constants.INSTANTVIEW, "true");
             tableParams.put(DatabaseConstants.ANOMALIES, reports);
             instantReportParams.put("tableHtml", thymeleaf.render(new ModelAndView(tableParams, "table")));
-            Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
-            instantReportParams.put("data", new Gson().toJson(EgadsResult.fuseResults(egadsResult), jsonType));
+            Type jsonType = new TypeToken<DetectorResult.Series[]>() { }.getType();
+            instantReportParams.put("data", new Gson().toJson(DetectorResult.fuseResults(detectorResult), jsonType));
             instantReportParams.put("timeseriesNames", timeseriesNames);
             instantReportParams.put("userQuery", userQuery);
         } catch (IOException | ClusterNotFoundException | DruidException | SherlockException e) {
@@ -359,7 +380,7 @@ public class Routes {
             return jobMetadata.getJobId().toString(); // return job ID
         } catch (Exception e) {
             response.status(500);
-            log.error("Error ocurred while saving job!", e);
+            log.error("Error occurred while saving job!", e);
             return e.getMessage();
         }
     }
@@ -485,8 +506,14 @@ public class Routes {
             params.put(Constants.DAY, Constants.MAX_DAY);
             params.put(Constants.WEEK, Constants.MAX_WEEK);
             params.put(Constants.MONTH, Constants.MAX_MONTH);
-            params.put(Constants.TIMESERIES_MODELS, EgadsConfig.TimeSeriesModel.getAllValues());
-            params.put(Constants.ANOMALY_DETECTION_MODELS, EgadsConfig.AnomalyDetectionModel.getAllValues());
+            params.put(Constants.FRAMEWORKS, DetectorConfig.Framework.getAllValues());
+            params.put(Constants.TIMESERIES_MODELS, DetectorConfig.TimeSeriesModel.getAllEgadsValues());
+            params.put(Constants.ANOMALY_DETECTION_MODELS, DetectorConfig.AnomalyDetectionModel.getAllValues());
+            params.put(Constants.PROPHET_GROWTH_MODELS, DetectorConfig.GrowthModel.getAllValues());
+            List<String> prophetSeasonalities = DetectorConfig.ProphetSeasonality.getAllValues();
+            params.put(Constants.PROPHET_YEARLY_SEASONALITY, prophetSeasonalities);
+            params.put(Constants.PROPHET_WEEKLY_SEASONALITY, prophetSeasonalities);
+            params.put(Constants.PROPHET_DAILY_SEASONALITY, prophetSeasonalities);
             boolean isClusterPresent = druidClusters.stream().anyMatch(c -> c.getClusterId().equals(job.getClusterId()));
             params.put(Constants.IS_CLUSTER_PRESENT, isClusterPresent);
             if (!isClusterPresent) {
@@ -1221,7 +1248,7 @@ public class Routes {
     }
 
     /**
-     * Processe a power query and store the results.
+     * Process a power query and store the results.
      * Send the job and query ID back to the UI.
      *
      * @param request  HTTP request
@@ -1371,7 +1398,7 @@ public class Routes {
     public static ModelAndView debugShowEgadsConfigurableQuery(Request request, Response response) throws IOException {
         Map<String, Object> params = new HashMap<>(defaultParams);
         params.put(Constants.DRUID_CLUSTERS, clusterAccessor.getDruidClusterList());
-        params.put("filteringMethods", EgadsConfig.FilteringMethod.values());
+        params.put("filteringMethods", DetectorConfig.FilteringMethod.values());
         return new ModelAndView(params, "debugMegaQuery");
     }
 
@@ -1397,7 +1424,7 @@ public class Routes {
                     .granularity(params.get("granularity"))
                     .intervals(params.get("intervals"))
                     .build();
-            EgadsConfig egadsConfig = EgadsConfig.create()
+            DetectorConfig detectorConfig = DetectorConfig.create()
                     .maxAnomalyTimeAgo(params.get("maxAnomalyTimeAgo"))
                     .aggregation(params.get("aggregation"))
                     .timeShifts(params.get("timeShifts"))
@@ -1416,26 +1443,29 @@ public class Routes {
                     .filteringMethod(params.get("filteringMethod"))
                     .filteringParam(params.get("filteringParam"))
                     .build();
+            // This method performs an EGADS-configured query
+            detectorConfig.setTsFramework(Constants.EGADS);
+            log.info("DetectorConfig reconstructed with Egads parameters.");
             UserQuery userQuery = UserQuery.fromQueryParams(request.queryMap());
             JobMetadata job = new JobMetadata(userQuery, query);
             JobExecutionService executionService = serviceFactory.newJobExecutionService();
             DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
-            List<EgadsResult> egadsResult = detectorService.detectWithResults(
+            List<DetectorResult> detectorResult = detectorService.detectWithResults(
                     query,
                     job.getSigmaThreshold(),
                     clusterAccessor.getDruidCluster(job.getClusterId()),
                     null,
-                    egadsConfig
+                    detectorConfig
             );
             List<Anomaly> anomalies = new ArrayList<>();
-            for (EgadsResult result : egadsResult) {
+            for (DetectorResult result : detectorResult) {
                 anomalies.addAll(result.getAnomalies());
             }
             List<AnomalyReport> reports = executionService.getReports(anomalies, job);
             response.status(200);
             Gson gson = new Gson();
-            Type jsonType = new TypeToken<EgadsResult.Series[]>() { }.getType();
-            String data = gson.toJson(EgadsResult.fuseResults(egadsResult), jsonType);
+            Type jsonType = new TypeToken<DetectorResult.Series[]>() { }.getType();
+            String data = gson.toJson(DetectorResult.fuseResults(detectorResult), jsonType);
             tableParams.put(DatabaseConstants.ANOMALIES, reports);
             String tableHtml = thymeleaf.render(new ModelAndView(tableParams, "table"));
             modelParams.put("tableHtml", tableHtml);

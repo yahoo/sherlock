@@ -253,8 +253,13 @@
         data.sigmaThreshold = [[${userQuery.getSigmaThreshold()}]];
         data.clusterId = [[${userQuery.getClusterId()}]];
         data.hoursOfLag = [[${userQuery.getHoursOfLag()}]];
+        data.tsFramework = [[${userQuery.getTsFramework()}]];
         data.tsModels = [[${userQuery.getTsModels()}]];
         data.adModels = [[${userQuery.getAdModels()}]];
+        data.growthModel = [[${userQuery.getGrowthModel()}]];
+        data.yearlySeasonality = [[${userQuery.getYearlySeasonality()}]];
+        data.weeklySeasonality = [[${userQuery.getWeeklySeasonality()}]];
+        data.dailySeasonality = [[${userQuery.getDailySeasonality()}]];
         data.testName = "Job_" + d.toLocaleDateString() + "_" + d.toLocaleTimeString();
         data.testDescription = "";
         data.owner = "";

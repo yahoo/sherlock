@@ -9,12 +9,18 @@ package com.yahoo.sherlock.utils;
 import com.yahoo.egads.control.DetectAnomalyProcessable;
 import com.yahoo.egads.control.ModelAdapter;
 import com.yahoo.egads.control.ProcessableObject;
+import com.yahoo.egads.control.ProcessableObjectFactory;
 import com.yahoo.egads.data.TimeSeries;
+import com.yahoo.egads.control.AnomalyDetector;
+import com.yahoo.egads.models.adm.AnomalyDetectionModel;
 import com.yahoo.sherlock.exception.SherlockException;
 
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -158,7 +164,7 @@ public class EgadsUtils {
      * The model adapter must have already been trained on the
      * provided time series.
      *
-     * @param timeseries   the time series to forecase
+     * @param timeseries   the time series to forecast
      * @param modelAdapter the model adapter to use
      * @return a list of data sequences that represented each model's
      * projection in the model adapter.
@@ -168,6 +174,66 @@ public class EgadsUtils {
             return modelAdapter.forecast(timeseries.startTime(), timeseries.lastTime());
         } catch (Exception e) {
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Use reflection to run the private buildAnomalyModel() method to acquire
+     * AnomalyDetector object in a {@code ProcessableObjectFactory}.
+     *
+     * @param timeseries   the time series to forecast
+     * @param config       the detector configuration properties
+     * @return an Egads AnomalyDetector object that handles anomaly detections
+     */
+    public static AnomalyDetector getAnomalyDetector(TimeSeries timeseries, Properties config) {
+        AnomalyDetector anomalyDetector = null;
+        try {
+            ProcessableObjectFactory pof = new ProcessableObjectFactory();
+            Method buildAnomalyModel = ProcessableObjectFactory.class.getDeclaredMethod("buildAnomalyModel", TimeSeries.class, Properties.class);
+            buildAnomalyModel.setAccessible(true);
+            anomalyDetector = (AnomalyDetector) buildAnomalyModel.invoke(pof, timeseries, config);
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        return anomalyDetector;
+    }
+
+    /**
+     * Use reflection to run the private buildTSModel() method to acquire
+     * ModelAdapter object in a {@code ProcessableObjectFactory}.
+     *
+     * @param timeseries   the time series to forecast
+     * @param config       the detector configuration properties
+     * @return an Egads Model Adaptor object that handles anomaly detections
+     */
+    public static ModelAdapter getTSModel(TimeSeries timeseries, Properties config) {
+        ModelAdapter modelAdapter = null;
+        try {
+            ProcessableObjectFactory pof = new ProcessableObjectFactory();
+            Method buildTSModel = ProcessableObjectFactory.class.getDeclaredMethod("buildTSModel", TimeSeries.class, Properties.class);
+            buildTSModel.setAccessible(true);
+            modelAdapter = (ModelAdapter) buildTSModel.invoke(pof, timeseries, config);
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        return modelAdapter;
+    }
+
+    /**
+     * Use reflection to run the private buildTSModel() method to acquire
+     * a list of Anomaly Detector models in a {@code ProcessableObjectFactory}
+     * (used for verification and debugging purposes).
+     *
+     * @param anomalyDetector   a given AnomalyDetector instance
+     * @return a list of Anomaly Detector models embedded in Egads
+     */
+    public static ArrayList<AnomalyDetectionModel> getAnomalyDetectionModelList(AnomalyDetector anomalyDetector) {
+        try {
+            Field modelsField = anomalyDetector.getClass().getDeclaredField("models");
+            modelsField.setAccessible(true);
+            return (ArrayList<AnomalyDetectionModel>) modelsField.get(anomalyDetector);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -9,8 +9,10 @@ package com.yahoo.sherlock.service;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.yahoo.sherlock.exception.DetectorServiceException;
 import com.yahoo.sherlock.exception.DruidException;
 import com.yahoo.sherlock.model.DruidCluster;
+import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.settings.DruidConstants;
 import com.yahoo.sherlock.utils.SHttpClient;
 
@@ -43,7 +45,7 @@ public class HttpService {
     }
 
     /**
-     * /**
+     *
      * Service method to call druid.
      *
      * @param cluster    the Druid cluster to issue the query
@@ -134,6 +136,44 @@ public class HttpService {
             throw new DruidException(e.getMessage(), e);
         } finally {
             httpGet.releaseConnection();
+        }
+    }
+
+    /**
+     *
+     * Service method to query the Prophet Service and get the response.
+     *
+     * @param prophetUrl   full url of the Prophet Service
+     * @param prophetQuery Prophet query json object
+     * @return Prophet response as a json array
+     * @throws DetectorServiceException http request exception while querying Prophet
+     */
+    public JsonObject queryProphetService(String prophetUrl, JsonObject prophetQuery) throws DetectorServiceException {
+        log.info("Calling Prophet REST Service.");
+        HttpPost httpPost = getHttpClient().newHttpPost(prophetUrl);
+        HttpClient client = getHttpClient().newHttpClient(CLISettings.PROPHET_TIMEOUT, 0, false, CLISettings.PROPHET_PRINCIPAL);
+        try {
+            HttpEntity httpEntity = new StringEntity(prophetQuery.toString(), ContentType.APPLICATION_JSON);
+            httpPost.setEntity(httpEntity);
+            // execute query to Prophet Service
+            HttpResponse response = client.execute(httpPost);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != HttpStatus.SC_OK) {
+                log.error(("Post request to Prophet REST endpoint failed: {}"), response.getStatusLine());
+                throw new DetectorServiceException("Prophet Rest endpoint failed with HTTP Status " + statusCode);
+            }
+            // read the response body.
+            InputStream inputStream = response.getEntity().getContent();
+            log.info("Retrieved response from Prophet Service.");
+            Gson gson = new Gson();
+            // get the response as json array
+            JsonObject jsonObject = gson.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+            return jsonObject;
+        } catch (Exception e) {
+            log.error("Error while sending Prophet Query!", e);
+            throw new DetectorServiceException(e.getMessage(), e);
+        } finally {
+            httpPost.releaseConnection();
         }
     }
 }

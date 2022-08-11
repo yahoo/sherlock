@@ -20,11 +20,11 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.FileAssert.fail;
 
-public class EgadsResultTest {
+public class DetectorResultTest {
 
     @Test
     public void testEgadsResult() {
-        EgadsResult r = new EgadsResult();
+        DetectorResult r = new DetectorResult();
         r.setAnomalies(new ArrayList<>());
         assertEquals(r.getAnomalies().size(), 0);
         assertNull(r.getTimeseries());
@@ -32,7 +32,7 @@ public class EgadsResultTest {
         TimeSeries ts = new TimeSeries();
         TimeSeries.DataSequence ds = new TimeSeries.DataSequence();
         List<Anomaly> al = new ArrayList<>();
-        r = new EgadsResult(al, ts, ds);
+        r = new DetectorResult(al, ts, ds);
         assertEquals(r.getAnomalies(), al);
         assertEquals(r.getTimeseries(), ts);
         assertEquals(r.getForecasted(), ds);
@@ -40,21 +40,21 @@ public class EgadsResultTest {
 
     @Test
     public void testEgadsResultPoint() {
-        EgadsResult.Point p = new EgadsResult.Point();
+        DetectorResult.Point p = new DetectorResult.Point();
         assertEquals(0, p.getX());
         assertEquals(null, p.getY());
-        p = new EgadsResult.Point(10, 10.0f);
+        p = new DetectorResult.Point(10, 10.0f);
         assertEquals(p.getX(), 10);
         assertEquals(p.getY(), Float.valueOf(10.0f));
     }
 
     @Test
     public void testEgadsResultSeries() {
-        EgadsResult.Series s = new EgadsResult.Series();
+        DetectorResult.Series s = new DetectorResult.Series();
         assertNull(s.getValues());
         assertNull(s.getKey());
         assertNull(s.getClassed());
-        s = new EgadsResult.Series(new EgadsResult.Point[3], "key", 10);
+        s = new DetectorResult.Series(new DetectorResult.Point[3], "key", 10);
         assertEquals(s.getValues().length, 3);
         assertEquals(s.getKey(), "key");
         assertEquals(s.getClassed(), "series-10");
@@ -68,12 +68,12 @@ public class EgadsResultTest {
         ts.meta = mock(MetricMeta.class);
         ts.meta.source = "abc\nggg";
         ts.meta.name = "M1";
-        EgadsResult egadsResult = new EgadsResult(Collections.emptyList(), ts, new TimeSeries.DataSequence());
-        String result = egadsResult.getBaseName();
+        DetectorResult detectorResult = new DetectorResult(Collections.emptyList(), ts, new TimeSeries.DataSequence());
+        String result = detectorResult.getBaseName();
         assertEquals(result, "M1; abc,ggg");
     }
 
-    private static EgadsResult getResult(float base) {
+    private static DetectorResult getResult(float base) {
         Anomaly a = new Anomaly();
         a.intervals = new Anomaly.IntervalSequence();
         Anomaly.Interval in = new Anomaly.Interval();
@@ -95,13 +95,13 @@ public class EgadsResultTest {
         ds.add(new TimeSeries.Entry(567000, base));
         ds.add(new TimeSeries.Entry(568000, base));
         ds.add(new TimeSeries.Entry(569000, base));
-        return new EgadsResult(anomalies, ts, ds);
+        return new DetectorResult(anomalies, ts, ds);
     }
 
     @Test
     public void testGetData() {
-        EgadsResult r = getResult(100);
-        EgadsResult.Series[] ss = r.getData();
+        DetectorResult r = getResult(100);
+        DetectorResult.Series[] ss = r.getData();
         assertEquals(ss.length, 3);
         for (int i = 0; i < 3; i++) {
             assertEquals(ss[i].getValues().length, 5);
@@ -116,7 +116,7 @@ public class EgadsResultTest {
     @Test
     public void testReorderDataException() {
         try {
-            EgadsResult.reorderData(new EgadsResult.Series[2]);
+            DetectorResult.reorderData(new DetectorResult.Series[2]);
         } catch (IllegalArgumentException e) {
             return;
         }
@@ -125,12 +125,12 @@ public class EgadsResultTest {
 
     @Test
     public void testReorderData() {
-        EgadsResult.Series[] array = new EgadsResult.Series[9];
+        DetectorResult.Series[] array = new DetectorResult.Series[9];
         for (int i = 0; i < 9; i++) {
-            array[i] = new EgadsResult.Series();
+            array[i] = new DetectorResult.Series();
             array[i].setKey(((Integer) (i + 1)).toString());
         }
-        array = EgadsResult.reorderData(array);
+        array = DetectorResult.reorderData(array);
         String[] expectedTraverse = {"1", "2", "4", "5", "7", "8", "3", "6", "9"};
         for (int i = 0; i < 9; i++) {
             assertEquals(array[i].getClassed(), "series-" + i);
@@ -140,7 +140,7 @@ public class EgadsResultTest {
 
     @Test
     public void testFuseResults() {
-        List<EgadsResult> res = new ArrayList<EgadsResult>() {
+        List<DetectorResult> res = new ArrayList<DetectorResult>() {
             {
                 add(getResult(120));
                 add(getResult(100));
@@ -148,7 +148,7 @@ public class EgadsResultTest {
                 add(getResult(12));
             }
         };
-        EgadsResult.Series[] series = EgadsResult.fuseResults(res);
+        DetectorResult.Series[] series = DetectorResult.fuseResults(res);
         assertEquals(series.length, 12);
     }
 

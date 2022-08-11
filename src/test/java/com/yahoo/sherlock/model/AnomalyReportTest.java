@@ -7,6 +7,7 @@
 package com.yahoo.sherlock.model;
 
 import com.yahoo.sherlock.enums.Triggers;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.utils.NumberUtils;
 import com.yahoo.sherlock.utils.TimeUtils;
@@ -146,6 +147,7 @@ public class AnomalyReportTest {
                 1,
                 "jobFrequency",
                 "status",
+                "Prophet",
                 "model",
                 "3.0",
                 "xyz"
@@ -159,12 +161,15 @@ public class AnomalyReportTest {
         assertEquals(rep.getJobId(), (Integer) 1);
         assertEquals(rep.getJobFrequency(), "jobFrequency");
         assertEquals(rep.getStatus(), "status");
+        assertEquals(rep.getTsModelName(), "Prophet");
         assertEquals(rep.getModelName(), "model");
         assertEquals(rep.getModelParam(), "3.0");
         assertEquals(rep.getTestName(), "xyz");
-
     }
 
+    /**
+     * Tests a sample report outputs all metrics (Egads/Prophet/Unknown case) correctly.
+     */
     @Test
     public void testCreateReportAndSetAnomalyTimestampsFromBytes() {
         Anomaly anomaly = new Anomaly();
@@ -189,12 +194,24 @@ public class AnomalyReportTest {
         when(jobMetadata.getReportNominalTime()).thenReturn(123);
         when(jobMetadata.getFrequency()).thenReturn("minute");
         when(jobMetadata.getJobId()).thenReturn(1);
+        when(jobMetadata.getTimeseriesModel()).thenReturn("Prophet");
         AnomalyReport report = AnomalyReport.createReport(anomaly, jobMetadata);
         assertEquals(report.getJobId(), (Integer) 1);
         assertEquals(report.getMetricName(), "m1");
         assertEquals(report.getUniqueId(), "123");
         assertEquals(report.getGroupByFilters(), "s1");
         assertEquals(report.getAnomalyTimestamps(), "1:2@100,0:2@100");
+        assertEquals(report.getTsModelName(), "Prophet");
+
+        when(jobMetadata.getTimeseriesModel()).thenReturn("Invalid TimeSeries Model");
+        report = AnomalyReport.createReport(anomaly, jobMetadata);
+        assertEquals(report.getTsModelName(), "Unknown TimeSeries Model");
+
+        for (String name: DetectorConfig.TimeSeriesModel.getAllEgadsValues()) {
+            when(jobMetadata.getTimeseriesModel()).thenReturn(name);
+            report = AnomalyReport.createReport(anomaly, jobMetadata);
+            assertEquals(report.getTsModelName(), "Egads - " + name);
+        }
 
         List<int[]> timestamps = report.getAnomalyTimestampsHours();
         byte[][] startTime = new byte[timestamps.size()][];
@@ -215,11 +232,15 @@ public class AnomalyReportTest {
         assertEquals(report1.getAnomalyTimestamps(), "2@null,2@null");
     }
 
+    /**
+     * Tests a sample report outputs all metrics including Prophet correctly.
+     */
     @Test
     public void testGetMetricInfoAndModelInfo() {
         AnomalyReport report = new AnomalyReport();
         report.setMetricName("m1");
         report.setTestName("test1");
+        report.setTsModelName("Prophet");
         report.setModelName("model1");
         report.setModelParam("3.0");
         StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
@@ -227,8 +248,30 @@ public class AnomalyReportTest {
         joiner.add("Anomaly test: " + "test1");
         Assert.assertEquals(report.getMetricInfo(), joiner.toString());
         joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
-        joiner.add("Model: " + "model1");
+        joiner.add("TimeSeries Model: " + "Prophet");
+        joiner.add("Anomaly Detection Model: " + "model1");
         joiner.add("Params: " + "3.0");
         Assert.assertEquals(report.getModelInfo(), joiner.toString());
+    }
+
+    /**
+     * Tests all combinations of Egads TimeSeries Models / Egads Anomaly Detection Models
+     * when their values are retrieved from the report.
+     */
+    @Test
+    public void testModelInfoEgads() {
+        AnomalyReport report = new AnomalyReport();
+        for (String tsName : DetectorConfig.TimeSeriesModel.getAllEgadsValues()) {
+            for (String adName : DetectorConfig.AnomalyDetectionModel.getAllValues()) {
+                report.setTsModelName(tsName);
+                report.setModelName(adName);
+                report.setModelParam("2.5");
+                StringJoiner joiner = new StringJoiner(Constants.NEWLINE_DELIMITER);
+                joiner.add("TimeSeries Model: " + tsName);
+                joiner.add("Anomaly Detection Model: " + adName);
+                joiner.add("Params: " + "2.5");
+                Assert.assertEquals(report.getModelInfo(), joiner.toString());
+            }
+        }
     }
 }

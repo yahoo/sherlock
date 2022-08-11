@@ -11,19 +11,20 @@ import com.yahoo.sherlock.settings.Constants;
 
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Iterator;
 
 /**
- * An {@code EgadsResult} contains the results of an
- * EGADS analysis, including the list of anomalies, the
- * original time series data, and the EGADS model
- * forecasted data sequence.
+ * An {@code DetectorResult} contains the results of an
+ * Anomaly Detection analysis, including a list of anomalies, the
+ * original time series data, and the forecasted data sequence
+ * using Egads/Prophet framework.
  */
 @Data
-public class EgadsResult {
+public class DetectorResult {
 
     /**
      * A single data point, consisting of an {@code x}
@@ -113,7 +114,7 @@ public class EgadsResult {
     }
 
     /**
-     * The list of anomalies for this EGADS result.
+     * The list of anomalies for the detector result.
      */
     private List<Anomaly> anomalies;
     /**
@@ -121,24 +122,24 @@ public class EgadsResult {
      */
     private TimeSeries timeseries;
     /**
-     * The EGADS model forecasted series.
+     * The Time Series framework forecasted series.
      */
     private TimeSeries.DataSequence forecasted;
 
     /**
      * Default constructor.
      */
-    public EgadsResult() {
+    public DetectorResult() {
     }
 
     /**
-     * Constructor for EGADS result.
+     * Constructor for Detector result.
      *
      * @param anomalies  the detected anomalies
      * @param timeseries the original time series
      * @param forecasted the model forecasted time series
      */
-    public EgadsResult(List<Anomaly> anomalies, TimeSeries timeseries, TimeSeries.DataSequence forecasted) {
+    public DetectorResult(List<Anomaly> anomalies, TimeSeries timeseries, TimeSeries.DataSequence forecasted) {
         this.anomalies = anomalies;
         this.timeseries = timeseries;
         this.forecasted = forecasted;
@@ -154,7 +155,7 @@ public class EgadsResult {
     }
 
     /**
-     * Get the data of the EGADS result as {@code Series}.
+     * Get the data of the Detector result as {@code Series}.
      * The series are the original data, the predicted data,
      * and the anomalies.
      * <p>
@@ -228,15 +229,15 @@ public class EgadsResult {
     }
 
     /**
-     * Get the data of a list of EGADS results in a single array.
+     * Get the data of a list of Detector results in a single array.
      *
      * @param results list of results
      * @return all data in a series array
      */
-    public static Series[] fuseResults(List<EgadsResult> results) {
+    public static Series[] fuseResults(List<DetectorResult> results) {
         List<Series[]> data = new ArrayList<>(results.size());
         int totalSize = 0;
-        for (EgadsResult result : results) {
+        for (DetectorResult result : results) {
             Series[] datum = result.getData();
             data.add(datum);
             totalSize += datum.length;
@@ -251,4 +252,57 @@ public class EgadsResult {
         return reorderData(fusedData);
     }
 
+    /**
+     * Convert the DetectorResult to a string.
+     * @return an DetectorResult string
+     */
+    @Override
+    public String toString() {
+        StringBuffer str = new StringBuffer();
+        str.append("TimeSeries: \n");
+        for (int i = 0; i < timeseries.size(); i++) {
+            if (i > 0) {
+                str.append(",");
+            }
+            str.append("[" + timeseries.time(i) + ": " + timeseries.value(i) + "]");
+        }
+        str.append("\n Forecasted: \n");
+        for (int i = 0; i < forecasted.size(); i++) {
+            if (i > 0) {
+                str.append(",");
+            }
+            str.append("[" + forecasted.get(i).time + ": " + forecasted.get(i).value + "]");
+        }
+        str.append("\n Anomalies: \n");
+        for (int i = 0; i < anomalies.size(); i++) {
+            str.append(anomalies.get(i).toString());
+        }
+        return str.toString();
+    }
+
+    /**
+     * Determines if the current DetectorResult instance equals to the other DetectorResult instance.
+     * Ignores original and forecasted series' logical index since logical index is not used in Sherlock.
+     * @return true if equal, false if not equal
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof DetectorResult)) {
+            return false;
+        }
+        DetectorResult newOther = (DetectorResult) other;
+        // current time series' times and values
+        Long[] ts1Times = this.timeseries.data.getTimes();
+        Long[] ts2Times = newOther.getTimeseries().data.getTimes();
+        Float[] ts1Vals = this.timeseries.data.getValues();
+        Float[] ts2Vals = newOther.getTimeseries().data.getValues();
+        // forecasted time series' times and values
+        Long[] forecasted1Times = this.forecasted.getTimes();
+        Long[] forecasted2Times = newOther.getForecasted().getTimes();
+        Float[] forecasted1Vals = this.forecasted.getValues();
+        Float[] forecasted2Vals = newOther.getForecasted().getValues();
+        return this.anomalies.equals(newOther.anomalies)
+                && Arrays.equals(ts1Times, ts2Times) && Arrays.equals(ts1Vals, ts2Vals)
+                && Arrays.equals(forecasted1Times, forecasted2Times) && Arrays.equals(forecasted1Vals, forecasted2Vals);
+    }
 }

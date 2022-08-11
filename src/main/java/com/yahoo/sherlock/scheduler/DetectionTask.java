@@ -12,6 +12,7 @@ import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.enums.JobStatus;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JobMetadata;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.service.DetectorService;
 import com.yahoo.sherlock.service.JobExecutionService;
 
@@ -22,11 +23,11 @@ import java.util.List;
 
 /**
  * EGADS processing task as a {@code Runnable} so that
- * multiple EGADS processing tasks can be run at the
+ * multiple EGADS detection tasks can be run at the
  * same time.
  */
 @Slf4j
-public class EgadsTask implements Runnable {
+public class DetectionTask implements Runnable {
 
     /**
      * The job proxy instance.
@@ -63,7 +64,7 @@ public class EgadsTask implements Runnable {
      * @param detectorService detector service to use
      * @param executionService execution service to use
      */
-    public EgadsTask(
+    public DetectionTask(
         JobMetadata job,
         Integer effectiveQueryEndTime,
         List<TimeSeries> timeSeriesList,
@@ -80,19 +81,32 @@ public class EgadsTask implements Runnable {
 
     /**
      * Run the job. The job will perform the EGADS
-     * detection on its data and keep a reference
-     * to its reports.
+     * anomaly detection on its data and keep a
+     * reference to its reports.
      */
     @Override
     public void run() {
         List<Anomaly> anomalies;
         List<AnomalyReport> reports = new ArrayList<>();
+        // reconstruct DetectorConfig
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsModel(this.proxyJob.getTimeseriesModel());
+        config.setAdModel(this.proxyJob.getAnomalyDetectionModel());
+        if (this.proxyJob.getTimeseriesFramework().equals(DetectorConfig.Framework.Prophet.toString())) {
+            config.setTsFramework(DetectorConfig.Framework.Prophet.toString());
+            config.setProphetGrowthModel(this.proxyJob.getProphetGrowthModel());
+            config.setProphetYearlySeasonality(this.proxyJob.getProphetYearlySeasonality());
+            config.setProphetWeeklySeasonality(this.proxyJob.getProphetWeeklySeasonality());
+            config.setProphetDailySeasonality(this.proxyJob.getProphetDailySeasonality());
+        } else {
+            config.setTsFramework(DetectorConfig.Framework.Egads.toString());
+        }
         try {
             proxyJob.setJobStatus(JobStatus.RUNNING.getValue());
             proxyJob.setEffectiveQueryTime(effectiveQueryEndTime);
             executionService.getAnomalyReportAccessor().deleteAnomalyReportsForJobAtTime(proxyJob.getJobId().toString(), proxyJob.getReportNominalTime().toString(), proxyJob.getFrequency());
             Granularity granularity = Granularity.getValue(proxyJob.getGranularity());
-            anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), null, proxyJob.getReportNominalTime(), proxyJob.getFrequency(), granularity, proxyJob.getGranularityRange());
+            anomalies = detectorService.runDetection(timeSeriesList, proxyJob.getSigmaThreshold(), config, proxyJob.getReportNominalTime(), proxyJob.getFrequency(), granularity, proxyJob.getGranularityRange());
             reports = executionService.getReports(anomalies, proxyJob);
         } catch (Exception e) {
             log.info("Error in egads job!", e);

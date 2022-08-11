@@ -169,52 +169,55 @@ java -Dlog4j.configuration=file:${path_to_log4j}/log4j.properties \
 
 ### CLI args usage
 
-| args                                  | required            | default           | description                                         |
-|---------------------------------------|---------------------|-------------------|-----------------------------------------------------|
-| --help                                |    -                | `false`           | [help](#help)                                       |
-| --config                              |    -                | `null`            | [config](#config)                                   |
-| --version                             |    -                | `v0.0.0`          | [version](#version)                                 |
-| --egads-config-filename               |    -                | `provided`        | [egads-config-filename](#egads-config-filename)     |
-| --port                                |    -                | `4080`            | [port](#port)                                       |
-| --interval-minutes                    |    -                | `180`             | [interval-minutes](#interval-minutes)               |
-| --interval-hours                      |    -                | `672`             | [interval-hours](#interval-hours)                   |
-| --interval-days                       |    -                | `28`              | [interval-days](#interval-days)                     |
-| --interval-weeks                      |    -                | `12`              | [interval-weeks](#interval-weeks)                   |
-| --interval-months                     |    -                | `6`               | [interval-months](#interval-months)                 |
-| --enable-email                        |    -                | `false`           | [enable-email](#enable-email)                       |
-| --from-mail                           | if email `enabled`  |                   | [from-mail](#from-mail)                             |
-| --reply-to                            | if email `enabled`  |                   | [reply-to](#reply-to)                               |
-| --smtp-host                           | if email `enabled`  |                   | [smtp-host](#smtp-host)                             |
-| --smtp-port                           |    -                | `25`              | [smtp-port](#smtp-port)                             |
-| --smtp-user                           |    -                |                   | [smtp-user](#smtp-user)                             |
-| --smtp-password                       |    -                |                   | [smtp-password](#smtp-password)                     |
-| --failure-email                       | if email `enabled`  |                   | [failure-email](#failure-email)                     |
-| --execution-delay                     |    -                | `30`              | [execution-delay](#execution-delay)                 |
-| --valid-domains                       |    -                | `null`            | [valid-domains](#valid-domains)                     |
-| --redis-host                          |    -                | `127.0.0.1`       | [redis-host](#redis-host)                           |
-| --redis-port                          |    -                | `6379`            | [redis-port](#redis-port)                           |
-| --redis-ssl                           |    -                | `false`           | [redis-ssl](#redis-ssl)                             |
-| --redis-timeout                       |    -                | `5000`            | [redis-timeout](#redis-timeout)                     |
-| --redis-password                      |    -                |  -                | [redis-password](#redis-password)                   |
-| --redis-clustered                     |    -                | `false`           | [redis-clustered](#redis-clustered)                 |
-| --project-name                        |    -                |  -                | [project-name](#project-name)                       |
-| --external-file-path                  |    -                |  -                | [external-file-path](#external-file-path)           |
-| --debug-mode                          |    -                | `false`           | [debug-mode](#debug-mode)                           |
-| --timeseries-completeness             |    -                | `60`              | [timeseries-completeness](#timeseries-completeness) |
-| --http-client-timeout                 |    -                | `20000`           | [http-client-timeout](#http-client-timeout)         |
-| --backup-redis-db-path                |    -                |  `null`           | [backup-redis-db-path](#backup-redis-db-path)       |
-| --druid-brokers-list-file             |    -                |  `null`           | [druid-brokers-list-file](#druid-brokers-list-file) |
-| --truststore-path                     |    -                |  `null`           | [truststore-path](#truststore-path)                 |
-| --truststore-type                     |    -                |  `jks`            | [truststore-type](#truststore-type)                 |
-| --truststore-password                 |    -                |  `null`           | [truststore-password](#truststore-password)         |
-| --keystore-path                       |    -                |  `null`           | [keystore-path](#keystore-path)                     |
-| --keystore-type                       |    -                |  `jks`            | [keystore-type](#keystore-type)                     |
-| --keystore-password                   |    -                |  `null`           | [keystore-password](#keystore-password)             |
-| --key-dir                             |    -                |  `null`           | [key-dir](#key-dir)                                 |
-| --cert-dir                            |    -                |  `null`           | [cert-dir](#cert-dir)                               |
-| --https-hostname-verification         |    -                |  `true`           | [https-hostname-verification](#https-hostname-verification)             |
-| --custom-ssl-context-provider-class   |    -                |  [`DefaultSslContextProvider`](https://github.com/yahoo/sherlock/tree/master/src/main/java/com/yahoo/sherlock/utils)  | [custom-ssl-context-provider-class](#custom-ssl-context-provider-class) |
-| --custom-secret-provider-class        |    -                |  [`DefaultSecretProvider`](https://github.com/yahoo/sherlock/tree/master/src/main/java/com/yahoo/sherlock/utils)  | [custom-secret-provider-class](#custom-secret-provider-class)           |
+| args                                  | required            | default                                                                                                             | description                                         |
+|---------------------------------------|---------------------|---------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| --help                                |    -                | `false`                                                                                                             | [help](#help)                                       |
+| --config                              |    -                | `null`                                                                                                              | [config](#config)                                   |
+| --version                             |    -                | `v0.0.0`                                                                                                            | [version](#version)                                 |
+| --egads-config-filename               |    -                | `provided`                                                                                                          | [egads-config-filename](#egads-config-filename)     |
+| --port                                |    -                | `4080`                                                                                                              | [port](#port)                                       |
+| --interval-minutes                    |    -                | `180`                                                                                                               | [interval-minutes](#interval-minutes)               |
+| --interval-hours                      |    -                | `672`                                                                                                               | [interval-hours](#interval-hours)                   |
+| --interval-days                       |    -                | `28`                                                                                                                | [interval-days](#interval-days)                     |
+| --interval-weeks                      |    -                | `12`                                                                                                                | [interval-weeks](#interval-weeks)                   |
+| --interval-months                     |    -                | `6`                                                                                                                 | [interval-months](#interval-months)                 |
+| --enable-email                        |    -                | `false`                                                                                                             | [enable-email](#enable-email)                       |
+| --from-mail                           | if email `enabled`  |                                                                                                                     | [from-mail](#from-mail)                             |
+| --reply-to                            | if email `enabled`  |                                                                                                                     | [reply-to](#reply-to)                               |
+| --smtp-host                           | if email `enabled`  |                                                                                                                     | [smtp-host](#smtp-host)                             |
+| --smtp-port                           |    -                | `25`                                                                                                                | [smtp-port](#smtp-port)                             |
+| --smtp-user                           |    -                |                                                                                                                     | [smtp-user](#smtp-user)                             |
+| --smtp-password                       |    -                |                                                                                                                     | [smtp-password](#smtp-password)                     |
+| --failure-email                       | if email `enabled`  |                                                                                                                     | [failure-email](#failure-email)                     |
+| --execution-delay                     |    -                | `30`                                                                                                                | [execution-delay](#execution-delay)                 |
+| --valid-domains                       |    -                | `null`                                                                                                              | [valid-domains](#valid-domains)                     |
+| --redis-host                          |    -                | `127.0.0.1`                                                                                                         | [redis-host](#redis-host)                           |
+| --redis-port                          |    -                | `6379`                                                                                                              | [redis-port](#redis-port)                           |
+| --redis-ssl                           |    -                | `false`                                                                                                             | [redis-ssl](#redis-ssl)                             |
+| --redis-timeout                       |    -                | `5000`                                                                                                              | [redis-timeout](#redis-timeout)                     |
+| --redis-password                      |    -                | -                                                                                                                   | [redis-password](#redis-password)                   |
+| --redis-clustered                     |    -                | `false`                                                                                                             | [redis-clustered](#redis-clustered)                 |
+| --project-name                        |    -                | -                                                                                                                   | [project-name](#project-name)                       |
+| --external-file-path                  |    -                | -                                                                                                                   | [external-file-path](#external-file-path)           |
+| --debug-mode                          |    -                | `false`                                                                                                             | [debug-mode](#debug-mode)                           |
+| --timeseries-completeness             |    -                | `60`                                                                                                                | [timeseries-completeness](#timeseries-completeness) |
+| --http-client-timeout                 |    -                | `20000`                                                                                                             | [http-client-timeout](#http-client-timeout)         |
+| --backup-redis-db-path                |    -                | `null`                                                                                                              | [backup-redis-db-path](#backup-redis-db-path)       |
+| --druid-brokers-list-file             |    -                | `null`                                                                                                              | [druid-brokers-list-file](#druid-brokers-list-file) |
+| --truststore-path                     |    -                | `null`                                                                                                              | [truststore-path](#truststore-path)                 |
+| --truststore-type                     |    -                | `jks`                                                                                                               | [truststore-type](#truststore-type)                 |
+| --truststore-password                 |    -                | `null`                                                                                                              | [truststore-password](#truststore-password)         |
+| --keystore-path                       |    -                | `null`                                                                                                              | [keystore-path](#keystore-path)                     |
+| --keystore-type                       |    -                | `jks`                                                                                                               | [keystore-type](#keystore-type)                     |
+| --keystore-password                   |    -                | `null`                                                                                                              | [keystore-password](#keystore-password)             |
+| --key-dir                             |    -                | `null`                                                                                                              | [key-dir](#key-dir)                                 |
+| --cert-dir                            |    -                | `null`                                                                                                              | [cert-dir](#cert-dir)                               |
+| --https-hostname-verification         |    -                | `true`                                                                                                              | [https-hostname-verification](#https-hostname-verification)             |
+| --custom-ssl-context-provider-class   |    -                | [`DefaultSslContextProvider`](https://github.com/yahoo/sherlock/tree/master/src/main/java/com/yahoo/sherlock/utils) | [custom-ssl-context-provider-class](#custom-ssl-context-provider-class) |
+| --custom-secret-provider-class        |    -                | [`DefaultSecretProvider`](https://github.com/yahoo/sherlock/tree/master/src/main/java/com/yahoo/sherlock/utils)     | [custom-secret-provider-class](#custom-secret-provider-class)           |
+| --prophet-url                       |    -                | `127.0.0.1:4080`                                                                                                    | [prophet-url](#prophet-url)                                             |
+| --prophet-timeout                   |    -                | `120000`                                                                                                            | [prophet-timeout](#prophet-timeout)                                     |
+| --prophet-principal                 |    -                | `prophet-principal`                                                                                                 | [prophet-principal](#prophet-principal)                                 |
 
 #### help
 Prints commandline argument help message.
@@ -310,6 +313,42 @@ Param to enable/disable https hostname verification for mTLS connections. (defau
 Param to specify custom ssl context provider class for mTLS connections. (default `com.yahoo.sherlock.utils.DefaultSslContextProvider` which returns SSLContext with validation)
 #### custom-secret-provider-class     
 Param to specify custom secret provider class for passwords. (default `com.yahoo.sherlock.utils.DefaultSecretProvider` which returns secrets specified from CLISettings)
+#### prophet-url
+API endpoint of a running Prophet Service. (default `127.0.0.1:4080` which include both url and port)
+#### prophet-timeout
+Timeout for querying the Prophet Service. (default `120000` milliseconds)
+#### prophet-principal
+The Kubernetes principal that the Prophet Service is located. (default `prophet-principal`)
+
+## Getting started
+It is suggested to use Java8 and Maven 3.3 to develop Sherlock.
+
+## Further Development
+### Adding a new anomaly detector to Sherlock
+Currently, Sherlock supports two detector pipelines (Egads/Prophet). Both pipelines use Egads' anomaly detection module for anomaly detection.
+The Egads pipeline conducts both time series forecasting and anomaly detection via Egads anomaly detection library.
+On the other hand, the Prophet pipeline allows Sherlock to query forecasted time series from a Prophet web service.
+After that, the Prophet pipeline performs anomaly detection via Egads' anomaly detection module.
+If the developer wants to add a new anomaly detector to Sherlock, the developer should look at the abstract class `service/DetectorAPIService.java`, and implement a new detector class that extends `DetectorAPIService`.
+More specifically, developers should implement abstract methods `detectAnomaliesAndForecast` and `detectAnomalies`. The two abstract methods are elaborated in sections below.
+
+### Developing the instant detection feature
+Sherlock allows the user to perform an instant anomaly detection, which is accessible via the /Flash-Query endpoint. The endpoint is linked to method `processInstantAnomalyJob` under `Routes.java`,
+which calls method `detectWithResults` under `DetectorService.java`.
+Method `detectWithResults` checks which detector the user wants to use, assign the corresponding `DetectorAPIService` instance, and calls the instance's `detectAnomaliesAndForecast` method.
+Method `detectAnomaliesAndForecast` does anomaly detection and returns the original time series, expected time series, and the anomaly points. The combined results are displayed via the /Flash-Query/ProcessAnomalyReport endpoint.
+
+### Developing the Job Scheduling feature
+Sherlock allows the user to schedule anomaly detection jobs that run routinely.
+Regarding the job scheduling, Sherlock uses `JobScheduler.java` to maintain a Priority Queue stored in Redis. Every time the user adds a job,
+Sherlock puts the job into via method `scheduleJob` with the job's next run time as the priority.
+Sherlock keeps checking the current system time, and pops the Priority Queue as required via method `consumeAndExecuteTasks`.
+For the actual detection, method `consumeAndExecuteTasks` executes a job that is due, which eventually goes to method `runDetection` under `DetectorService.java`.
+Method `runDetection` checks which detector the user wants to use, assign the corresponding DetectorAPIService instance, and calls the instance's `detectAnomalies` method.
+Method `detectAnomalies` does anomaly detection and returns anomaly points because job reports display only detected anomaly points.
+
+### Understanding TimeSeries/Anomaly format used in Sherlock
+All current pipelines use `TimeSeries` and `Anomaly` classes defined in Egads heavily. To gain a better understanding of those formats, developers should read `TimeSeries.java/Anomaly.java` defined in the [Egads repository](https://github.com/yahoo/egads).
 
 ## Committers
 
@@ -321,7 +360,9 @@ Jeff Niu, [jeffniu22@gmail.com](mailto:jeffniu22@gmail.com)
 
 Josh Walters, [josh@joshwalters.com](mailto:josh@joshwalters.com)
 
-Stephan Stiefel, [Stephan3555](linkto:https://github.com/Stephan3555)
+Stephan Stiefel, [Stephan3555](https://github.com/Stephan3555)
+
+Han Xu, [hanxu12](https://github.com/hanxu12)
 
 ## License
 

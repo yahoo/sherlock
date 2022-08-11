@@ -9,6 +9,8 @@ package com.yahoo.sherlock.service;
 import com.beust.jcommander.internal.Lists;
 import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.exception.SherlockException;
+import com.yahoo.sherlock.model.DetectorResult;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.query.QueryBuilderTest;
 import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.egads.control.ProcessableObject;
@@ -21,8 +23,11 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -35,14 +40,14 @@ import static org.testng.Assert.fail;
 /**
  * Test for egads service.
  */
-public class EgadsServiceTest {
+public class EgadsAPIServiceTest {
 
     private static ProcessableObject processableObject;
     private static List<Anomaly> anomalies;
     private static TimeSeries timeseries;
     private static String tempConfig;
 
-    private static class MockEgadsService extends EgadsService {
+    private static class MockEgadsAPIService extends EgadsAPIService {
         @Override
         protected ProcessableObject getEgadsProcessableObject(TimeSeries timeseries) {
             return processableObject;
@@ -86,26 +91,26 @@ public class EgadsServiceTest {
 
     @Test
     public void testRunEGADSAndException() throws Exception {
-        EgadsService egadsService = new MockEgadsService();
-        Assert.assertEquals(egadsService.runEGADS(timeseries, 3.0), anomalies);
+        EgadsAPIService egadsAPIService = new MockEgadsAPIService();
+        Assert.assertEquals(egadsAPIService.detectAnomalies(Arrays.asList(timeseries), 600), anomalies);
         CLISettings.EGADS_CONFIG_FILENAME = "/xxxxx.con";
         timeseries = new TimeSeries();
         timeseries.append(3600L, 11.11f);
         timeseries.append(3600L * 24L, 22.22f);
-        Assert.assertEquals(egadsService.runEGADS(timeseries, 3.0), anomalies);
+        Assert.assertEquals(egadsAPIService.detectAnomalies(Arrays.asList(timeseries), 1440), anomalies);
         timeseries = new TimeSeries();
         timeseries.append(3600L, 11.11f);
         timeseries.append(3600L * 24L * 7L, 22.22f);
-        Assert.assertEquals(egadsService.runEGADS(timeseries, 3.0), anomalies);
+        Assert.assertEquals(egadsAPIService.detectAnomalies(Arrays.asList(timeseries), 10080), anomalies);
         timeseries = new TimeSeries();
         timeseries.append(3600L, 11.11f);
         timeseries.append(3600L * 24L * 100L, 22.22f);
-        Assert.assertEquals(egadsService.runEGADS(timeseries, 3.0), anomalies);
+        Assert.assertEquals(egadsAPIService.detectAnomalies(Arrays.asList(timeseries), 144000), anomalies);
         ProcessableObject mockProcessableObject = mock(ProcessableObject.class);
         when(mockProcessableObject.result()).thenThrow(new IOException("error in egads"));
         processableObject = mockProcessableObject;
         try {
-            egadsService.runEGADS(timeseries, 3.0);
+            egadsAPIService.detectAnomalies(Arrays.asList(timeseries), 144000);
         } catch (Exception e) {
             Assert.assertEquals(e.getMessage(), "error in egads");
         }
@@ -116,47 +121,78 @@ public class EgadsServiceTest {
         ProcessableObject mockProcessableObject = mock(ProcessableObject.class);
         when(mockProcessableObject.result()).thenThrow(new IOException("error in egads"));
         processableObject = mockProcessableObject;
-        EgadsService egadsService = new MockEgadsService();
+        EgadsAPIService egadsAPIService = new MockEgadsAPIService();
         try {
-            egadsService.detectAnomalies(timeseries);
+            egadsAPIService.detectAnomalies(timeseries);
         } catch (Exception e) {
             Assert.assertEquals(e.getMessage(), "error in egads");
         }
     }
 
+    /**
+     * Tests method detectAnomaliesAndForecast() runs with given timeseries.
+     * @throws Exception
+     */
     @Test
-    public void testGetEgadsProcessableObject() throws Exception {
-        EgadsService egadsService = new EgadsService();
-        egadsService.preRunConfigure(3.0, Granularity.DAY, 1);
+    public void testGetEgadsDetectAnomalies() throws Exception {
+        EgadsAPIService egadsAPIService = new EgadsAPIService();
+        egadsAPIService.preRunConfigure(3.0, Granularity.DAY, 1);
         // test egads
-        egadsService.runEGADS(timeseries, 3.0);
+        egadsAPIService.detectAnomaliesAndForecast(timeseries);
     }
 
     @Test
     public void testDetectAnomaliesEgadsResult() throws Exception {
-        EgadsService egads = mock(EgadsService.class);
+        EgadsAPIService egads = mock(EgadsAPIService.class);
         ProcessableObject po = mock(ProcessableObject.class);
         when(egads.getEgadsProcessableObject(any())).thenReturn(po);
         List<Anomaly> result = Lists.newArrayList(
                 new Anomaly(), new Anomaly(), new Anomaly()
         );
         when(po.result()).thenReturn(result);
-        when(egads.detectAnomaliesResult(any())).thenCallRealMethod();
+        when(egads.detectAnomaliesAndForecast(any(TimeSeries.class))).thenCallRealMethod();
         try {
-            egads.detectAnomaliesResult(mock(TimeSeries.class));
+            egads.detectAnomaliesAndForecast(mock(TimeSeries.class));
         } catch (SherlockException e) {
             return;
         }
         fail();
     }
 
+    /**
+     * Tests properties inside egadsAPIService matches with the configured parameters.
+     * @throws Exception
+     */
     @Test
     public void testConfigureDetectionWindow() throws Exception {
-        EgadsService egadsService = new EgadsService();
-        egadsService.configureWithDefault();
-        egadsService.configureDetectionWindow(61, "hour", 1);
-        Properties p = (Properties) QueryBuilderTest.getValue("p", egadsService);
+        EgadsAPIService egadsAPIService = new EgadsAPIService();
+        egadsAPIService.configureWithDefault();
+        egadsAPIService.configureDetectionWindow(61, "hour", 1);
+        Properties p = (Properties) QueryBuilderTest.getValue("p", egadsAPIService);
         assertEquals(p.getProperty("DETECTION_WINDOW_START_TIME"), "60");
     }
 
+    /**
+     * Tests method detectAnomaliesAndForecast() and detectAnomalies() generates the same anomalies.
+     * @throws Exception
+     */
+    @Test
+    public void checkAnomalyEquals() throws Exception {
+        EgadsAPIService egadsAPIService = new EgadsAPIService();
+        InputStream is = new FileInputStream("src/main/resources/egads_config.ini");
+        Properties p = new Properties();
+        p.load(is);
+        p.setProperty("TS_MODEL" , DetectorConfig.TimeSeriesModel.OlympicModel.toString());
+        p.setProperty(DetectorConfig.AD_MODEL, DetectorConfig.AnomalyDetectionModel.KSigmaModel.toString());
+        p.setProperty(DetectorAPIService.MAX_ANOMALY_TIME_AGO, "0");
+        p.setProperty("OP_TYPE" , "DETECT_ANOMALY");
+        egadsAPIService.init();
+        ArrayList<TimeSeries> tsList = com.yahoo.egads.utilities.FileUtils
+                .createTimeSeries("src/test/resources/sample_input_anomaly_detection.csv", p);
+        // actual anomalies
+        DetectorResult actual = egadsAPIService.detectAnomaliesAndForecast(tsList.get(0));
+        // expected anomalies
+        List<Anomaly> expected = egadsAPIService.detectAnomalies(tsList.get(0));
+        Assert.assertEquals(actual.getAnomalies(), expected);
+    }
 }

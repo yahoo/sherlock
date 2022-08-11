@@ -36,10 +36,21 @@ public class ServiceFactoryTest {
     public void testNewSchedulerServiceInstance() throws Exception {
         Assert.assertTrue(serviceFactory.newSchedulerServiceInstance() != null);
     }
-    
+
+    /**
+     * Tests method newEgadsAPIServiceInstance() returns non-null EgadsAPIService Instance.
+     */
     @Test
-    public void testNewEgadsServiceInstance() throws Exception {
-        Assert.assertTrue(serviceFactory.newEgadsServiceInstance() != null);
+    public void testNewEgadsAPIServiceInstance() throws Exception {
+        Assert.assertTrue(serviceFactory.newEgadsAPIServiceInstance() != null);
+    }
+
+    /**
+     * Tests method newProphetAPIServiceInstance() returns non-null ProphetAPIService Instance.
+     */
+    @Test
+    public void testNewProphetAPIServiceInstance() throws Exception {
+        Assert.assertTrue(serviceFactory.newProphetAPIServiceInstance() != null);
     }
 
     @Test

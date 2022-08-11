@@ -1,0 +1,12 @@
+<div id="egads-param-modal" th:fragment="egads-param-modal" >
+    <div class="form-group" id="timeseriesModelSection">
+        <label class="control-label" for="tsModels">Egads Timeseries Model:</label>
+        <select id="tsModels" name="tsModels" class="form-control"
+                th:field="*{timeseriesModel}">
+            <option th:each="timeseriesModel : ${timeseriesModels}"
+                    th:value="${timeseriesModel}"
+                    th:selected="${timeseriesModel} == ${job.getTimeseriesModel()}"
+                    th:text="${timeseriesModel}"></option>
+        </select>
+    </div>
+</div>

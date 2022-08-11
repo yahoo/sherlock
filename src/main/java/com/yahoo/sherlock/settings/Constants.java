@@ -315,6 +315,11 @@ public final class Constants {
     public static final String ANOMALY_DETECTION_MODELS = "anomalyDetectionModels";
 
     /**
+     * Constant for 'frameworks'.
+     */
+    public static final String FRAMEWORKS = "frameworks";
+
+    /**
      * Constant for 'timeseriesModels'.
      */
     public static final String TIMESERIES_MODELS = "timeseriesModels";
@@ -323,6 +328,11 @@ public final class Constants {
      * Constant for 'http'.
      */
     public static final String HTTP = "http";
+
+    /**
+     * Constant for 'https'.
+     */
+    public static final String HTTPS = "https";
 
     /**
      * Constant for 'path'.
@@ -393,6 +403,46 @@ public final class Constants {
      * Constant for 'IS_CLUSTER_PRESENT'.
      */
     public static final String IS_CLUSTER_PRESENT = "isClusterPresent";
+
+    /**
+     * Constant for 'UNKNOWN_TIMESERIES_MODEL'.
+     */
+    public static final String UNKNOWN_TS_MODEL = "Unknown TimeSeries Model";
+
+    /**
+     * Constant for 'EGADS'.
+     */
+    public static final String EGADS = "Egads";
+
+    /**
+     * Constant for 'PROPHET'.
+     */
+    public static final String PROPHET = "Prophet";
+
+    /**
+     * Constant for 'PROPHET_GROWTH_MODELS'.
+     */
+    public static final String PROPHET_GROWTH_MODELS = "prophetGrowthModels";
+
+    /**
+     * Constant for 'PROPHET_ENDPOINT'.
+     */
+    public static final String PROPHET_ENDPOINT = "forecasts";
+
+    /**
+     * Constant for 'PROPHET_YEARLY_SEASONALITY'.
+     */
+    public static final String PROPHET_YEARLY_SEASONALITY = "yearlySeasonalities";
+
+    /**
+     * Constant for 'PROPHET_WEEKLY_SEASONALITY'.
+     */
+    public static final String PROPHET_WEEKLY_SEASONALITY = "weeklySeasonalities";
+
+    /**
+     * Constant for 'PROPHET_DAILY_SEASONALITY'.
+     */
+    public static final String PROPHET_DAILY_SEASONALITY = "dailySeasonalities";
 
     /**
      * Constant set of allowed druid brokers.

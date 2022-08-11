@@ -16,10 +16,11 @@ import com.yahoo.sherlock.enums.Granularity;
 import com.yahoo.sherlock.exception.DruidException;
 import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.DruidCluster;
-import com.yahoo.sherlock.model.EgadsResult;
+import com.yahoo.sherlock.model.DetectorResult;
 import com.yahoo.sherlock.model.JobMetadata;
-import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.query.Query;
+import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.DBTestHelper;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -29,15 +30,15 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,7 +53,7 @@ public class DetectorServiceTest {
     private static DruidQueryService druidQueryService;
     private static HttpService httpService;
     private static TimeSeriesParserService timeSeriesParserService;
-    private static EgadsService egadsService;
+    private static EgadsAPIService egadsAPIService;
     private static String queryString;
     private static JsonArray fakeDataSources;
     private Gson gson = new Gson();
@@ -74,8 +75,8 @@ public class DetectorServiceTest {
         }
 
         @Override
-        protected EgadsService newEgadsServiceInstance() {
-            return egadsService;
+        protected EgadsAPIService newEgadsAPIServiceInstance() {
+            return egadsAPIService;
         }
     }
 
@@ -114,17 +115,14 @@ public class DetectorServiceTest {
         fakeDataSources = gson.fromJson("[\"datastore\"]", JsonArray.class);
         DruidQueryService mockDruidQueryService = mock(DruidQueryService.class);
         HttpService mockHttpService = mock(HttpService.class);
-        TimeSeriesParserService mockTimeSeriesParserService = mock(TimeSeriesParserService.class);
-        EgadsService mockEgadsService = mock(EgadsService.class);
+        druidQueryService = mockDruidQueryService;
+        httpService = mockHttpService;
+        timeSeriesParserService = mock(TimeSeriesParserService.class);
+        egadsAPIService = mock(EgadsAPIService.class);
         when(mockDruidQueryService.build(anyString(), any(), Mockito.anyObject(), anyInt(), anyInt())).thenReturn(query);
         when(mockHttpService.queryDruidDatasources(Mockito.anyObject())).thenReturn(fakeDataSources);
         when(mockHttpService.queryDruid(Mockito.anyObject(), Mockito.anyObject())).thenReturn(jsonArray);
-        when(mockTimeSeriesParserService.parseTimeSeries(Mockito.anyObject(), Mockito.anyObject())).thenReturn(Collections.singletonList(timeseries));
-        when(mockEgadsService.runEGADS(Mockito.anyObject(), anyDouble())).thenReturn(anomalies);
-        druidQueryService = mockDruidQueryService;
-        httpService = mockHttpService;
-        timeSeriesParserService = mockTimeSeriesParserService;
-        egadsService = mockEgadsService;
+        when(timeSeriesParserService.parseTimeSeries(Mockito.anyObject(), Mockito.anyObject())).thenReturn(Collections.singletonList(timeseries));
     }
 
     private static void inject(Object o, String name, Object v) {
@@ -132,6 +130,16 @@ public class DetectorServiceTest {
             Field f = DetectorService.class.getDeclaredField(name);
             f.setAccessible(true);
             f.set(o, v);
+        } catch (Exception e) {
+            Assert.fail(e.toString());
+        }
+    }
+
+    private static void inject(Class c, Object o, String name, Object v) {
+        try {
+            Field field = c.getDeclaredField(name);
+            field.setAccessible(true);
+            field.set(o, v);
         } catch (Exception e) {
             Assert.fail(e.toString());
         }
@@ -158,82 +166,337 @@ public class DetectorServiceTest {
         }
     }
 
-    private DetectorService ds;
-    private EgadsService egads;
-    private TimeSeriesParserService ps;
+    private DetectorService detectorService;
+    private EgadsAPIService mockEgadsAPIService;
+    private ProphetAPIService prophetAPIService;
+    private TimeSeriesParserService mockTimeSeriesParserService;
 
     private void initMocks() {
-        ds = mock(DetectorService.class);
-
-        ps = mock(TimeSeriesParserService.class);
-        egads = mock(EgadsService.class);
-        inject(ds, "parserService", ps);
-        inject(ds, "egads", egads);
+        detectorService = mock(DetectorService.class);
+        mockTimeSeriesParserService = mock(TimeSeriesParserService.class);
+        mockEgadsAPIService = mock(EgadsAPIService.class);
+        prophetAPIService = mock(ProphetAPIService.class);
+        inject(detectorService, "parserService", mockTimeSeriesParserService);
+        inject(detectorService, "egadsAPIService", mockEgadsAPIService);
+        inject(detectorService, "prophetAPIService", prophetAPIService);
     }
 
+    /**
+     * Test the overloaded runDetection() calls the other main runDetection() method.
+     * @throws Exception Exception
+     */
     @Test
     public void testRunDetection() throws SherlockException {
         initMocks();
-        when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
                 .thenReturn(Collections.singletonList(new Anomaly()));
-        when(ds.runDetection(any(JsonArray.class), any(), anyDouble(), any(EgadsConfig.class), anyString(), anyInt()))
+        when(detectorService.runDetection(any(JsonArray.class), any(), anyDouble(), any(DetectorConfig.class), anyString(), anyInt()))
                 .thenCallRealMethod();
         Query query = mock(Query.class);
         when(query.getRunTime()).thenReturn(100000);
         when(query.getGranularity()).thenReturn(Granularity.HOUR);
-        List<Anomaly> response = ds.runDetection(new JsonArray(), query, 0.0, mock(EgadsConfig.class), "day", 1);
+        List<Anomaly> response = detectorService.runDetection(new JsonArray(), query, 0.0, mock(DetectorConfig.class), "day", 1);
         assertEquals(response.size(), 1);
     }
 
+    /**
+     * Test runDetection() when the input is null config and empty Time Series List.
+     * @throws Exception Exception
+     */
     @Test
-    public void testRunDetectionNoConfig() throws Exception {
+    public void testRunDetectionNoConfigEmptyTSList() throws Exception {
         initMocks();
-        when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
                 .thenReturn(Collections.singletonList(new Anomaly()));
-        when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(Granularity.class), anyInt())).thenCallRealMethod();
-        assertEquals(ds.runDetection(Collections.emptyList(), 0.0, null, 1234, null, null, 1).size(), 1);
+        when(mockEgadsAPIService.getNoDataAnomaly(any())).thenReturn(new Anomaly());
+        when(detectorService.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(Granularity.class), anyInt())).thenCallRealMethod();
+        assertEquals(detectorService.runDetection(Collections.emptyList(), 0.0, null, 1234, null, null, 1).size(), 1);
+        verify(mockEgadsAPIService, times(0)).preRunConfigure(any(), any(), any());
+        verify(mockEgadsAPIService, times(0)).configureDetectionWindow(any(), any(), anyInt());
+        verify(mockEgadsAPIService, times(0)).detectAnomalies(anyList(), anyInt());
     }
 
+    /**
+     * Test runDetection() when the input is Prophet forecast model and empty Time Series List.
+     * @throws Exception Exception
+     */
     @Test
-    public void testRunDetectionWithConfig() throws Exception {
+    public void testRunDetectionProphetConfigEmptyTsList() throws Exception {
+        initMocks();
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(DetectorConfig.Framework.Prophet.toString());
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+                .thenReturn(Collections.singletonList(new Anomaly()));
+        when(detectorService.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(Granularity.class), anyInt())).thenCallRealMethod();
+        assertEquals(detectorService.runDetection(Collections.emptyList(), 0.0, config, 1234, null, null, 1).size(), 1);
+        verify(prophetAPIService, times(1)).configureWith(any());
+        verify(mockEgadsAPIService, times(0)).configureWith(any());
+    }
+
+    /**
+     * Test runDetection() when the input is an arbitrary Egads forecast model and empty Time Series List.
+     * @throws Exception Exception
+     */
+    @Test
+    public void testRunDetectionEgadsConfigEmptyTsList() throws Exception {
+        initMocks();
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(DetectorConfig.Framework.Egads.toString());
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+                .thenReturn(Collections.singletonList(new Anomaly()));
+        when(detectorService.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(Granularity.class), anyInt())).thenCallRealMethod();
+        List<String> tsModelList = DetectorConfig.TimeSeriesModel.getAllEgadsValues();
+        for (int i = 0; i < tsModelList.size(); i++) {
+            config.setTsModel(tsModelList.get(i));
+            assertEquals(detectorService.runDetection(Collections.emptyList(), 0.0, config, 1234, null, null, 1).size(), 1);
+        }
+        verify(prophetAPIService, times(0)).configureWith(any());
+        verify(mockEgadsAPIService, times(12)).configureWith(any());
+    }
+
+    /**
+     * Test runDetection() when the input is null config and anomalies are detected.
+     * @throws Exception Exception
+     */
+    @Test
+    public void testRunDetectionWithAnomaliesNullConfig() throws Exception {
         initMocks();
         List<Anomaly> anomalies = Lists.newArrayList(new Anomaly(), new Anomaly());
-        TimeSeries endSeries = new TimeSeries();
-        endSeries.data = new TimeSeries.DataSequence();
-        endSeries.data.add(new TimeSeries.Entry(123 * 60, 1000));
-        List<TimeSeries> tslist = Lists.newArrayList(endSeries, new TimeSeries());
-        Properties p = new Properties();
-        p.setProperty("AD_MODEL", "model1");
-        when(egads.getP()).thenReturn(p);
-        when(egads.runEGADS(any(), anyDouble())).thenReturn(anomalies);
-        when(ds.runDetection(any(), anyDouble(), any(EgadsConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+        List<TimeSeries> tslist = Lists.newArrayList(new TimeSeries(), new TimeSeries());
+        when(mockEgadsAPIService.detectAnomalies(anyList(), anyInt())).thenReturn(anomalies);
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
                 .thenCallRealMethod();
-        List<Anomaly> result = ds.runDetection(tslist, 3.0, null, 123, "day", Granularity.DAY, 1);
-        assertEquals(result.size(), 3);
-        result = ds.runDetection(tslist, 3.0, mock(EgadsConfig.class), 123, "day", Granularity.DAY, 1);
-        assertEquals(result.size(), 3);
-        verify(egads, times(2)).runEGADS(any(), any());
-        verify(egads, times(1)).preRunConfigure(any(), any(), anyInt());
-        verify(egads, times(1)).configureWith(any());
+        // run with null config
+        List<Anomaly> result = detectorService.runDetection(tslist, 3.0, null, 123, "day", Granularity.DAY, 1);
+        assertEquals(result.size(), 2);
+        verify(mockEgadsAPIService, times(0)).configureWith(any());
+        verify(mockEgadsAPIService, times(1)).preRunConfigure(any(), any(), anyInt());
+        verify(mockEgadsAPIService, times(1)).configureDetectionWindow(any(), any(), anyInt());
+        verify(mockEgadsAPIService, times(1)).detectAnomalies(anyList(), anyInt());
+        verify(prophetAPIService, times(0)).configureWith(any());
+        verify(prophetAPIService, times(0)).preRunConfigure(any(), any(), anyInt());
+        verify(prophetAPIService, times(0)).configureDetectionWindow(any(), any(), anyInt());
+        verify(prophetAPIService, times(0)).detectAnomalies(anyList(), anyInt());
     }
 
+    /**
+     * Test runDetection() runs the Egads route when passing in Egads as the argument;
+     * tested with all available Egads Time Series Forecasting models.
+     * @throws Exception Exception
+     */
     @Test
-    public void testDetectWithResults() throws Exception {
-        EgadsResult res = new EgadsResult();
+    public void testRunDetectionWithAnomaliesEgadsConfig() throws Exception {
         initMocks();
-        when(egads.detectAnomaliesResult(any())).thenReturn(res);
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(DetectorConfig.Framework.Egads.toString());
+        List<Anomaly> anomalies = Lists.newArrayList(new Anomaly(), new Anomaly(), new Anomaly());
+        List<TimeSeries> tslist = Lists.newArrayList(new TimeSeries(), new TimeSeries(), new TimeSeries());
+        when(mockEgadsAPIService.detectAnomalies(anyList(), anyInt())).thenReturn(anomalies);
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+                .thenCallRealMethod();
+        // run with Egads config
+        List<String> tsModelList = DetectorConfig.TimeSeriesModel.getAllEgadsValues();
+        for (int i = 0; i < tsModelList.size(); i++) {
+            config.setTsModel(tsModelList.get(i));
+            List<Anomaly> result = detectorService.runDetection(tslist, 3.0, config, 123, "day", Granularity.DAY, 1);
+            assertEquals(result.size(), 3);
+            verify(mockEgadsAPIService, times(i + 1)).configureWith(any());
+            verify(mockEgadsAPIService, times(i + 1)).preRunConfigure(any(), any(), anyInt());
+            verify(mockEgadsAPIService, times(i + 1)).configureDetectionWindow(any(), any(), anyInt());
+            verify(mockEgadsAPIService, times(i + 1)).detectAnomalies(anyList(), anyInt());
+            verify(prophetAPIService, times(0)).configureWith(any());
+            verify(prophetAPIService, times(0)).preRunConfigure(any(), any(), anyInt());
+            verify(prophetAPIService, times(0)).configureDetectionWindow(any(), any(), anyInt());
+            verify(prophetAPIService, times(0)).detectAnomalies(anyList(), anyInt());
+        }
+    }
+
+    /**
+     * Test runDetection() runs the Prophet route when passing in Prophet as the argument.
+     * @throws Exception Exception
+     */
+    @Test
+    public void testRunDetectionWithAnomaliesProphetConfig() throws Exception {
+        initMocks();
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(DetectorConfig.Framework.Prophet.toString());
+        List<Anomaly> anomalies = Lists.newArrayList(new Anomaly(), new Anomaly());
+        List<TimeSeries> tslist = Lists.newArrayList(new TimeSeries(), new TimeSeries());
+        when(mockEgadsAPIService.detectAnomalies(anyList(), anyInt())).thenReturn(anomalies);
+        when(prophetAPIService.detectAnomalies(anyList(), anyInt())).thenReturn(Lists.newArrayList(new Anomaly(), new Anomaly(), new Anomaly()));
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+                .thenCallRealMethod();
+        // Run with Prophet
+        config.setTsModel(Constants.PROPHET);
+        List<Anomaly> result = detectorService.runDetection(tslist, 3.0, config, 123, "day", Granularity.DAY, 1);
+        assertEquals(result.size(), 3);
+        verify(mockEgadsAPIService, times(0)).configureWith(any());
+        verify(mockEgadsAPIService, times(0)).preRunConfigure(any(), any(), anyInt());
+        verify(mockEgadsAPIService, times(0)).configureDetectionWindow(any(), any(), anyInt());
+        verify(mockEgadsAPIService, times(0)).detectAnomalies(anyList(), anyInt());
+        verify(prophetAPIService, times(1)).configureWith(any());
+        verify(prophetAPIService, times(1)).preRunConfigure(any(), any(), anyInt());
+        verify(prophetAPIService, times(1)).configureDetectionWindow(any(), any(), anyInt());
+        verify(prophetAPIService, times(1)).detectAnomalies(anyList(), anyInt());
+    }
+
+    /**
+     * Unit tests runDetection() throws Exception when passing Illegal Forecasting Framework as argument.
+     */
+    @Test
+    public void testRunDetectionFrameworkException() throws Exception {
+        initMocks();
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        // use an invalid TimeSeries framework name
+        config.setTsFramework("Invalid TimeSeries Framework");
         List<TimeSeries> tslist = Lists.newArrayList(
                 new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
         );
-        when(ps.parseTimeSeries(any(), any())).thenReturn(tslist);
-        when(ds.detectWithResults(any(), any(), any(), any(), any())).thenCallRealMethod();
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+                .thenCallRealMethod();
+        try {
+            detectorService.runDetection(tslist, 3.0, config, 123, "day", Granularity.DAY, 1);
+        } catch (Exception e) {
+            assertEquals(e.getMessage(), "Time Series Framework not identified.");
+            return;
+        }
+        Assert.fail();
+    }
+
+    /**
+     * Unit tests runDetection() throws Exception when passing Illegal Egads TimeSeries Model as argument.
+     */
+    @Test
+    public void testRunDetectionTSModelException() throws Exception {
+        initMocks();
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(DetectorConfig.Framework.Egads.toString());
+        // use an invalid Egads TimeSeries Model name
+        config.setTsModel("Invalid Egads TimeSeries Model");
+        List<TimeSeries> tslist = Lists.newArrayList(
+                new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
+        );
+        when(detectorService.runDetection(any(), anyDouble(), any(DetectorConfig.class), anyInt(), anyString(), any(Granularity.class), anyInt()))
+                .thenCallRealMethod();
+        try {
+            detectorService.runDetection(tslist, 3.0, config, 123, "day", Granularity.DAY, 1);
+        } catch (Exception e) {
+            assertEquals(e.getMessage(), "Egads Time Series Forecasting Model not identified.");
+            return;
+        }
+        Assert.fail();
+    }
+
+    /**
+     * Test method detectWithResults() runs the Egads route when passing
+     * in Egads TimeSeries Models.
+     */
+    @Test
+    public void testDetectWithResults() throws Exception {
+        DetectorResult res = new DetectorResult();
+        initMocks();
+        when(mockEgadsAPIService.detectAnomaliesAndForecast(any(List.class))).thenCallRealMethod();
+        when(mockEgadsAPIService.detectAnomaliesAndForecast(any(TimeSeries.class))).thenReturn(res);
+        List<TimeSeries> tslist = Lists.newArrayList(
+                new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
+        );
+        when(mockTimeSeriesParserService.parseTimeSeries(any(), any())).thenReturn(tslist);
+        when(detectorService.detectWithResults(any(), any(), any(), any(), any())).thenCallRealMethod();
         Query query = new Query(null, 150000000, 159999999, Granularity.DAY, 1);
-        List<EgadsResult> reslist = ds.detectWithResults(query, 3.0, new DruidCluster(), 1, new EgadsConfig());
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(Constants.EGADS);
+        List<String> tsModelList = DetectorConfig.TimeSeriesModel.getAllEgadsValues();
+        for (int i = 0; i < tsModelList.size(); i++) {
+            config.setTsModel(tsModelList.get(i));
+            List<DetectorResult> reslist = detectorService.detectWithResults(query, 3.0, new DruidCluster(), 1, config);
+            assertEquals(5, reslist.size());
+            verify(mockEgadsAPIService, times(i + 1)).configureWith(any());
+            verify(mockEgadsAPIService, times(i + 1)).preRunConfigure(any(), any(), anyInt());
+            verify(mockEgadsAPIService, times(i + 1)).configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), 2);
+            verify(mockEgadsAPIService, times(5 * (i + 1))).detectAnomaliesAndForecast(any(TimeSeries.class));
+        }
+    }
+
+    /**
+     * Test method detectWithResults() runs the Prophet route when
+     * passing in Prophet as TimeSeries Model.
+     */
+    @Test
+    public void testProphetDetectWithResults() throws Exception {
+        List<DetectorResult> res = Lists.newArrayList(new DetectorResult(), new DetectorResult(),
+                new DetectorResult(), new DetectorResult(), new DetectorResult());
+        initMocks();
+        when(prophetAPIService.detectAnomaliesAndForecast(anyList())).thenReturn(res);
+        List<TimeSeries> tslist = Lists.newArrayList(
+                new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
+        );
+        when(mockTimeSeriesParserService.parseTimeSeries(any(), any())).thenReturn(tslist);
+        when(detectorService.detectWithResults(any(), any(), any(), any(), any())).thenCallRealMethod();
+        Query query = new Query(null, 150000000, 159999999, Granularity.DAY, 1);
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(Constants.PROPHET);
+        config.setTsModel(Constants.PROPHET);
+        List<DetectorResult> reslist = detectorService.detectWithResults(query, 3.0, new DruidCluster(), 1, config);
         assertEquals(5, reslist.size());
-        verify(egads, times(1)).configureWith(any());
-        verify(egads, times(1)).preRunConfigure(any(), any(), anyInt());
-        verify(egads, times(1)).configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), 2);
-        verify(egads, times(5)).detectAnomaliesResult(any());
+        verify(prophetAPIService, times(1)).configureWith(any());
+        verify(prophetAPIService, times(1)).preRunConfigure(any(), any(), anyInt());
+        verify(prophetAPIService, times(1)).configureDetectionWindow(query.getRunTime() / 60, query.getGranularity().toString(), 2);
+        verify(prophetAPIService, times(1)).detectAnomaliesAndForecast(anyList());
+    }
+
+    /**
+     * Test method detectWithResults() throws Exception when passing
+     * Illegal TimeSeries Framework as argument.
+     */
+    @Test
+    public void testDetectWithResultsFrameworkException() throws Exception {
+        List<DetectorResult> res = new ArrayList<>();
+        initMocks();
+        when(prophetAPIService.detectAnomaliesAndForecast(anyList())).thenReturn(res);
+        List<TimeSeries> tslist = Lists.newArrayList(
+                new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
+        );
+        when(mockTimeSeriesParserService.parseTimeSeries(any(), any())).thenReturn(tslist);
+        when(detectorService.detectWithResults(any(), any(), any(), any(), any())).thenCallRealMethod();
+        Query query = new Query(null, 150000000, 159999999, Granularity.DAY, 1);
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        // use an invalid forecasting framework name
+        config.setTsFramework("Invalid TimeSeries Framework");
+        try {
+            detectorService.detectWithResults(query, 3.0, new DruidCluster(), 1, config);
+        } catch (Exception e) {
+            assertEquals(e.getMessage(), "Time Series Framework not identified.");
+            return;
+        }
+        Assert.fail();
+    }
+
+    /**
+     * Test method detectWithResults() throws Exception when passing
+     * Illegal Egads Time Series Forecasting Model as argument.
+     */
+    @Test
+    public void testDetectWithResultsEgadsModelException() throws Exception {
+        List<DetectorResult> res = new ArrayList<>();
+        initMocks();
+        when(prophetAPIService.detectAnomaliesAndForecast(anyList())).thenReturn(res);
+        List<TimeSeries> tslist = Lists.newArrayList(
+                new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries(), new TimeSeries()
+        );
+        when(mockTimeSeriesParserService.parseTimeSeries(any(), any())).thenReturn(tslist);
+        when(detectorService.detectWithResults(any(), any(), any(), any(), any())).thenCallRealMethod();
+        Query query = new Query(null, 150000000, 159999999, Granularity.DAY, 1);
+        DetectorConfig config = DetectorConfig.fromProperties(DetectorConfig.fromFile());
+        config.setTsFramework(Constants.EGADS);
+        // use an invalid Egads Time Series Model name
+        config.setTsModel("Invalid Egads TimeSeries Model");
+        try {
+            detectorService.detectWithResults(query, 3.0, new DruidCluster(), 1, config);
+        } catch (Exception e) {
+            assertEquals(e.getMessage(), "Egads Time Series Forecasting Model not identified.");
+            return;
+        }
+        Assert.fail();
     }
 
     @Test

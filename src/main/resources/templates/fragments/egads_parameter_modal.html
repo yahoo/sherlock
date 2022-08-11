@@ -1,0 +1,14 @@
+<div id="egads-param-modal" th:fragment="egads-param-modal" >
+    <div class="form-group" id="timeseriesModelSection">
+        <label class="control-label" for="tsModels">Egads Forecasting Model:</label>
+        <p id="defaultTSMsg" class="bg-info">Select the model for Egads timeseries modeling.
+            <code>Default: 'OlympicModel'</code></p>
+        <select id="tsModels" name="tsModels" class="form-control"
+                th:field="*{timeseriesModel}" onchange="selectTSModel()">
+            <option th:each="timeseriesModel : ${timeseriesModels}"
+                    th:value="${timeseriesModel}"
+                    th:selected="${timeseriesModel} == 'OlympicModel'"
+                    th:text="${timeseriesModel}"></option>
+        </select>
+    </div>
+</div>

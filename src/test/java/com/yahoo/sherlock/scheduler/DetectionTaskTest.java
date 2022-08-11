@@ -33,10 +33,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
-public class EgadsTaskTest {
+public class DetectionTaskTest {
 
     @Test
-    public void testEgadsTaskError() throws SherlockException {
+    public void testDetectionTaskError() throws SherlockException {
         JobMetadata j = new JobMetadata();
         AnomalyReport ar = new AnomalyReport();
         ar.setStatus(Constants.ERROR);
@@ -44,7 +44,7 @@ public class EgadsTaskTest {
         List<TimeSeries> tslist = Collections.emptyList();
         DetectorService ds = mock(DetectorService.class);
         JobExecutionService jes = mock(JobExecutionService.class);
-        EgadsTask et = new EgadsTask(j, runtime, tslist, ds, jes);
+        DetectionTask et = new DetectionTask(j, runtime, tslist, ds, jes);
         when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(), anyInt())).thenThrow(new SherlockException());
         when(jes.getSingletonReport(any())).thenReturn(ar);
         et.run();
@@ -52,7 +52,7 @@ public class EgadsTaskTest {
     }
 
     @Test
-    public void testEgadsTaskRunToCompletion() throws SherlockException, IOException {
+    public void testDetectionTaskRunToCompletion() throws SherlockException, IOException {
         JobMetadata j = new JobMetadata();
         j.setJobId(1);
         LettuceAnomalyReportAccessor ara = mock(LettuceAnomalyReportAccessor.class);
@@ -62,7 +62,7 @@ public class EgadsTaskTest {
         List<TimeSeries> tslist = Collections.emptyList();
         DetectorService ds = mock(DetectorService.class);
         JobExecutionService jes = mock(JobExecutionService.class);
-        EgadsTask et = new EgadsTask(j, runtime, tslist, ds, jes);
+        DetectionTask et = new DetectionTask(j, runtime, tslist, ds, jes);
         List<AnomalyReport> arlist = Lists.newArrayList(new AnomalyReport(), new AnomalyReport(), new AnomalyReport());
         when(ds.runDetection(any(), anyDouble(), any(), anyInt(), anyString(), any(), anyInt())).thenReturn(new ArrayList<>());
         when(jes.getReports(any(), any())).thenReturn(arlist);
