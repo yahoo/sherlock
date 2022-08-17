@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PUSH_PACKAGES: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     steps:
     - uses: actions/checkout@v2
 
@@ -23,6 +25,7 @@ jobs:
       run: mvn install
 
     - name: Publish Snapshots to Maven Central
+      if: ${{ env.PUSH_PACKAGES }}
       run: ./.github/scripts/publish.sh
       env:
         GPG_ENCPASS: ${{ secrets.GPG_ENCPASS }}
