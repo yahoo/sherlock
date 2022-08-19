@@ -10,7 +10,6 @@ import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.JsonTimeline;
 import lombok.extern.slf4j.Slf4j;
 import spark.QueryParamsMap;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

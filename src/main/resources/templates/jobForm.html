@@ -111,7 +111,7 @@
                             </div>
 
                             <div class="form-group" th:if="${instantView != null}">
-                                <label class="control-label" for="queryEndTimeText">Query End Time:(oprtional)</label>
+                                <label class="control-label" for="queryEndTimeText">Query End Time:(optional)</label>
                                 <p id="queryEndTimeMsg" class="bg-info">Use this for custom query time-range.
                                     <code>Default: 'Date.now()' i.e. current date</code></p>
                                 <input type="text" id="queryEndTimeText" name="queryEndTimeText" class="form-control input-md" th:required="true" autocomplete="false"/>
@@ -166,18 +166,23 @@
                                 </select>
                             </div>
 
-                            <div class="form-group" id="timeseriesModelSection">
-                                <label class="control-label" for="tsModels">Timeseries Model:</label>
-                                <p id="defaultTSMsg" class="bg-info">Select the model for timeseries modeling.
-                                    <code>Default: 'OlympicModel'</code></p>
-                                <select id="tsModels" name="tsModels" class="form-control"
-                                        th:field="*{timeseriesModel}" onchange="showTSModel()">
-                                    <option th:each="timeseriesModel : ${timeseriesModels}"
-                                            th:value="${timeseriesModel}"
-                                            th:selected="${timeseriesModel} == 'OlympicModel' ? true : false"
-                                            th:text="${timeseriesModel}"></option>
+                            <div class="form-group" id="forecastFrameworkSection">
+                                <label class="control-label" for="tsFramework">Forecasting Framework:</label>
+                                <p id="defaultTSFMsg" class="bg-info">Select the Forecasting Framework.
+                                    <code>Default: 'Egads'</code></p>
+                                <select id="tsFramework" name="tsFramework" class="form-control"
+                                        th:field="*{framework}" onchange="selectTSFramework()">
+                                    <option th:each="framework : ${frameworks}"
+                                            th:value="${framework}"
+                                            th:selected="${framework} == 'Egads'"
+                                            th:text="${framework}"></option>
                                 </select>
                             </div>
+
+                            <!-- Egads Parameter Modal -->
+                            <div th:replace="fragments/egads_parameter_modal :: egads-param-modal"></div>
+                            <!-- Prophet Parameter Modal -->
+                            <div th:replace="fragments/prophet_parameter_modal :: prophet-param-modal"></div>
 
                             <div class="form-group" id="anomalyDetectionModelSection">
                                 <label class="control-label" for="adModels">Anomaly Detection Model:</label>
@@ -345,7 +350,7 @@
                 }
                 $('#saveConfirmModalCode').html();
                 $('#saveConfirmModal').modal('show');
-            } else {
+            } else { // Flash Results
                 e.preventDefault();
                 var data = {};
                 data.query = queryText.getValue();
@@ -355,11 +360,20 @@
                 data.frequency = $('#frequency').val();
                 data.queryEndTimeText = $('#queryEndTimeText').val();
                 data.detectionWindow = $('#detectionWindow').val();
-                data.sigmaThreshold = $('#sdSliderVal').text();
                 data.hoursOfLag = $('#hoursOfLag').val();
                 data.clusterId = $druidCluster.val();
-                data.tsModels = $('#tsModels').val();
+                data.tsFramework = $('#tsFramework').val();
                 data.adModels = $('#adModels').val();
+                data.sigmaThreshold = $('#sdSliderVal').text();
+                if ($('#tsFramework').val() === 'Prophet') {
+                    data.tsModels = $('#tsFramework').val(); // stores 'Prophet' in both tsFramework & tsModels
+                    data.growthModel = $('#growth-models').val();
+                    data.yearlySeasonality = $('#yearly-seasonalities').val();
+                    data.weeklySeasonality = $('#weekly-seasonalities').val();
+                    data.dailySeasonality = $('#daily-seasonalities').val();
+                } else {  // if Egads framework is chosen
+                    data.tsModels = $('#tsModels').val();
+                }
                 $.ajax({
                     type: 'POST',
                     url: '/Flash-Query/ProcessAnomalyReport',
@@ -398,12 +412,21 @@
         data.granularity = $('#granularity').val();
         data.granularityRange = $('#granularityRange').val();
         data.timeseriesRange = $('#timeseriesRange').val();
+        data.tsFramework = $('#tsFramework').val();
+        data.adModels = $('#adModels').val();
         data.sigmaThreshold = $('#sdSliderVal').text();
+        if ($('#tsFramework').val() === 'Prophet') {
+            data.tsModels = $('#tsFramework').val();
+            data.growthModel = $('#growth-models').val();
+            data.yearlySeasonality = $('#yearly-seasonalities').val();
+            data.weeklySeasonality = $('#weekly-seasonalities').val();
+            data.dailySeasonality = $('#daily-seasonalities').val();
+        } else {
+            data.tsModels = $('#tsModels').val();
+        }
         data.clusterId = $druidCluster.val();
         data.hoursOfLag = $('#hoursOfLag').val();
-        data.tsModels = $('#tsModels').val();
-        data.adModels = $('#adModels').val();
-        if ([[${instantView}]] != null) {
+        if ([[${instantView}]] != null) {  // if we are in flash query page
             data.testName = "Job_" + d.toLocaleDateString() + "_" + d.toLocaleTimeString();
             data.testDescription = "";
             data.owner = "";
@@ -411,7 +434,7 @@
             data.emailOnNoData = "false";
             data.queryUrl = "";
             data.frequency = $('#granularity').val();
-        } else {
+        } else {  // if we are in new job page
             data.testName = $('#test-name').val();
             data.testDescription = $('#test-description').val();
             data.owner = $('#owner-name').val();
@@ -536,14 +559,40 @@
         $('#defaultFrequencyMsg').html("Every " + $('#frequency').val())
     }
 
+    function selectTSFramework() {
+        $('#defaultTSFMsg').attr("hidden", true);
+        if ($('#tsFramework').val() === 'Prophet') {
+            $('#egads-param-modal').attr("hidden", true)
+            $('#prophet-param-modal').attr("hidden", false)
+        } else {
+            $('#egads-param-modal').attr("hidden", false)
+            $('#prophet-param-modal').attr("hidden", true)
+        }
+    }
+
     function showTSModel() {
-        $('#defaultTSMsg').attr("hidden", true);
+        $('#defaultTSMsg').attr("hidden", true)
     }
 
     function showADModel() {
         $('#defaultADMsg').attr("hidden", true)
     }
 
+    function showGrowthModel() {
+        $('#default-growth-model').attr("hidden", true)
+    }
+
+    function showYearlySeasonality() {
+        $('#default-yearly-seasonality').attr("hidden", true)
+    }
+
+    function showWeeklySeasonality() {
+        $('#default-weekly-seasonality').attr("hidden", true)
+    }
+
+    function showDailySeasonality() {
+        $('#default-daily-seasonality').attr("hidden", true)
+    }
     /*]]>*/
 </script>
 

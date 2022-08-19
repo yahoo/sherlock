@@ -81,6 +81,9 @@ public class UserQuery {
     /** Granularity range to aggregate on. */
     private Integer granularityRange;
 
+    /** Timeseries Framework (e.g., Egads/Prophet). */
+    private String tsFramework;
+
     /** Timeseries model. */
     private String tsModels;
 
@@ -89,6 +92,18 @@ public class UserQuery {
 
     /** Hours of lag associated with the job's cluster. */
     private Integer hoursOfLag;
+
+    /** Meta Prophet's growth model ("linear"/"flat"). */
+    private String growthModel;
+
+    /** Meta Prophet's yearly seasonality ("auto"/"true"/"false"). */
+    private String yearlySeasonality;
+
+    /** Meta Prophet's weekly seasonality parameter ("auto"/"true"/"false"). */
+    private String weeklySeasonality;
+
+    /** Meta Prophet's daily seasonality parameter ("auto"/"true"/"false"). */
+    private String dailySeasonality;
 
     /**
      * Removing duplicate emails and return set of comma separated emails.

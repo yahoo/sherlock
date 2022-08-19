@@ -9,8 +9,10 @@ package com.yahoo.sherlock.service;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.yahoo.sherlock.TestUtilities;
 import com.yahoo.sherlock.exception.DruidException;
+import com.yahoo.sherlock.exception.DetectorServiceException;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.settings.CLISettings;
 import com.yahoo.sherlock.utils.SHttpClient;
@@ -34,12 +36,13 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertEqualsNoOrder;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertEqualsNoOrder;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -281,6 +284,7 @@ public class HttpServiceTest {
         when(sl.getStatusCode()).thenReturn(500);
         result = httpService.queryDruidClusterStatus(cluster);
         assertEquals(result, 500);
+        verify(get, times(2)).releaseConnection();
         when(client.execute(any(HttpGet.class))).thenThrow(new IOException("error"));
         try {
             httpService.queryDruidClusterStatus(cluster);
@@ -292,4 +296,108 @@ public class HttpServiceTest {
         fail();
     }
 
+    /**
+     * Test queryProphetService() method handles the IOException.
+     * @throws DetectorServiceException the DetectorService Exception
+     * @throws IOException IOException
+     */
+    @Test
+    public void testQueryProphetIOException() throws DetectorServiceException, IOException {
+        mockGets();
+        when(httpService.queryProphetService(anyString(), any(JsonObject.class))).thenCallRealMethod();
+        when(client.execute(any(HttpPost.class))).thenThrow(new IOException("IOError"));
+        ProphetAPIService prophetAPIService = new ProphetAPIService();
+        String prophetUrl = prophetAPIService.generateProphetURL();
+        try {
+            httpService.queryProphetService(prophetUrl, new JsonObject());
+        } catch (DetectorServiceException e) {
+            assertEquals(e.getMessage(), "IOError");
+            verify(post, times(1)).releaseConnection();
+            return;
+        }
+        fail();
+    }
+
+    /**
+     * Test queryProphetService() method handles various HTTP Exceptions (HTTP Status 400, 422, 500).
+     * @throws DetectorServiceException the DetectorService Exception
+     * @throws IOException IOException
+     */
+    @Test
+    public void testQueryProphetDetectorServiceException() throws DetectorServiceException, IOException {
+        mockGets();
+        ProphetAPIService prophetAPIService = new ProphetAPIService();
+        String prophetUrl = prophetAPIService.generateProphetURL();
+        when(httpService.queryProphetService(anyString(), any(JsonObject.class))).thenCallRealMethod();
+        when(client.execute(any(HttpPost.class))).thenReturn(res);
+        StatusLine sl = mock(StatusLine.class);
+        when(sl.getStatusCode()).thenReturn(400); // 400 Bad Request
+        when(res.getStatusLine()).thenReturn(sl);
+        try {
+            httpService.queryProphetService(prophetUrl, new JsonObject());
+        } catch (DetectorServiceException e) {
+            assertEquals(e.getMessage(), "Prophet Rest endpoint failed with HTTP Status 400");
+            verify(post, times(1)).releaseConnection();
+        }
+        when(sl.getStatusCode()).thenReturn(422);
+        try {
+            httpService.queryProphetService(prophetUrl, new JsonObject());
+        } catch (DetectorServiceException e) {
+            assertEquals(e.getMessage(), "Prophet Rest endpoint failed with HTTP Status 422");
+            verify(post, times(2)).releaseConnection();
+        }
+        when(sl.getStatusCode()).thenReturn(500);
+        try {
+            httpService.queryProphetService(prophetUrl, new JsonObject());
+        } catch (DetectorServiceException e) {
+            assertEquals(e.getMessage(), "Prophet Rest endpoint failed with HTTP Status 500");
+            verify(post, times(3)).releaseConnection();
+            return;
+        }
+        fail();
+    }
+
+    /**
+     * Test queryProphetService() method when Prophet Microservice returns Status code 200
+     * and returns forecasted json object.
+     * @throws DetectorServiceException the DetectorService Exception
+     * @throws IOException IOException
+     */
+    @Test
+    public void testQueryProphetDetectorSuccess() throws DetectorServiceException, IOException {
+        mockGets();
+        when(httpService.queryProphetService(anyString(), any(JsonObject.class))).thenCallRealMethod();
+        ProphetAPIService prophetAPIService = new ProphetAPIService();
+        String prophetUrl = prophetAPIService.generateProphetURL();
+        // init Prophet Query object
+        JsonObject query = new JsonObject();
+        query.addProperty("growth", "linear");
+        JsonObject tsObject = new JsonObject();
+        tsObject.addProperty("1412038800", 80273608.047961);
+        tsObject.addProperty("1412042400", 78275518.2733113);
+        tsObject.addProperty("1412046000", 65171461.6414272);
+        query.add("timeseries", new Gson().toJsonTree(tsObject));
+
+        HttpEntity ent = mock(HttpEntity.class);
+        when(client.execute(post)).thenReturn(res);
+        StatusLine sl = mock(StatusLine.class);
+        when(res.getStatusLine()).thenReturn(sl);
+        when(sl.getStatusCode()).thenReturn(200);
+        JsonObject obj = new JsonObject();
+        obj.addProperty("1412038800", 84239140.95351946);
+        obj.addProperty("1412042400", 73508672.07613184);
+        obj.addProperty("1412046000", 62778203.10910882);
+        String objJson = new Gson().toJson(obj);
+        InputStream is = new ByteArrayInputStream(objJson.getBytes(StandardCharsets.UTF_8));
+        when(ent.getContent()).thenReturn(is);
+        when(res.getEntity()).thenReturn(ent);
+        JsonObject result = httpService.queryProphetService(prophetUrl, query);
+        assertTrue(result.isJsonObject());
+        JsonParser parser = new JsonParser();
+        String expected = "{ \"1412038800\": 8.423914095351946E7, \"1412042400\": 7.350867207613184E7, \"1412046000\": 6.277820310910882E7 }";
+        assertEquals(parser.parse(expected), result);
+        verify(client, times(1)).execute(any(HttpPost.class));
+        verify(sl, times(1)).getStatusCode();
+        verify(post, times(1)).releaseConnection();
+    }
 }

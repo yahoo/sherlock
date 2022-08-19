@@ -36,11 +36,19 @@ public class ServiceFactory {
     }
 
     /**
-     * Method to get EgadsService instance.
-     * @return EgadsService object
+     * Method to get EgadsAPIService instance.
+     * @return EgadsAPIService object
      */
-    protected EgadsService newEgadsServiceInstance() {
-        return new EgadsService();
+    protected EgadsAPIService newEgadsAPIServiceInstance() {
+        return new EgadsAPIService();
+    }
+
+    /**
+     * Method to get ProphetAPIService instance.
+     * @return ProphetAPIService object
+     */
+    protected ProphetAPIService newProphetAPIServiceInstance() {
+        return new ProphetAPIService();
     }
 
     /**

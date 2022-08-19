@@ -112,4 +112,21 @@ public class ExceptionTest {
         assertEquals(e.getCause().getMessage(), "h");
     }
 
+    /**
+     * Test exceptions are thrown correctly via DetectorServiceException().
+     */
+    @Test
+    public void testProphetExceptionConstructors() {
+        DetectorServiceException e = new DetectorServiceException();
+        assertNull(e.getMessage());
+        assertNull(e.getCause());
+        e = new DetectorServiceException("fake_message");
+        assertEquals(e.getMessage(), "fake_message");
+        assertNull(e.getCause());
+        Exception cause = new RuntimeException("fake_message");
+        e = new DetectorServiceException("some_message", cause);
+        assertEquals(e.getMessage(), "some_message");
+        assertEquals(e.getCause().getMessage(), "fake_message");
+    }
+
 }

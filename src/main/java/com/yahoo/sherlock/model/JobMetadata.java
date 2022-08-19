@@ -10,7 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParser;
 import com.yahoo.sherlock.enums.Granularity;
-import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.utils.TimeUtils;
 import com.yahoo.sherlock.enums.JobStatus;
@@ -163,16 +163,46 @@ public class JobMetadata implements Serializable, Cloneable {
     private Integer hoursOfLag;
 
     /**
-     * Timeseries Model to use for given job.
+     * Timeseries Framework (Egads/Prophet) used in the job (default to Egads).
      */
     @Attribute
-    private String timeseriesModel = EgadsConfig.TimeSeriesModel.OlympicModel.toString();
+    private String timeseriesFramework = DetectorConfig.Framework.Egads.toString();
 
     /**
-     * Anomaly Detection Model to use for given job.
+     * Timeseries Model used in the job (default to OlympicModel).
      */
     @Attribute
-    private String anomalyDetectionModel = EgadsConfig.AnomalyDetectionModel.KSigmaModel.toString();
+    private String timeseriesModel = DetectorConfig.TimeSeriesModel.OlympicModel.toString();
+
+    /**
+     * Anomaly Detection Model used in the job (default to KSigmaModel).
+     */
+    @Attribute
+    private String anomalyDetectionModel = DetectorConfig.AnomalyDetectionModel.KSigmaModel.toString();
+
+    /**
+     * Prophet GrowthModel used to query the Prophet Microservice.
+     */
+    @Attribute
+    private String prophetGrowthModel = DetectorConfig.GrowthModel.linear.toString();
+
+    /**
+     * Prophet Yearly Seasonality used to query the Prophet Microservice.
+     */
+    @Attribute
+    private String prophetYearlySeasonality = DetectorConfig.ProphetSeasonality.auto.toString();
+
+    /**
+     * Prophet Weekly Seasonality used to query the Prophet Microservice.
+     */
+    @Attribute
+    private String prophetWeeklySeasonality = DetectorConfig.ProphetSeasonality.auto.toString();
+
+    /**
+     * Prophet Daily Seasonality used to query the Prophet Microservice.
+     */
+    @Attribute
+    private String prophetDailySeasonality = DetectorConfig.ProphetSeasonality.auto.toString();
 
     /**
      * Empty Constructor.
@@ -204,8 +234,13 @@ public class JobMetadata implements Serializable, Cloneable {
         this.sigmaThreshold = jobMetadata.getSigmaThreshold();
         this.clusterId = jobMetadata.getClusterId();
         this.hoursOfLag = jobMetadata.getHoursOfLag();
+        this.timeseriesFramework = jobMetadata.getTimeseriesFramework();
         this.timeseriesModel = jobMetadata.getTimeseriesModel();
         this.anomalyDetectionModel = jobMetadata.getAnomalyDetectionModel();
+        this.prophetGrowthModel = jobMetadata.getProphetGrowthModel();
+        this.prophetDailySeasonality = jobMetadata.getProphetDailySeasonality();
+        this.prophetWeeklySeasonality = jobMetadata.getProphetWeeklySeasonality();
+        this.prophetYearlySeasonality = jobMetadata.getProphetYearlySeasonality();
     }
 
     /**
@@ -233,8 +268,13 @@ public class JobMetadata implements Serializable, Cloneable {
         setSigmaThreshold(userQuery.getSigmaThreshold());
         setClusterId(userQuery.getClusterId());
         setHoursOfLag(userQuery.getHoursOfLag());
+        setTimeseriesFramework(userQuery.getTsFramework());
         setTimeseriesModel(userQuery.getTsModels());
         setAnomalyDetectionModel(userQuery.getAdModels());
+        setProphetGrowthModel(userQuery.getGrowthModel());
+        setProphetDailySeasonality(userQuery.getDailySeasonality());
+        setProphetWeeklySeasonality(userQuery.getWeeklySeasonality());
+        setProphetYearlySeasonality(userQuery.getYearlySeasonality());
     }
 
     /**
@@ -294,10 +334,15 @@ public class JobMetadata implements Serializable, Cloneable {
         setGranularityRange(newJob.getGranularityRange());
         setFrequency(newJob.getFrequency());
         setSigmaThreshold(newJob.getSigmaThreshold());
-        setTimeseriesModel(newJob.getTimeseriesModel());
-        setAnomalyDetectionModel(newJob.getAnomalyDetectionModel());
         setClusterId(newJob.getClusterId());
         setHoursOfLag(newJob.getHoursOfLag());
+        setTimeseriesFramework(newJob.getTimeseriesFramework());
+        setTimeseriesModel(newJob.getTimeseriesModel());
+        setAnomalyDetectionModel(newJob.getAnomalyDetectionModel());
+        setProphetGrowthModel(newJob.getProphetGrowthModel());
+        setProphetDailySeasonality(newJob.getProphetDailySeasonality());
+        setProphetWeeklySeasonality(newJob.getProphetWeeklySeasonality());
+        setProphetYearlySeasonality(newJob.getProphetYearlySeasonality());
     }
 
     /**
@@ -375,5 +420,40 @@ public class JobMetadata implements Serializable, Cloneable {
     @Override
     public int hashCode() {
         return null != jobId ? jobId.hashCode() : 1;
+    }
+
+    /**
+     * Convert a JobMetadata to a string.
+     * @return a JobMetadata string
+     */
+    public String toString() {
+        StringBuffer str = new StringBuffer();
+        str.append("jobID: " + jobId + "\n");
+        str.append("owner: " + owner + "\n");
+        str.append("ownerEmail: " + ownerEmail + "\n");
+        str.append("emailOnNoData: " + emailOnNoData + "\n");
+        str.append("userQuery: " + userQuery + "\n");
+        str.append("query: " + query + "\n");
+        str.append("testName: " + testName + "\n");
+        str.append("testDescription: " + testDescription + "\n");
+        str.append("url: " + url + "\n");
+        str.append("jobStatus: " + jobStatus + "\n");
+        str.append("effectiveRunTime: " + effectiveRunTime + "\n");
+        str.append("effectiveQueryTime: " + effectiveQueryTime + "\n");
+        str.append("granularity: " + granularity + "\n");
+        str.append("timeseriesRange: " + timeseriesRange + "\n");
+        str.append("granularityRange: " + granularityRange + "\n");
+        str.append("frequency: " + frequency + "\n");
+        str.append("sigmaThreshold: " + sigmaThreshold + "\n");
+        str.append("clusterId: " + clusterId + "\n");
+        str.append("hoursOfLag: " + hoursOfLag + "\n");
+        str.append("timeseriesFramework: " + timeseriesFramework + "\n");
+        str.append("timeseriesModel: " + timeseriesModel + "\n");
+        str.append("anomalyDetectionModel: " + anomalyDetectionModel + "\n");
+        str.append("prophetGrowthModel: " + prophetGrowthModel + "\n");
+        str.append("prophetYearlySeasonality: " + prophetYearlySeasonality + "\n");
+        str.append("prophetWeeklySeasonality: " + prophetWeeklySeasonality + "\n");
+        str.append("prophetDailySeasonality: " + prophetDailySeasonality + "\n");
+        return str.toString();
     }
 }

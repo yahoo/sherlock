@@ -42,14 +42,36 @@ public class QueryBuilderTest {
         return ZonedDateTime.now(ZoneOffset.UTC);
     }
 
+    /**
+     * Recursively search a field in the class hierarchy.
+     * @param classVar the class variable
+     * @param name the field name
+     * @throws NoSuchFieldException if a field is not found
+     * @throws SecurityException if there is a security violation
+     */
+    public static Field getFieldHelper(Class<?> classVar, String name) throws NoSuchFieldException, SecurityException {
+        Field field = null;
+        while (classVar != null && field == null) {
+            try {
+                field = classVar.getDeclaredField(name);
+
+            } catch (Exception e) {
+                classVar = classVar.getSuperclass();
+                if (classVar == null) {
+                    throw e;
+                }
+            }
+        }
+        return field;
+    }
+
     public static Object getValue(String name, Object o) {
         try {
-            Field f = o.getClass().getDeclaredField(name);
+            Field f = getFieldHelper(o.getClass(), name);
             return getValue(f, o);
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e.toString());
         }
-
     }
 
     @Test

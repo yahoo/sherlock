@@ -23,19 +23,21 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Class contains EGADS configuration parameters.
+ * Class contains Detector configuration parameters.
  */
 @Slf4j
 @Data
-public class EgadsConfig {
+public class DetectorConfig {
+
+    public static final String AD_MODEL = "AD_MODEL";
 
     /**
-     * Used to mark EGADS parameter fields.
+     * Used to mark Detector parameter fields.
      */
     @Retention(RetentionPolicy.RUNTIME)
-    public @interface EgadsParam {
+    public @interface DetectorParam {
         /**
-         * The name of the EGADS parameter.
+         * The name of the Detector parameter.
          * @return name of the param
          */
         String name();
@@ -75,6 +77,26 @@ public class EgadsConfig {
     }
 
     /**
+     * Timeseries forecasting framework.
+     */
+    public enum Framework {
+        Egads,
+        Prophet;
+
+        /**
+         * get all the Framework names.
+         * @return list of name of the Frameworks
+         */
+        public static List<String> getAllValues() {
+            List<String> frameworks = new ArrayList<>();
+            for (Framework framework : Framework.values()) {
+                frameworks.add(framework.toString());
+            }
+            return frameworks;
+        }
+    }
+
+    /**
      * EGADS timeseries models.
      */
     public enum TimeSeriesModel {
@@ -85,6 +107,7 @@ public class EgadsConfig {
         NaiveForecastingModel,
         OlympicModel,
         PolynomialRegressionModel,
+        Prophet,
         RegressionModel,
         SimpleExponentialSmoothingModel,
         TripleExponentialSmoothingModel,
@@ -99,6 +122,20 @@ public class EgadsConfig {
             List<String> timeseriesModels = new ArrayList<>();
             for (TimeSeriesModel timeSeriesModel : TimeSeriesModel.values()) {
                 timeseriesModels.add(timeSeriesModel.toString());
+            }
+            return timeseriesModels;
+        }
+
+        /**
+         * get all the Egads Model names.
+         * @return list of name of the Egads models
+         */
+        public static List<String> getAllEgadsValues() {
+            List<String> timeseriesModels = new ArrayList<>();
+            for (TimeSeriesModel timeSeriesModel : TimeSeriesModel.values()) {
+                if (timeSeriesModel != Prophet) {
+                    timeseriesModels.add(timeSeriesModel.toString());
+                }
             }
             return timeseriesModels;
         }
@@ -129,11 +166,52 @@ public class EgadsConfig {
     }
 
     /**
+     * Prophet Growth Models.
+     */
+    public enum GrowthModel {
+        linear,
+        flat;
+
+        /**
+         * get all the model names.
+         * @return list of name of the models
+         */
+        public static List<String> getAllValues() {
+            List<String> growthModels = new ArrayList<>();
+            for (GrowthModel growthModel : GrowthModel.values()) {
+                growthModels.add(growthModel.toString());
+            }
+            return growthModels;
+        }
+    }
+
+    /**
+     * Prophet (yearly/weekly/daily) seasonalities.
+     */
+    public enum ProphetSeasonality {
+        auto,
+        True,
+        False;
+
+        /**
+         * get all the seasonality values.
+         * @return list of seasonality values
+         */
+        public static List<String> getAllValues() {
+            List<String> prophetSeasonalities = new ArrayList<>();
+            for (ProphetSeasonality prophetSeasonality : ProphetSeasonality.values()) {
+                prophetSeasonalities.add(prophetSeasonality.toString());
+            }
+            return prophetSeasonalities;
+        }
+    }
+
+    /**
      * Set all parameters of a config object to {@code null}.
      * @param emptyConfig the config object to set
      */
-    private static void setAllNull(EgadsConfig emptyConfig) {
-        Field[] configFields = Utils.findFields(EgadsConfig.class, EgadsParam.class);
+    private static void setAllNull(DetectorConfig emptyConfig) {
+        Field[] configFields = Utils.findFields(DetectorConfig.class, DetectorParam.class);
         for (Field configField : configFields) {
             configField.setAccessible(true);
             try {
@@ -152,10 +230,10 @@ public class EgadsConfig {
      * @param config the config object to set
      * @param setAll whether all fields should be set
      */
-    private static void setToDefault(EgadsConfig config, boolean setAll) {
-        Field[] configFields = Utils.findFields(EgadsConfig.class, EgadsParam.class);
+    private static void setToDefault(DetectorConfig config, boolean setAll) {
+        Field[] configFields = Utils.findFields(DetectorConfig.class, DetectorParam.class);
         for (Field configField : configFields) {
-            String defaultVal = configField.getAnnotation(EgadsParam.class).def();
+            String defaultVal = configField.getAnnotation(DetectorParam.class).def();
             configField.setAccessible(true);
             try {
                 if (configField.get(config) == null || setAll) {
@@ -168,40 +246,40 @@ public class EgadsConfig {
     }
 
     /**
-     * Builder class for the EGADS config.
+     * Builder class for the Detector config.
      */
     public static class Builder {
         /**
-         * A map of EGADS parameter name to the field object.
+         * A map of Detector parameter name to the field object.
          */
         private static Map<String, Field> fieldMap;
 
         // Initialize the field map
         static {
-            Field[] configFields = Utils.findFields(EgadsConfig.class, EgadsParam.class);
+            Field[] configFields = Utils.findFields(DetectorConfig.class, DetectorParam.class);
             fieldMap = new HashMap<>((int) (configFields.length * 1.5));
             for (Field configField : configFields) {
-                fieldMap.put(configField.getAnnotation(EgadsParam.class).name(), configField);
+                fieldMap.put(configField.getAnnotation(DetectorParam.class).name(), configField);
             }
         }
 
         /**
-         * EgadsConfig instance.
+         * DetectorConfig instance.
          */
-        private final EgadsConfig config;
+        private final DetectorConfig config;
 
         /**
-         * Create a new EgadsConfig builder.
+         * Create a new DetectorConfig builder.
          * @param config config to use
          */
-        private Builder(EgadsConfig config) {
+        private Builder(DetectorConfig config) {
             this.config = config;
         }
 
         /**
-         * Set a specific EGADS parameter given a parameter name
+         * Set a specific Detector parameter given a parameter name
          * and the string parameter value.
-         * @param paramName the EGADS parameter name
+         * @param paramName the Detector parameter name
          * @param paramValue the string parameter value
          * @return build instance
          */
@@ -374,7 +452,7 @@ public class EgadsConfig {
         }
 
         /**
-         * @param val whether EGADS should fill missing values
+         * @param val whether Detector should fill missing values
          * @return builder instance
          */
         public Builder fillMissing(boolean val) {
@@ -669,19 +747,67 @@ public class EgadsConfig {
         }
 
         /**
-         * @return EGADS config with all fields set to default
+         * @param val string Prophet growth model
+         * @return builder instance
          */
-        public EgadsConfig buildDefault() {
+        public Builder growthModel(String val) {
+            if (!GrowthModel.getAllValues().contains(val)) {
+                return this;
+            }
+            config.setProphetGrowthModel(val);
+            return this;
+        }
+
+        /**
+         * @param val string Prophet yearly seasonality
+         * @return builder instance
+         */
+        public Builder yearlySeasonality(String val) {
+            if (!ProphetSeasonality.getAllValues().contains(val)) {
+                return this;
+            }
+            config.setProphetYearlySeasonality(val);
+            return this;
+        }
+
+        /**
+         * @param val string Prophet weekly seasonality
+         * @return builder instance
+         */
+        public Builder weeklySeasonality(String val) {
+            if (!ProphetSeasonality.getAllValues().contains(val)) {
+                return this;
+            }
+            config.setProphetWeeklySeasonality(val);
+            return this;
+        }
+
+        /**
+         * @param val string Prophet daily seasonality
+         * @return builder instance
+         */
+        public Builder dailySeasonality(String val) {
+            if (!ProphetSeasonality.getAllValues().contains(val)) {
+                return this;
+            }
+            config.setProphetDailySeasonality(val);
+            return this;
+        }
+
+        /**
+         * @return Detector config with all fields set to default
+         */
+        public DetectorConfig buildDefault() {
             setToDefault(config, true);
             return config;
         }
 
         /**
          * Set remaining fields to default and build
-         * EGADS config.
-         * @return EGADS config
+         * Detector config.
+         * @return Detector config
          */
-        public EgadsConfig build() {
+        public DetectorConfig build() {
             if (config.getFilteringMethod() != null && config.getFilteringParam() == null) {
                 this.recommendedFilteringParam();
             }
@@ -691,10 +817,10 @@ public class EgadsConfig {
     }
 
     /**
-     * @return a new EGADS config builder
+     * @return a new Detector config builder
      */
     public static Builder create() {
-        return new Builder(new EgadsConfig());
+        return new Builder(new DetectorConfig());
     }
 
     /**
@@ -704,7 +830,7 @@ public class EgadsConfig {
      * occur in the last time series data point will
      * be shown.
      */
-    @EgadsParam(name = "MAX_ANOMALY_TIME_AGO", def = "0")
+    @DetectorParam(name = "MAX_ANOMALY_TIME_AGO", def = "0")
     private String maxAnomalyTimeAgo;
 
     /**
@@ -714,7 +840,7 @@ public class EgadsConfig {
      * If set to "0" then "MAX_ANOMALY_TIME_AGO" comes
      * into effect.
      */
-    @EgadsParam(name = "DETECTION_WINDOW_START_TIME", def = "0")
+    @DetectorParam(name = "DETECTION_WINDOW_START_TIME", def = "0")
     private String detectionWindowStartTime;
 
     /**
@@ -722,15 +848,22 @@ public class EgadsConfig {
      * time series. If set to 1 or less, the setting
      * is ignored.
      */
-    @EgadsParam(name = "AGGREGATION", def = "1")
+    @DetectorParam(name = "AGGREGATION", def = "1")
     private String aggregation;
 
     /**
      * The EGADS operation type. For Sherlock
      * this should always be {@code "DETECT_ANOMALY"}.
      */
-    @EgadsParam(name = "OP_TYPE", def = "DETECT_ANOMALY")
+    @DetectorParam(name = "OP_TYPE", def = "DETECT_ANOMALY")
     private String opType;
+
+    /**
+     * The forecasting framework used to predict the expected
+     * time series data.
+     */
+    @DetectorParam(name = "TS_FRAMEWORK", def = "Egads")
+    private String tsFramework;
 
     /**
      * The time series model type used to generate
@@ -738,7 +871,7 @@ public class EgadsConfig {
      * are detected. As of now, this setting should
      * always be {@code "OlympicModel"} for Sherlock.
      */
-    @EgadsParam(name = "TS_MODEL", def = "OlympicModel")
+    @DetectorParam(name = "TS_MODEL", def = "OlympicModel")
     private String tsModel;
 
     /**
@@ -747,26 +880,26 @@ public class EgadsConfig {
      * As of now, this setting should always be
      * {@code "KSigmaModel"} for Sherlock.
      */
-    @EgadsParam(name = "AD_MODEL", def = "KSigmaModel")
+    @DetectorParam(name = "AD_MODEL", def = "KSigmaModel")
     private String adModel;
 
     /**
      * EGADS input source. {@code ['CSV', 'STD_IN']}.
      */
-    @EgadsParam(name = "INPUT", def = "CSV")
+    @DetectorParam(name = "INPUT", def = "CSV")
     private String input;
 
     /**
      * Where output should be directed. {@code ['STD_OUT', 'GUI']}.
      */
-    @EgadsParam(name = "OUTPUT", def = "STD_OUT")
+    @DetectorParam(name = "OUTPUT", def = "STD_OUT")
     private String output;
 
     /**
      * The number of possible time-shifts allowed
      * for the Olympic scoring model.
      */
-    @EgadsParam(name = "TIME_SHIFTS", def = "0")
+    @DetectorParam(name = "TIME_SHIFTS", def = "0")
     private String timeShifts;
 
     /**
@@ -774,7 +907,7 @@ public class EgadsConfig {
      * Olympic scoring. Windows are between
      * {@code baseWindow[0] <= w <= baseWindow[1]}.
      */
-    @EgadsParam(name = "BASE_WINDOWS", def = "1,7")
+    @DetectorParam(name = "BASE_WINDOWS", def = "1,7")
     private String baseWindows;
 
     /**
@@ -782,28 +915,28 @@ public class EgadsConfig {
      * Set to 0 for EGADS to auto detect periodicity,
      * set to -1 to disable the option.
      */
-    @EgadsParam(name = "PERIOD", def = "0")
+    @DetectorParam(name = "PERIOD", def = "0")
     private String period;
 
     /**
-     * Whether egads should fill in missing values.
+     * Whether Detector should fill in missing values.
      * Set to 1 to enable.
      */
-    @EgadsParam(name = "FILL_MISSING", def = "1")
+    @DetectorParam(name = "FILL_MISSING", def = "1")
     private String fillMissing;
 
     /**
      * The number of weeks that should be used
      * in Olympic scoring.
      */
-    @EgadsParam(name = "NUM_WEEKS", def = "8")
+    @DetectorParam(name = "NUM_WEEKS", def = "8")
     private String numWeeks;
 
     /**
      * The number of the highest and lowest points
      * to drop in the series.
      */
-    @EgadsParam(name = "NUM_TO_DROP", def = "1")
+    @DetectorParam(name = "NUM_TO_DROP", def = "1")
     private String numToDrop;
 
     /**
@@ -811,81 +944,110 @@ public class EgadsConfig {
      * then EGADS will automatically vary parameters
      * e.g. {@code numWeeks} to produce the best fit.
      */
-    @EgadsParam(name = "DYNAMIC_PARAMETERS", def = "0")
+    @DetectorParam(name = "DYNAMIC_PARAMETERS", def = "0")
     private String dynamicParameters;
 
     /**
      * The expected percentage of anomalies in the
      * time series data.
      */
-    @EgadsParam(name = "AUTO_SENSITIVITY_ANOMALY_PCNT", def = "0.01")
+    @DetectorParam(name = "AUTO_SENSITIVITY_ANOMALY_PCNT", def = "0.01")
     private String autoSensitivityAnomalyPercent;
 
     /**
      * The expected cluster standard deviation.
      */
-    @EgadsParam(name = "AUTO_SENSITIVITY_SD", def = "3.0")
+    @DetectorParam(name = "AUTO_SENSITIVITY_SD", def = "3.0")
     private String autoSensitivityStandardDeviation;
 
     /**
      * The detection size before the main window.
      */
-    @EgadsParam(name = "PRE_WINDOW_SIZE", def = "48")
+    @DetectorParam(name = "PRE_WINDOW_SIZE", def = "48")
     private String preWindowSize;
     /**
      * The detection size after the main window.
      */
-    @EgadsParam(name = "POST_WINDOW_SIZE", def = "48")
+    @DetectorParam(name = "POST_WINDOW_SIZE", def = "48")
     private String postWindowSize;
     /**
      * Confidence level at which divergence for
      * anomalies is computed.
      */
-    @EgadsParam(name = "CONFIDENCE", def = "0.8")
+    @DetectorParam(name = "CONFIDENCE", def = "0.8")
     private String confidence;
     /**
      * Window size for spectral smoothing. Should be a
      * value larger than the size of the most important
      * seasonality.
      */
-    @EgadsParam(name = "WINDOW_SIZE", def = "192")
+    @DetectorParam(name = "WINDOW_SIZE", def = "192")
     private String windowSize;
 
     /**
      * The filtering method to use for spectral smoothing.
      * {@code ['GAP_RATIO', 'EIGEN_RATIO', 'EXPLICIT', 'K_GAP', 'VARIANCE', 'SMOOTHNESS'}.
      */
-    @EgadsParam(name = "FILTERING_METHOD", def = "GAP_RATIO")
+    @DetectorParam(name = "FILTERING_METHOD", def = "GAP_RATIO")
     private String filteringMethod;
+
     /**
      * Filtering parameter for the filtering method.
      * Recommended are {@code [0.01, 0.1, 10, 8, 0.99, 0.97]}.
      */
-    @EgadsParam(name = "FILTERING_PARAM", def = "0.01")
+    @DetectorParam(name = "FILTERING_PARAM", def = "0.01")
     private String filteringParam;
 
     /**
-     * Create a new EGADS config will all fields
+     * The growth model used in Meta's Prophet.
+     * Should be either "linear" or "flat".
+     */
+    @DetectorParam(name = "PROPHET_GROWTH_MODEL", def = "linear")
+    private String prophetGrowthModel;
+
+    /**
+     * The yearly seasonality flag used in Meta's Prophet.
+     * Should be either "auto" or "true" or "false".
+     */
+    @DetectorParam(name = "PROPHET_YEARLY_SEASONALITY", def = "auto")
+    private String prophetYearlySeasonality;
+
+    /**
+     * The weekly seasonality flag used in Meta's Prophet.
+     * Should be either "auto" or "true" or "false".
+     */
+    @DetectorParam(name = "PROPHET_WEEKLY_SEASONALITY", def = "auto")
+    private String prophetWeeklySeasonality;
+
+    /**
+     * The daily seasonality flag used in Meta's Prophet.
+     * Should be either "auto" or "true" or "false".
+     */
+    @DetectorParam(name = "PROPHET_DAILY_SEASONALITY", def = "auto")
+    private String prophetDailySeasonality;
+
+    /**
+     * Create a new Detector config will all fields
      * set to null.
      */
-    public EgadsConfig() {
+    public DetectorConfig() {
         setAllNull(this);
     }
 
     /**
-     * Convert this EGADS config object to a properties
+     * Convert this Detector config object to a properties
      * object using the parameter names.
-     * @return EGADS properties
+     * @return properties
      */
     public Properties asProperties() {
-        Field[] configFields = Utils.findFields(EgadsConfig.class, EgadsParam.class);
+        Field[] configFields = Utils.findFields(DetectorConfig.class, DetectorParam.class);
         Properties properties = new Properties();
         for (Field configField : configFields) {
             configField.setAccessible(true);
-            String paramName = configField.getAnnotation(EgadsParam.class).name();
+            String paramName = configField.getAnnotation(DetectorParam.class).name();
             try {
                 if (configField.get(this) == null) {
-                    properties.setProperty(paramName, configField.getAnnotation(EgadsParam.class).def());
+                    properties.setProperty(paramName, configField.getAnnotation(DetectorParam.class).def());
                 } else {
                     properties.setProperty(paramName, (String) configField.get(this));
                 }
@@ -897,15 +1059,15 @@ public class EgadsConfig {
     }
 
     /**
-     * Set an egads config from a properties. This method
+     * Set a Detector config from a properties. This method
      * ignores property values that are invalid.
      *
      * @param properties properties object to create a config with
-     * @return egads configuration
+     * @return Detector configuration
      */
-    public static EgadsConfig fromProperties(Properties properties) {
-        EgadsConfig config = new EgadsConfig();
-        EgadsConfig.Builder builder = new EgadsConfig.Builder(config);
+    public static DetectorConfig fromProperties(Properties properties) {
+        DetectorConfig config = new DetectorConfig();
+        DetectorConfig.Builder builder = new DetectorConfig.Builder(config);
         for (String key : properties.stringPropertyNames()) {
             builder.setParam(key, properties.getProperty(key));
         }

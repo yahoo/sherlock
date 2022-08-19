@@ -9,3 +9,4 @@ dependency-reduced-pom.xml
 pom.xml.releaseBackup
 release.properties
 .DS_Store
+.ipynb_checkpoints

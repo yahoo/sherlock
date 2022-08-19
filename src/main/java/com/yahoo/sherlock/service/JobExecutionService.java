@@ -19,10 +19,10 @@ import com.yahoo.sherlock.exception.SherlockException;
 import com.yahoo.sherlock.model.AnomalyReport;
 import com.yahoo.sherlock.model.DruidCluster;
 import com.yahoo.sherlock.model.JobMetadata;
-import com.yahoo.sherlock.query.EgadsConfig;
+import com.yahoo.sherlock.query.DetectorConfig;
 import com.yahoo.sherlock.query.Query;
 import com.yahoo.sherlock.query.QueryBuilder;
-import com.yahoo.sherlock.scheduler.EgadsTask;
+import com.yahoo.sherlock.scheduler.DetectionTask;
 import com.yahoo.sherlock.settings.Constants;
 import com.yahoo.sherlock.store.AnomalyReportAccessor;
 import com.yahoo.sherlock.store.DruidClusterAccessor;
@@ -113,7 +113,7 @@ public class JobExecutionService {
                 reports.add(report);
             }
             List<String> originalEmailList = job.getOwnerEmail() == null || job.getOwnerEmail().isEmpty() ? new ArrayList<>() :
-                                             Arrays.stream(job.getOwnerEmail().split(Constants.COMMA_DELIMITER)).collect(Collectors.toList());
+                    Arrays.stream(job.getOwnerEmail().split(Constants.COMMA_DELIMITER)).collect(Collectors.toList());
             List<String> finalEmailList = new ArrayList<>();
             if (reports.get(0).getStatus().equalsIgnoreCase(Constants.ERROR)) {
                 emailService.processEmailReports(job, originalEmailList, reports);
@@ -223,8 +223,8 @@ public class JobExecutionService {
             int intervals
     ) throws SherlockException, DruidException, InterruptedException, IOException {
         log.info("Performing backfill for job [{}] for time range ({}, {})", job.getJobId(),
-                 TimeUtils.getTimeFromSeconds(start * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS),
-                 TimeUtils.getTimeFromSeconds(end * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS));
+                TimeUtils.getTimeFromSeconds(start * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS),
+                TimeUtils.getTimeFromSeconds(end * 60L, Constants.TIMESTAMP_FORMAT_NO_SECONDS));
         log.info("Job granularity is [{}]", granularity.toString());
         DetectorService detectorService = serviceFactory.newDetectorServiceInstance();
         TimeSeriesParserService parserService = serviceFactory.newTimeSeriesParserServiceInstance();
@@ -232,11 +232,11 @@ public class JobExecutionService {
         List<TimeSeries> sourceSeries = parserService.parseTimeSeries(druidResponse, query);
         List<TimeSeries>[] fillSeriesList = parserService.subseries(sourceSeries, start, end, granularity, query.getGranularityRange(), intervals);
         List<Thread> threads = new ArrayList<>(fillSeriesList.length);
-        List<EgadsTask> tasks = new ArrayList<>(fillSeriesList.length);
+        List<DetectionTask> tasks = new ArrayList<>(fillSeriesList.length);
         Integer singleInterval = granularity.getMinutes();
         Integer subEnd = start + singleInterval;
         for (List<TimeSeries> fillSeries : fillSeriesList) {
-            EgadsTask task = createTask(
+            DetectionTask task = createTask(
                     job,
                     subEnd,
                     fillSeries,
@@ -258,21 +258,21 @@ public class JobExecutionService {
     }
 
     /**
-     * Create a new egads task.
+     * Create a new Detection task.
      *
      * @param job               the job to run
      * @param effectiveQueryEndTime  the effective endtime of subquery
      * @param series            time series data
      * @param detectorService   the detector service instance to use
-     * @return an egads task
+     * @return a Detection task
      */
-    protected EgadsTask createTask(
+    protected DetectionTask createTask(
             JobMetadata job,
             Integer effectiveQueryEndTime,
             List<TimeSeries> series,
             DetectorService detectorService
     ) {
-        return new EgadsTask(job, effectiveQueryEndTime, series, detectorService, this);
+        return new DetectionTask(job, effectiveQueryEndTime, series, detectorService, this);
     }
 
     /**
@@ -313,12 +313,12 @@ public class JobExecutionService {
 
     /**
      * Execute a job with the specified query and a provided
-     * EGADS config object.
+     * Detector config object.
      *
      * @param job     job details
      * @param cluster druid cluster to use
      * @param query   Druid query to run
-     * @param config  EGADS configuration
+     * @param config  Detector configuration
      * @return list of anomalies from the job
      * @throws SherlockException if an error occurs during execution
      */
@@ -326,7 +326,7 @@ public class JobExecutionService {
             JobMetadata job,
             DruidCluster cluster,
             Query query,
-            EgadsConfig config
+            DetectorConfig config
     ) throws SherlockException {
         log.info("Executing job with Query [{}]", job.getJobId());
         try {

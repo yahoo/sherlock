@@ -102,7 +102,7 @@ public class JsonTimeSeries {
     public JsonTimeSeries(JsonArray jsonArray, Query query) {
         this.metrics = query.getMetricNames();
         this.dimensions = query.getGroupByDimensions();
-        this.jsonDataSequence = new Gson().fromJson(jsonArray, JsonTimeSeries.JsonDataSequence.class);
+        this.jsonDataSequence = new Gson().fromJson(jsonArray, JsonDataSequence.class);
         this.uniqueIDMap = new HashMap<>();
         this.uniqueTimeSeriesMap = new HashMap<>();
     }
@@ -192,7 +192,7 @@ public class JsonTimeSeries {
                 log.error("Druid timestamp parsing error!", e);
                 throw new SherlockException(e.getMessage(), e);
             }
-            Timestamp tp = new java.sql.Timestamp(parsedDate.getTime());
+            Timestamp tp = new Timestamp(parsedDate.getTime());
             return (tp.getTime() / 1000);
         } else {
             log.info("Found null timestamp in Druid response");

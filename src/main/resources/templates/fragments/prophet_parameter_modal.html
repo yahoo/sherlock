@@ -1,0 +1,71 @@
+<div id="prophet-param-modal" th:fragment="prophet-param-modal" th:hidden="true">
+    <div class="form-group" id="prophet-timeseriesModelSection">
+        <label class="control-label" for="prophet-tsModels">Prophet Forecasting Model:</label>
+        <select id="prophet-tsModels" name="prophet-tsModels" class="form-control"
+                th:field="*{timeseriesModel}" disabled="disabled">
+            <option th:value="'Prophet'" th:text="Prophet"></option>
+        </select>
+    </div>
+
+    <div class="form-group" id="growth-model-section">
+        <label class="control-label" for="growth-models">Prophet Growth Model: </label>
+        <p id="default-growth-model" class="bg-info">Select the Prophet Growth Model.
+            <code>Default: 'linear'</code></p>
+        <div>
+            <select id="growth-models" name="growth-models" class="form-control"
+                    th:field="*{growthModel}" th:required="true" onchange="showGrowthModel()">
+                <option th:each="growthModel : ${prophetGrowthModels}"
+                        th:value="${growthModel}"
+                        th:selected="${growthModel} == 'linear'"
+                        th:text="${growthModel}"></option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-group col-lg-3" id="yearly-seasonality-selection">
+            <label class="control-label" for="yearly-seasonalities">Prophet Yearly Seasonality: </label>
+            <p id="default-yearly-seasonality" class="bg-info">Select the Prophet Yearly Seasonality.
+                <code>Default: 'auto'</code></p>
+            <div>
+                <select id="yearly-seasonalities" name="yearly-seasonalities" class="form-control"
+                        th:field="*{yearlySeasonality}" th:required="true" onchange="showYearlySeasonality()">
+                    <option th:each="yearlySeasonality : ${yearlySeasonalities}"
+                            th:value="${yearlySeasonality}"
+                            th:selected="${yearlySeasonality} == 'auto'"
+                            th:text="${yearlySeasonality}"></option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group col-lg-3" id="weekly-seasonality-selection">
+            <label class="control-label" for="weekly-seasonalities">Prophet Weekly Seasonality: </label>
+            <p id="default-weekly-seasonality" class="bg-info">Select the Prophet Weekly Seasonality.
+                <code>Default: 'auto'</code></p>
+            <div>
+                <select id="weekly-seasonalities" name="weekly-seasonalities" class="form-control"
+                        th:field="*{weeklySeasonality}" th:required="true" onchange="showWeeklySeasonality()">
+                    <option th:each="weeklySeasonality : ${weeklySeasonalities}"
+                            th:value="${weeklySeasonality}"
+                            th:selected="${weeklySeasonality} == 'auto'"
+                            th:text="${weeklySeasonality}"></option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group col-lg-3" id="daily-seasonality-selection">
+            <label class="control-label" for="daily-seasonalities">Prophet Daily Seasonality: </label>
+            <p id="default-daily-seasonality" class="bg-info">Select the Prophet Daily Seasonality.
+                <code>Default: 'auto'</code></p>
+            <div>
+                <select id="daily-seasonalities" name="daily-seasonalities" class="form-control"
+                        th:field="*{dailySeasonality}" th:required="true" onchange="showDailySeasonality()">
+                    <option th:each="dailySeasonality : ${dailySeasonalities}"
+                            th:value="${dailySeasonality}"
+                            th:selected="${dailySeasonality} == 'auto'"
+                            th:text="${dailySeasonality}"></option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>

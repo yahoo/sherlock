@@ -15,7 +15,6 @@ import com.yahoo.sherlock.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -190,6 +189,14 @@ public class CLISettings {
     @Parameter(names = "--redis-clustered", description = "Whether the Redis backend is a cluster")
     public static boolean REDIS_CLUSTERED = false;
 
+    @Parameter(names = "--prophet-url", description = "Prophet Service URL, e.g. 'prophet-service.com:8000'")
+    public static String PROPHET_URL = "127.0.0.1:4080";
+
+    @Parameter(names = "--prophet-timeout", description = "Timeout when querying the Prophet Service in milliseconds. (default 120 sec)")
+    public static int PROPHET_TIMEOUT = 120000;
+
+    @Parameter(names = "--prophet-principal", description = "Principal of the Prophet Service")
+    public static String PROPHET_PRINCIPAL = "prophet-principal";
     /**
      * Whether debug routes should be enabled.
      */
@@ -348,18 +355,8 @@ public class CLISettings {
         log.info("Attempting to read config file at: {}", CONFIG_FILE);
         Field[] configFields = Utils.findFields(getClass(), Parameter.class);
         Properties props = new Properties();
-        InputStream is = null;
-        try {
-            is = new FileInputStream(CONFIG_FILE);
-            props.load(is);
-        } catch (FileNotFoundException e) {
-            log.error("File not found!", e);
-        } catch (IOException io) {
-            log.error("Exception while reading file!", io);
-        } finally {
-            assert is != null;
-            is.close();
-        }
+        InputStream is = new FileInputStream(CONFIG_FILE);
+        props.load(is);
         for (Field configField : configFields) {
             String configName = configField.getName();
             Class<?> type = configField.getType();
