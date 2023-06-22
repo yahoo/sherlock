@@ -96,7 +96,38 @@ public class DetectorService {
         }
         return detect(query, jobMetadata.getSigmaThreshold(), cluster, config, jobMetadata.getFrequency(), jobMetadata.getGranularityRange());
     }
-
+    /**
+     * redBorder function to get invalid Sources in the specified Druid cluster.
+     * 
+     *
+     * @param query   the query to check
+     * @param cluster the druid cluster to check
+     * @return list of anomalies
+     * @throws DruidException if the datasource is not found
+     */
+    public ArrayList<String> invalidSources(Query query, DruidCluster cluster) throws DruidException {
+        ArrayList<String> inValidDataSources = new ArrayList<>();
+        JsonElement datasourceInfo = query.getDatasource();
+        JsonArray druidDataSources = httpService.queryDruidDatasources(cluster);
+        if (datasourceInfo.isJsonArray()) {
+            JsonArray dataSources = datasourceInfo.getAsJsonArray();
+            for (JsonElement dataSource :
+                    dataSources) {
+                if (!druidDataSources.contains(dataSource)) {
+                    inValidDataSources.add(dataSource.getAsString());
+                }
+            }
+        } else {
+            if (!druidDataSources.contains(datasourceInfo)) {
+                inValidDataSources.add(datasourceInfo.getAsString());
+            }
+        }
+        if (druidDataSources.size() == 0) {
+            log.error("Druid DataSources are 0");
+            throw new DruidException("Querying 0 datasources");
+        }
+        return inValidDataSources;
+    }
     /**
      * Check to ensure that the datasource in the query exists
      * in the specified cluster.
@@ -273,6 +304,7 @@ public class DetectorService {
             String frequency,
             Integer granularityRange
     ) throws SherlockException, DruidException {
+        query.removeDatasource(invalidSources(query, cluster));
         checkDatasource(query, cluster);
         JsonArray druidResponse = queryDruid(query, cluster);
         return runDetection(druidResponse, query, sigmaThreshold, config, frequency, granularityRange);
@@ -300,6 +332,7 @@ public class DetectorService {
             @Nonnull DetectorConfig config
     ) throws SherlockException, DruidException, Exception {
         DetectorAPIService detectorAPIService;
+        query.removeDatasource(invalidSources(query, cluster));
         checkDatasource(query, cluster);
         JsonArray druidResponse = queryDruid(query, cluster);
         List<TimeSeries> timeSeriesList = parserService.parseTimeSeries(druidResponse, query);

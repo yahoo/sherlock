@@ -162,7 +162,8 @@ public class DetectorServiceTest {
             detectorService.detect(DBTestHelper.getNewDruidCluster(), job);
             Assert.fail();
         } catch (Exception e) {
-            assertEquals(e.getMessage(), "Querying unknown datasource: [s1]");
+            //Change test from Querying unknown datasource: [s1] to null since we are removing the DataSource.
+            assertEquals(e.getMessage(), null);
         }
     }
 

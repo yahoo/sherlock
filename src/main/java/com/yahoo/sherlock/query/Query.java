@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.ArrayList;
 
 /**
  * Class to store new query json object and helper methods to operate on query.
@@ -163,7 +164,59 @@ public class Query {
         }
         return dimensions;
     }
+    /**
+     * redBorder function that removes the specified data sources from the query object.
+     *
+     * @param dataSources The list of data sources to be removed.
+     */
+    public void removeDatasource(ArrayList<String> dataSources) {
+        if (this.queryObj == null) {
+            return;
+        }
 
+        if (this.queryObj.has(QueryConstants.DATASOURCE)) {
+            if (this.queryObj.get(QueryConstants.DATASOURCE).isJsonPrimitive()) {
+                // If the datasource key is a primitive, check if it needs to be removed
+                String dataSource = this.queryObj.get(QueryConstants.DATASOURCE).getAsString();
+                if (dataSources.contains(dataSource)) {
+                    this.queryObj.remove(QueryConstants.DATASOURCE);
+                }
+            } else if (this.queryObj.get(QueryConstants.DATASOURCE).isJsonObject()) {
+                JsonObject dataSourceInfo = this.queryObj.getAsJsonObject(QueryConstants.DATASOURCE);
+                String dataSourceType = dataSourceInfo.get(QueryConstants.TYPE).getAsString();
+
+                if (dataSources.contains(dataSourceType)) {
+                    // If the datasource key is an object and the type matches the one to be removed, remove it
+                    this.queryObj.remove(QueryConstants.DATASOURCE);
+                }
+
+                switch (dataSourceType) {
+                    case QueryConstants.UNION:
+                        JsonElement dataSource = dataSourceInfo.get(QueryConstants.DATASOURCES);
+                        if (dataSource.isJsonArray()) {
+                            JsonArray dataSourceArray = dataSource.getAsJsonArray();
+                            for (int i = 0; i < dataSourceArray.size(); i++) {
+                                JsonElement element = dataSourceArray.get(i);
+                                if (element.isJsonPrimitive()) {
+                                    String value = element.getAsString();
+                                    if (dataSources.contains(value)) {
+                                        dataSourceArray.remove(i);
+                                        i--;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        String dataSourceName = dataSourceInfo.get(QueryConstants.NAME).getAsString();
+                        if (dataSources.contains(dataSourceName)) {
+                            dataSourceInfo.remove(QueryConstants.NAME);
+                        }
+                        break;
+                }
+            }
+        }
+    }
     /**
      * Method to get the datasource from query.
      *
