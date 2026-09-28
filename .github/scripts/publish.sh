@@ -18,23 +18,6 @@ gpg --batch --yes \
   --output .github/deploy/secring.gpg \
   --decrypt .github/encrypted/secring.gpg.gpg
 
-echo "=== Secret keys available ==="
-gpg \
-  --homedir "${GITHUB_WORKSPACE}/.github/deploy" \
-  --list-secret-keys \
-  --keyid-format LONG
-
-echo "=== Test signing ==="
-echo "test" | gpg \
-  --homedir "${GITHUB_WORKSPACE}/.github/deploy" \
-  --batch \
-  --yes \
-  --pinentry-mode loopback \
-  --passphrase "${GPG_PASSPHRASE}" \
-  --local-user "${GPG_KEYNAME}" \
-  --armor \
-  --detach-sign
-
 mvn -B deploy \
   -P ossrh \
   -Dmaven.test.skip=true \
