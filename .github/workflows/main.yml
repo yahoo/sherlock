@@ -22,12 +22,12 @@ jobs:
     - name: Build with Maven
       run: mvn install
 
-    # - name: Publish Snapshots to Maven Central
-    #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-    #   run: ./.github/scripts/publish.sh
-    #   env:
-    #     GPG_ENCPASS: ${{ secrets.GPG_ENCPASS }}
-    #     GPG_KEYNAME: ${{ secrets.GPG_KEYNAME }}
-    #     GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-    #     OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-    #     OSSRH_USER: ${{ secrets.OSSRH_USER }}
+    - name: Publish Snapshots to Maven Central
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      run: ./.github/scripts/publish.sh
+      env:
+        GPG_ENCPASS: ${{ secrets.GPG_ENCPASS }}
+        GPG_KEYNAME: ${{ secrets.GPG_KEYNAME }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+        OSSRH_USER: ${{ secrets.OSSRH_USER }}
